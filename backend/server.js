@@ -69,6 +69,43 @@ app.delete("/deleteUser/:id", (req, res) => {
     });
 });
 
+app.put("/updateUser/:id", (req, res) => {
+  const { id } = req.params;
+  const { Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum } = req.body;
+
+  // Ellenőrizzük, hogy legalább egy mezőt frissíteni akar a felhasználó
+  if (!Email && !Jelszo && !Telefonszam && !Felhasznalonev && !Csaladnev && !Keresztnev && !Szuletesi_datum) {
+      return res.status(400).json({ message: "Legalább egy mezőt módosítani kell!" });
+  }
+
+  // SQL dinamikus frissítéshez
+  let sql = "UPDATE user SET ";
+  const updates = [];
+  const values = [];
+
+  if (Email) { updates.push("Email = ?"); values.push(Email); }
+  if (Jelszo) { updates.push("Jelszo = ?"); values.push(Jelszo); }
+  if (Telefonszam) { updates.push("Telefonszam = ?"); values.push(Telefonszam); }
+  if (Felhasznalonev) { updates.push("Felhasznalonev = ?"); values.push(Felhasznalonev); }
+  if (Csaladnev) { updates.push("Csaladnev = ?"); values.push(Csaladnev); }
+  if (Keresztnev) { updates.push("Keresztnev = ?"); values.push(Keresztnev); }
+  if (Szuletesi_datum) { updates.push("Szuletesi_datum = ?"); values.push(Szuletesi_datum); }
+
+  sql += updates.join(", ") + " WHERE Id = ?";
+  values.push(id);
+
+  db.query(sql, values, (err, result) => {
+      if (err) {
+          console.error(err);
+          return res.status(500).json({ message: "Hiba történt a felhasználó módosításakor" });
+      }
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ message: "A felhasználó nem található" });
+      }
+      return res.status(200).json({ message: "Felhasználó sikeresen módosítva", id });
+  });
+});
+
 // Szerver indítása
 app.listen(8081, () => {
   console.log("listening on port 8081");
