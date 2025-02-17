@@ -1,19 +1,48 @@
 const db = require("../config/db");
+const bcrypt = require("bcrypt");
 
-// Felhasználók lekérése
+// Összes felhasználó lekérése
 const getAllUsers = (callback) => {
     const sql = "SELECT * FROM user";
     db.query(sql, callback);
 };
 
+// Egy felhasználó lekérése e-mail alapján
+const getUserByEmail = (email, callback) => {
+    const sql = "SELECT * FROM user WHERE Email = ?";
+    db.query(sql, [email], (err, results) => {
+        if (err) return callback(err, null);
+        callback(null, results[0]); // Egyetlen felhasználó visszaadása
+    });
+};
+
+
+// Jelszó frissítése az adatbázisban
+const updatePassword = async (email, newPassword, callback) => {
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const sql = "UPDATE user SET Jelszo = ? WHERE Email = ?";
+        db.query(sql, [hashedPassword, email], callback);
+    } catch (error) {
+        callback(error, null);
+    }
+};
+
 // Új felhasználó hozzáadása
-const addUser = (userData, callback) => {
+const addUser = async (userData, callback) => {
     const { Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum } = userData;
-    const sql = `
-        INSERT INTO user (Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    db.query(sql, [Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum], callback);
+    
+    try {
+        const hashedPassword = await bcrypt.hash(Jelszo, 10); // Jelszó titkosítása
+
+        const sql = `
+            INSERT INTO user (Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        db.query(sql, [Email, hashedPassword, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum], callback);
+    } catch (error) {
+        callback(error, null);
+    }
 };
 
 // Felhasználó törlése
@@ -39,4 +68,9 @@ const updateUser = (id, userData, callback) => {
     db.query(sql, values, callback);
 };
 
-module.exports = { getAllUsers, addUser, deleteUser, updateUser };
+// Jelszó ellenőrzése (bcrypt.compare)
+const checkPassword = async (enteredPassword, storedHash) => {
+    return await bcrypt.compare(enteredPassword, storedHash);
+};
+
+module.exports = { getAllUsers, getUserByEmail, addUser, deleteUser, updateUser, getUserByEmail, updatePassword, checkPassword};
