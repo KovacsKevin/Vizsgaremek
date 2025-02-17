@@ -8,8 +8,6 @@ dotenv.config();
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
-
-// 📧 Nodemailer beállítása
 const transporter = nodemailer.createTransport({
     service: process.env.EMAIL_SERVICE,
     auth: {
@@ -18,8 +16,6 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-
-// Összes felhasználó lekérése
 const getUsers = (req, res) => {
     User.getAllUsers((err, data) => {
         if (err) return res.status(500).json({ message: "Hiba történt!" });
@@ -27,19 +23,22 @@ const getUsers = (req, res) => {
     });
 };
 
-// Új felhasználó hozzáadása bcrypt titkosítással
 const createUser = async (req, res) => {
     const userData = req.body;
+
     if (!userData.Email || !userData.Jelszo || !userData.Felhasznalonev) {
         return res.status(400).json({ message: "Hiányzó adatok!" });
     }
 
     try {
-        // Jelszó titkosítása
-        userData.Jelszo = await bcrypt.hash(userData.Jelszo, 10);
-        
+        const hashedPassword = await bcrypt.hash(userData.Jelszo, 10);
+        userData.Jelszo = hashedPassword;
+
         User.addUser(userData, (err, result) => {
-            if (err) return res.status(500).json({ message: "Hiba történt a felhasználó létrehozásakor" });
+            if (err) {
+                return res.status(500).json({ message: "Hiba történt a felhasználó létrehozásakor" });
+            }
+
             res.status(201).json({ message: "Felhasználó hozzáadva!", id: result.insertId });
         });
     } catch (error) {
@@ -47,7 +46,6 @@ const createUser = async (req, res) => {
     }
 };
 
-// Felhasználó törlése
 const deleteUser = (req, res) => {
     const { id } = req.params;
     User.deleteUser(id, (err, result) => {
@@ -57,7 +55,6 @@ const deleteUser = (req, res) => {
     });
 };
 
-// Felhasználó frissítése (Jelszót is titkosítja, ha módosul)
 const updateUser = async (req, res) => {
     const { id } = req.params;
     const userData = req.body;
@@ -89,20 +86,7 @@ const authenticateUser = async (req, res) => {
         if (!user) return res.status(401).json({ message: "Hibás e-mail vagy jelszó!" });
 
         try {
-            console.log("📌 Beírt jelszó:", Jelszo);
-            console.log("🔐 Adatbázisban tárolt hash:", user.Jelszo);
-
-            // Titkosítjuk a beírt jelszót (az összehasonlítás előtt) és kiírjuk
-            const hashedInputPassword = await bcrypt.hash(Jelszo, 10);
-            console.log("🔒 Titkosított beírt jelszó:", hashedInputPassword);
-
-            // Ellenőrzés közvetlenül bcrypt.compare használatával
             const isMatch = await bcrypt.compare(Jelszo, user.Jelszo);
-
-            console.log("🔍 bcrypt.compare() bemeneti értékek:");
-            console.log("   🔑 Beírt jelszó:", Jelszo);
-            console.log("   🔒 Hash az adatbázisból:", user.Jelszo);
-            console.log("✅ Jelszó egyezés eredménye:", isMatch);
 
             if (!isMatch) {
                 return res.status(401).json({ message: "Hibás e-mail vagy jelszó!" });
@@ -116,12 +100,6 @@ const authenticateUser = async (req, res) => {
     });
 };
 
-
-
-
-
-
-// 🔹 Jelszó-visszaállítási link generálás és e-mail küldés
 const requestPasswordReset = (req, res) => {
     const { Email } = req.body;
 
@@ -131,12 +109,10 @@ const requestPasswordReset = (req, res) => {
         if (err) return res.status(500).json({ message: "Hiba történt az adatbázis lekérdezése során" });
         if (!user) return res.status(404).json({ message: "A felhasználó nem található!" });
 
-        // JWT token létrehozása (15 percig érvényes)
         const token = jwt.sign({ Email: user.Email }, SECRET_KEY, { expiresIn: "15m" });
 
         const resetLink = `http://localhost:3000/reset-password?token=${token}`;
 
-        // 📧 E-mail küldés
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: Email,
@@ -153,8 +129,6 @@ const requestPasswordReset = (req, res) => {
     });
 };
 
-
-// 🔹 Jelszó módosítása a visszaállító tokennel
 const resetPassword = (req, res) => {
     const { token, newPassword } = req.body;
 
@@ -163,11 +137,9 @@ const resetPassword = (req, res) => {
     }
 
     try {
-        // Token dekódolása
         const decoded = jwt.verify(token, SECRET_KEY);
         const Email = decoded.Email;
 
-        // Jelszó frissítése az adatbázisban
         User.updatePassword(Email, newPassword, (err) => {
             if (err) return res.status(500).json({ message: "Hiba történt a jelszó frissítése közben!" });
             res.json({ message: "Jelszó sikeresen módosítva!" });

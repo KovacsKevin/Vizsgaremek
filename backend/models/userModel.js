@@ -33,13 +33,11 @@ const addUser = async (userData, callback) => {
     const { Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum } = userData;
     
     try {
-        const hashedPassword = await bcrypt.hash(Jelszo, 10); // Jelszó titkosítása
-
         const sql = `
             INSERT INTO user (Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
-        db.query(sql, [Email, hashedPassword, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum], callback);
+        db.query(sql, [Email, Jelszo, Telefonszam, Felhasznalonev, Csaladnev, Keresztnev, Szuletesi_datum], callback);
     } catch (error) {
         callback(error, null);
     }
