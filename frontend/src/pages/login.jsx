@@ -15,30 +15,32 @@ const Login = () => {
     setSuccess("");
 
     try {
-      const response = await fetch("http://localhost:8081/api/v1/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ Email: email, Jelszo: password }),
-      });
+        const response = await fetch("http://localhost:8081/api/v1/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            // Change the keys here to match the backend expectations
+            body: JSON.stringify({ email: email, password: password }), // Use 'email' and 'password'
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (response.ok) {
-        // Save JWT token in cookies
-        Cookies.set("token", data.token, { expires: 1 }); // Token expires in 1 day
-        setSuccess("Sikeres bejelentkezés!");
+        if (response.ok) {
+            // Save JWT token in cookies
+            Cookies.set("token", data.token, { expires: 1 }); // Token expires in 1 day
+            setSuccess("Sikeres bejelentkezés!");
 
-        // Redirect to protected page after 1 second
-        setTimeout(() => navigate("/protected"), 1000);
-      } else {
-        setError(data.message || "Hiba történt a bejelentkezés során!");
-      }
+            // Redirect to protected page after 1 second
+            setTimeout(() => navigate("/protected"), 1000);
+        } else {
+            setError(data.message || "Hiba történt a bejelentkezés során!");
+        }
     } catch (err) {
-      setError("Hiba történt a bejelentkezés során!");
+        setError("Hiba történt a bejelentkezés során!");
     }
-  };
+};
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
