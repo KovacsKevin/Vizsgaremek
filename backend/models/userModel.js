@@ -1,7 +1,8 @@
-// model.js - User model definition
+// models/User.js
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
+// Define the User model
 const User = sequelize.define("User", {
     id: {
         type: DataTypes.INTEGER,
@@ -36,6 +37,11 @@ const User = sequelize.define("User", {
 }, {
     timestamps: true,
 });
+
+// User model definition is done, now establish associations
+User.associate = function (models) {
+    User.hasMany(models.Esemény, { foreignKey: 'userId' });
+};
 
 sequelize.sync()
     .then(() => console.log("✅ User table created!"))

@@ -1,19 +1,13 @@
-// dbConfig.js - Database configuration using Sequelize
+// config/db.js
 const { Sequelize } = require("sequelize");
 
-const sequelize = new Sequelize(
-    "sportpartner_kereso", // Database name
-    "root", // Database user
-    "", // Database password
-    {
-        host: "localhost",
-        dialect: "mysql",
-        logging: false,
-    }
-);
-
-sequelize.authenticate()
-    .then(() => console.log("✅ Sikeres adatbázis kapcsolat!"))
-    .catch(err => console.error("❌ Adatbázis kapcsolat hiba:", err));
+// Initialize Sequelize instance
+const sequelize = new Sequelize({
+  dialect: "mysql",  // Adjust this if using a different database
+  host: "localhost", // Your database host
+  username: "root",  // Your database username
+  password: "root",      // Your database password
+  database: "sportpartner_kereso", // Your database name
+});
 
 module.exports = sequelize;

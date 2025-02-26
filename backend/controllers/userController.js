@@ -1,6 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+const Esemény = require("../models/esemenyModel");
+
+
 
 // Create User
 const createUser = async (req, res) => {
@@ -83,4 +86,56 @@ const deleteUser = async (req, res) => {
     }
 };
 
-module.exports = { createUser, authenticateUser, getUser, updateUser, deleteUser };
+
+
+// Create Esemény (Event)
+const createEsemeny = async (req, res) => {
+    try {
+        // Get the token from the Authorization header
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        // Verify the token and decode it
+        const decoded = jwt.verify(token, "secretkey"); // The same secret key used during login
+        const userId = decoded.userId;
+
+        // Extract event details from the request body
+        const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor } = req.body;
+
+        if (!helyszinId || !sportId || !kezdoIdo || !zaroIdo || !szint || !minimumEletkor || !maximumEletkor) {
+            return res.status(400).json({ message: "Missing required fields for creating event!" });
+        }
+
+        // Create a new event (Esemény) and associate it with the userId from the token
+        const newEsemény = await Esemény.create({
+            helyszinId,
+            sportId,
+            kezdoIdo,
+            zaroIdo,
+            szint,
+            minimumEletkor,
+            maximumEletkor,
+            userId,  // The userId extracted from the token
+        });
+
+        res.status(201).json({ message: "Event created successfully!", esemeny: newEsemény });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error creating event", error });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+module.exports = { createUser, authenticateUser, getUser, updateUser, deleteUser, createEsemeny };

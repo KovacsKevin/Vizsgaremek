@@ -3,7 +3,9 @@ const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
-const sequelize = require("./config/db"); // Sequelize konfiguráció betöltése
+const sequelize = require("./config/db"); // Sequelize configuration
+const User = require("./models/userModel"); // Import User model to ensure it's synced
+const Esemény = require("./models/esemenyModel"); // If you're using Esemény model as well
 const { authenticateUser, requestPasswordReset, resetPassword } = require("./controllers/userController");
 
 dotenv.config();
@@ -13,15 +15,15 @@ app.use(bodyParser.json());
 app.use(express.json());
 app.use(cors());
 
-// Felhasználó útvonalak
+// User routes
 app.use("/api/v1", userRoutes);
 
-// Adatbázis szinkronizálás
-sequelize.sync({ alter: true }) // `alter: true` biztosítja a meglévő táblák frissítését
-    .then(() => console.log("✅ Adatbázis sikeresen szinkronizálva!"))
-    .catch((err) => console.error("❌ Adatbázis szinkronizálási hiba:", err));
+// Synchronize the database, including the User and other models like Esemény
+sequelize.sync({ alter: true }) // `alter: true` ensures that existing tables are updated if needed
+    .then(() => console.log("✅ Database synchronized successfully!"))
+    .catch((err) => console.error("❌ Error syncing database:", err));
 
 const PORT = 8081;
 app.listen(PORT, () => {
-    console.log(`✅ Szerver fut a ${PORT}-as porton`);
+    console.log(`✅ Server is running on port ${PORT}`);
 });
