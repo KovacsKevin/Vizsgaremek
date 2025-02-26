@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
+const esemenyRoutes = require("./routes/esemenyRoutes");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const sequelize = require("./config/db"); // Sequelize configuration
@@ -17,11 +18,13 @@ app.use(cors());
 
 // User routes
 app.use("/api/v1", userRoutes);
+app.use("/api/v1",esemenyRoutes);
 
 // Synchronize the database, including the User and other models like Esemény
 sequelize.sync({ alter: true }) // `alter: true` ensures that existing tables are updated if needed
     .then(() => console.log("✅ Database synchronized successfully!"))
     .catch((err) => console.error("❌ Error syncing database:", err));
+
 
 const PORT = 8081;
 app.listen(PORT, () => {
