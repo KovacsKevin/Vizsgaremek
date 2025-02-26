@@ -1,6 +1,8 @@
 // models/Esemény.js
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
+const User = require("./userModel");  // Assuming User model is correctly imported
+const Helyszin = require("./helyszinModel");  // Import the Helyszin model
 
 // Define the Esemény model
 const Esemény = sequelize.define("Esemény", {
@@ -12,12 +14,16 @@ const Esemény = sequelize.define("Esemény", {
     helyszinId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: Helyszin,  // Reference the Helyszin model
+            key: 'Id',  // The key in the Helyszin table
+        }
     },
     userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users', // Use the actual table name here
+            model: User,  // Reference the User model
             key: 'id',
         }
     },
@@ -49,10 +55,9 @@ const Esemény = sequelize.define("Esemény", {
     timestamps: true,
 });
 
-// Esemény model definition is done, now establish associations
-Esemény.associate = function (models) {
-    Esemény.belongsTo(models.User, { foreignKey: 'userId' });
-};
+// Establish associations
+Esemény.belongsTo(Helyszin, { foreignKey: 'helyszinId' });
+Esemény.belongsTo(User, { foreignKey: 'userId' });
 
 sequelize.sync()
     .then(() => console.log("✅ Esemény table created!"))
