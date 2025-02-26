@@ -133,18 +133,12 @@ const getEsemenyById = async (req, res) => {
 // Get All Events for the Logged-in User (Requires Authentication)
 const getAllEsemeny = async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ message: "Authentication token is required!" });
+        // Find all events (no authentication required)
+        const events = await Esemény.findAll();
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found." });
         }
-
-        const decoded = jwt.verify(token, "secretkey");
-        const userId = decoded.userId;
-
-        // Find all events created by the logged-in user
-        const events = await Esemény.findAll({
-            where: { userId },
-        });
 
         res.json({ events });
     } catch (error) {
@@ -152,5 +146,6 @@ const getAllEsemeny = async (req, res) => {
         res.status(500).json({ message: "Error fetching events", error });
     }
 };
+
 
 module.exports = { createEsemeny, deleteEsemeny, updateEsemeny, getEsemenyById, getAllEsemeny };
