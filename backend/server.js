@@ -4,10 +4,12 @@ const userRoutes = require("./routes/userRoutes");
 const esemenyRoutes = require("./routes/esemenyRoutes");
 const bodyParser = require("body-parser");
 const helyszinRoutes = require("./routes/helyszinRoutes")
+const sportokRoutes = require("./routes/sportokRoutes")
 const dotenv = require("dotenv");
 const sequelize = require("./config/db"); // Sequelize configuration
 const User = require("./models/userModel"); // Import User model to ensure it's synced
-const Esemény = require("./models/esemenyModel"); // If you're using Esemény model as well
+const Esemény = require("./models/esemenyModel");
+const Sportok = require("./models/sportokModel") // If you're using Esemény model as well
 const { authenticateUser, requestPasswordReset, resetPassword } = require("./controllers/userController");
 
 dotenv.config();
@@ -21,6 +23,8 @@ app.use(cors());
 app.use("/api/v1", userRoutes);
 app.use("/api/v1",esemenyRoutes);
 app.use("/api/v1",helyszinRoutes);
+app.use("/api/v1", sportokRoutes);
+
 
 // Synchronize the database, including the User and other models like Esemény
 sequelize.sync({ alter: true }) // `alter: true` ensures that existing tables are updated if needed
