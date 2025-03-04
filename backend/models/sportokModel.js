@@ -15,6 +15,10 @@ const Sportok = sequelize.define("Sportok", {
     Leiras: {
         type: DataTypes.TEXT,
         allowNull: false,
+    },
+    KepUrl: {
+        type: DataTypes.STRING, // Kép URL-t tárolunk itt
+        allowNull: true,  // Ha nem kötelező a kép, akkor allowNull true
     }
 }, {
     timestamps: false,  // No timestamps as in the provided SQL definition
