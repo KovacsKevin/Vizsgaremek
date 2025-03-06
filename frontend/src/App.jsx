@@ -5,6 +5,7 @@ import Register from './pages/register';
 import Protected from './pages/protected';
 import SportList from './pages/sportok';
 import Main from './pages/Main';
+import Teszt from './pages/teszt';
 function App() {
   return (
     <Router> {/* Itt ágyazd be Router-be */}
@@ -16,6 +17,7 @@ function App() {
           <Route path="/protected" element={<Protected />} />
           <Route path ="/sportok" element={<SportList />} />
           <Route path ="/home" element={<Main />} />
+          <Route path ="/teszt" element={<Teszt />} />
         </Routes>
       </div>
     </Router>
