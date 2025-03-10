@@ -15,7 +15,7 @@ const PopularDestinations = ({ Image, Link }) => {
     return (
       <section className="py-12 bg-gradient-to-br from-slate-800/50 to-zinc-900/50 backdrop-blur-md">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">Explore popular destinations</h2>
+          <h2 className="text-2xl font-bold mb-8">Legfrisebb sportesemények</h2>
   
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {destinations.map((destination, index) => (

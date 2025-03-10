@@ -6,15 +6,15 @@ const Header = ({ activeTab, setActiveTab }) => {
     <header className="backdrop-blur-md bg-slate-800/70 border-b border-slate-700/50 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="text-2xl font-bold">TravelEase.com</div>
+          <div className="text-2xl font-bold">Sporthaver</div>
           <div className="hidden md:flex items-center space-x-2">
             <div className="flex items-center">
             </div>
             <button className="px-4 py-2 border border-white/20 text-white hover:bg-white/10 rounded">
-              Register
+              Regisztráció
             </button>
             <button className="px-4 py-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20 rounded">
-              Sign in
+              Bejelentkezés
             </button>
           </div>
           <button className="md:hidden text-white">
