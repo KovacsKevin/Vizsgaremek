@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import User from "./pages/User"; // Fontos: nagybetű!
-import Login from './pages/login';
-import Register from './pages/register';
+import Login from './pages/Auth/login';
+import Register from './pages/Auth/register';
 import Protected from './pages/protected';
 import SportList from './pages/sportok';
-import Main from './pages/Main';
-import Teszt from './pages/teszt';
+import SearchResults from './pages/searchresult';
+import HomePage from './pages/Main/Homepage';
 function App() {
   return (
     <Router> {/* Itt ágyazd be Router-be */}
@@ -16,8 +16,9 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/protected" element={<Protected />} />
           <Route path ="/sportok" element={<SportList />} />
-          <Route path ="/home" element={<Main />} />
-          <Route path ="/teszt" element={<Teszt />} />
+          <Route path ="/search" element={<SearchResults />} />
+          <Route path ="/homepage" element={<HomePage />} />
+          
         </Routes>
       </div>
     </Router>
