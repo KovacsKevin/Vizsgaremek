@@ -1,5 +1,6 @@
 // components/Header.jsx
 import { Hotel, Plane, Car, Map } from "lucide-react"
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 
 const Header = ({ activeTab, setActiveTab }) => {
   return (
@@ -11,11 +12,11 @@ const Header = ({ activeTab, setActiveTab }) => {
             <div className="flex items-center">
             </div>
             <button className="px-4 py-2 border border-white/20 text-white hover:bg-white/10 rounded">
-              Regisztráció
-            </button>
-            <button className="px-4 py-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20 rounded">
-              Bejelentkezés
-            </button>
+            <Link to="/register">Regisztráció</Link>
+          </button>
+          <button className="px-4 py-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20 rounded">
+            <Link to="/login">Bejelentkezés</Link>
+          </button>
           </div>
           <button className="md:hidden text-white">
             <span className="sr-only">Open menu</span>

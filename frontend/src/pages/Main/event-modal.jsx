@@ -2,74 +2,24 @@
 
 import { useState } from "react"
 
+export function EventModal({ buttonText, title, description }) {
+  const [isOpen, setIsOpen] = useState(false)
 
-export function OffersSection() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalContent, setModalContent] = useState({ title: "", description: "" })
-
-  const openModal = (title, description) => {
-    setModalContent({ title, description })
-    setIsModalOpen(true)
-  }
+  const openModal = () => setIsOpen(true)
+  const closeModal = () => setIsOpen(false)
 
   return (
-    <section className="py-12 bg-slate-900">
-      <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold mb-2 text-gray-100">Esemény létrehozása</h2>
-        <p className="text-gray-400 mb-8">Hogy te dönts kivel, mikor, hol és mit játszol!</p>
+    <>
+      <button onClick={openModal} className="bg-neutral-800 hover:bg-neutral-700 text-gray-100 py-2 px-4 rounded transition duration-300">
+        {buttonText}
+      </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* First Offer Card */}
-          <div className="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
-            <div className="relative h-48 w-full bg-slate-700 flex items-center justify-center">
-              {/* Fix Image component usage */}
-              <div className="w-full h-full bg-slate-700 flex items-center justify-center text-gray-400">
-                Image Placeholder
-              </div>
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-semibold text-gray-100 mb-2">Hozz létre saját eseményt!</h3>
-              <p className="text-gray-400 mb-4">A gomb megnyomásával megadhatod az eseményed adatait</p>
-              {/* Replace with inline button that uses the openModal function */}
-              <button
-                onClick={() => openModal("Esemény létrehozása", "Töltsd ki az alábbi űrlapot az esemény létrehozásához")}
-                className="bg-zinc-700 hover:bg-zinc-600 text-gray-100 py-2 px-4 rounded transition duration-300"
-              >
-                Esemény létrehozása
-              </button>
-            </div>
-          </div>
-
-          {/* Second Offer Card */}
-          <div className="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
-            <div className="relative h-48 w-full bg-slate-700 flex items-center justify-center">
-              {/* Fix Image component usage */}
-              <div className="w-full h-full bg-slate-700 flex items-center justify-center text-gray-400">
-                Image Placeholder
-              </div>
-            </div>
-            <div className="p-6">
-              <h3 className="text-xl font-semibold text-gray-100 mb-2">Tervezz egy új eseményt!</h3>
-              <p className="text-gray-400 mb-4">Események, amiket könnyedén szervezhetsz és élvezhetsz</p>
-              {/* Replace with inline button that uses the openModal function */}
-              <button
-                onClick={() => openModal("Esemény tervezése", "Töltsd ki az alábbi űrlapot az esemény tervezéséhez")}
-                className="bg-zinc-700 hover:bg-zinc-600 text-gray-100 py-2 px-4 rounded transition duration-300"
-              >
-                Tervezz most!
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal */}
-      {isModalOpen && (
+      {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-slate-800 rounded-lg max-w-[600px] w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-100">{modalContent.title}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-100">
+              <h2 className="text-2xl font-bold text-gray-100">{title}</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-100">
                 <svg
                   className="w-6 h-6"
                   fill="none"
@@ -81,7 +31,7 @@ export function OffersSection() {
                 </svg>
               </button>
             </div>
-            <p className="text-gray-400 mb-6">{modalContent.description}</p>
+            <p className="text-gray-400 mb-6">{description}</p>
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="grid gap-6 mb-6 md:grid-cols-2">
                 <div>
@@ -195,8 +145,8 @@ export function OffersSection() {
           </div>
         </div>
       )}
-    </section>
+    </>
   )
 }
 
-export default OffersSection
+export default EventModal

@@ -92,7 +92,7 @@ const Login = () => {
           </button>
           
           <p className="text-sm text-white/70 text-center">
-            Még nincs fiókod? <a href="#" className="text-white hover:text-white/90 transition-colors">Regisztrálj</a>
+            Még nincs fiókod? <a href="/register" className="text-white hover:text-white/90 transition-colors">Regisztrálj</a>
           </p>
         </form>
       </div>
