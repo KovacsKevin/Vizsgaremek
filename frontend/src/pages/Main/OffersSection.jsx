@@ -1,15 +1,51 @@
 "use client"
 
-import { useState } from "react"
-
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 
 export function OffersSection() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalContent, setModalContent] = useState({ title: "", description: "" })
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const navigate = useNavigate()
+
+  // Check authentication status when component mounts
+  useEffect(() => {
+    checkAuthStatus()
+  }, [])
+
+  // Function to check if user is authenticated
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch("/login", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          // Assuming you store the token in localStorage
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      })
+      const data = await response.json()
+      setIsAuthenticated(data.isAuthenticated)
+    } catch (error) {
+      console.error("Error checking authentication status:", error)
+      setIsAuthenticated(false)
+    }
+  }
 
   const openModal = (title, description) => {
     setModalContent({ title, description })
     setIsModalOpen(true)
+  }
+
+  const handleEventCreation = () => {
+    if (isAuthenticated) {
+      // If authenticated, open modal
+      openModal("Esemény létrehozása", "Töltsd ki az alábbi űrlapot az esemény létrehozásához")
+    } else {
+      // If not authenticated, redirect to login
+      navigate("/login")
+    }
   }
 
   return (
@@ -30,9 +66,9 @@ export function OffersSection() {
             <div className="p-6">
               <h3 className="text-xl font-semibold text-gray-100 mb-2">Hozz létre saját eseményt!</h3>
               <p className="text-gray-400 mb-4">A gomb megnyomásával megadhatod az eseményed adatait</p>
-              {/* Replace with inline button that uses the openModal function */}
+              {/* Updated to check authentication before action */}
               <button
-                onClick={() => openModal("Esemény létrehozása", "Töltsd ki az alábbi űrlapot az esemény létrehozásához")}
+                onClick={handleEventCreation}
                 className="bg-zinc-700 hover:bg-zinc-600 text-gray-100 py-2 px-4 rounded transition duration-300"
               >
                 Esemény létrehozása

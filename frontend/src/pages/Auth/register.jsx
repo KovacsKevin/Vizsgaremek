@@ -17,7 +17,13 @@ const Register = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
-  
+
+    // Basic validation
+    if (!felhasznalonev || !email || !jelszo) {
+      setError("Felhasználónév, email és jelszó megadása kötelező!");
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:8081/api/v1/addUser", {
         method: "POST",
@@ -25,20 +31,20 @@ const Register = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          Felhasznalonev: felhasznalonev,
-          Email: email,
-          Jelszo: jelszo,
-          Telefonszam: telefonszam,
-          Csaladnev: csaladnev,
-          Keresztnev: keresztnev,
-          Szuletesi_datum: szuletesiDatum,
+          username: felhasznalonev,
+          email: email,
+          password: jelszo,
+          phone: telefonszam,
+          lastName: csaladnev,
+          firstName: keresztnev,
+          birthDate: szuletesiDatum,
         }),
       });
-  
+
       const data = await response.json();
       console.log(data);
-  
-      if (data.success) {
+
+      if (response.ok) {
         setSuccess("Sikeres regisztráció!");
         navigate("/login");
       } else {
