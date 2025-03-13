@@ -6,7 +6,7 @@ const sequelize = new Sequelize({
   dialect: "mysql",  // Adjust this if using a different database
   host: "localhost", // Your database host
   username: "root",  // Your database username
-  password: "",      // Your database password
+  password: "root",      // Your database password
   database: "sportpartner_kereso", // Your database name
 });
 
