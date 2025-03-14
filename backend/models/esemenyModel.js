@@ -1,8 +1,7 @@
-// models/Esemény.js
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const User = require("./userModel");  // Assuming User model is correctly imported
-const Helyszin = require("./helyszinModel");  // Import the Helyszin model
+const User = require("./userModel");
+const Helyszin = require("./helyszinModel");
 
 // Define the Esemény model
 const Esemény = sequelize.define("Esemény", {
@@ -15,15 +14,15 @@ const Esemény = sequelize.define("Esemény", {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: Helyszin,  // Reference the Helyszin model
-            key: 'Id',  // The key in the Helyszin table
+            model: Helyszin,
+            key: 'Id',
         }
     },
     userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: User,  // Reference the User model
+            model: User,
             key: 'id',
         }
     },
@@ -51,6 +50,10 @@ const Esemény = sequelize.define("Esemény", {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    imageUrl: {  // New column for image
+        type: DataTypes.STRING,  // Stores the image URL
+        allowNull: true,  // Optional field
+    }
 }, {
     timestamps: true,
 });
@@ -60,7 +63,7 @@ Esemény.belongsTo(Helyszin, { foreignKey: 'helyszinId' });
 Esemény.belongsTo(User, { foreignKey: 'userId' });
 
 sequelize.sync()
-    .then(() => console.log("✅ Esemény table created!"))
-    .catch(err => console.error("❌ Error creating Esemény table:", err));
+    .then(() => console.log("✅ Esemény table created or updated!"))
+    .catch(err => console.error("❌ Error creating/updating Esemény table:", err));
 
 module.exports = Esemény;
