@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { EventModal } from "./event-modal" // Import the new modal component
+import { EventModal } from "./event-modal" 
+import { HelyszinModal } from "./helyszin-modal" // Import the new location modal component
 
 export function OffersSection() {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
   const [modalContent, setModalContent] = useState({ title: "", description: "" })
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const navigate = useNavigate()
@@ -45,9 +47,20 @@ export function OffersSection() {
     }
   }
 
-  const openModal = (title, description) => {
-    setModalContent({ title, description })
-    setIsModalOpen(true)
+  const openEventModal = () => {
+    setModalContent({ 
+      title: "Esemény létrehozása", 
+      description: "Töltsd ki az alábbi űrlapot az esemény létrehozásához" 
+    })
+    setIsEventModalOpen(true)
+  }
+
+  const openHelyszinModal = () => {
+    setModalContent({ 
+      title: "Helyszín létrehozása", 
+      description: "Add meg a helyszín adatait" 
+    })
+    setIsHelyszinModalOpen(true)
   }
 
   const handleEventCreation = () => {
@@ -75,7 +88,7 @@ export function OffersSection() {
       .then(data => {
         if (data.isAuthenticated) {
           // Ha érvényes a token, nyissuk meg a modált
-          openModal("Esemény létrehozása", "Töltsd ki az alábbi űrlapot az esemény létrehozásához")
+          openEventModal()
         } else {
           navigate("/login")
         }
@@ -90,7 +103,7 @@ export function OffersSection() {
     }
   }
 
-  const handlePlanEvent = () => {
+  const handleHelyszinCreation = () => {
     // JWT token ellenőrzése
     const token = localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1")
     
@@ -115,7 +128,7 @@ export function OffersSection() {
       .then(data => {
         if (data.isAuthenticated) {
           // Ha érvényes a token, nyissuk meg a modált
-          openModal("Esemény tervezése", "Töltsd ki az alábbi űrlapot az esemény tervezéséhez")
+          openHelyszinModal()
         } else {
           navigate("/login")
         }
@@ -157,7 +170,7 @@ export function OffersSection() {
             </div>
           </div>
 
-          {/* Second Offer Card */}
+          {/* Second Offer Card - Updated for Location Creation */}
           <div className="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
             <div className="relative h-48 w-full bg-slate-700 flex items-center justify-center">
               {/* Fix Image component usage */}
@@ -166,24 +179,31 @@ export function OffersSection() {
               </div>
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-semibold text-gray-100 mb-2">Tervezz egy új eseményt!</h3>
-              <p className="text-gray-400 mb-4">Események, amiket könnyedén szervezhetsz és élvezhetsz</p>
+              <h3 className="text-xl font-semibold text-gray-100 mb-2">Hozz létre új helyszínt!</h3>
+              <p className="text-gray-400 mb-4">Add meg a helyszín adatait, amit később eseményekhez használhatsz</p>
               <button
-                onClick={handlePlanEvent}
+                onClick={handleHelyszinCreation}
                 className="bg-zinc-700 hover:bg-zinc-600 text-gray-100 py-2 px-4 rounded transition duration-300"
               >
-                Tervezz most!
+                Helyszín létrehozása
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Use the new EventModal component instead of inline modal */}
+      {/* Event Modal for creating events */}
       <EventModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        isOpen={isEventModalOpen} 
+        onClose={() => setIsEventModalOpen(false)} 
         modalContent={modalContent} 
+      />
+
+      {/* Location Modal for creating locations */}
+      <HelyszinModal
+        isOpen={isHelyszinModalOpen}
+        onClose={() => setIsHelyszinModalOpen(false)}
+        modalContent={modalContent}
       />
     </section>
   )

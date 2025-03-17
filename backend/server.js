@@ -9,8 +9,9 @@ const dotenv = require("dotenv");
 const sequelize = require("./config/db"); // Sequelize configuration
 const User = require("./models/userModel"); // Import User model to ensure it's synced
 const Esemény = require("./models/esemenyModel");
-const Sportok = require("./models/sportokModel") // If you're using Esemény model as well
+const Sportok = require("./models/sportokModel"); // If you're using Esemény model as well
 const { authenticateUser, requestPasswordReset, resetPassword } = require("./controllers/userController");
+
 
 dotenv.config();
 const app = express();

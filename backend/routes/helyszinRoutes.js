@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const helyszinController = require("../controllers/helyszinController");
+const jwt = require("jsonwebtoken"); // Import jwt for token verification
+
+
 
 
 const authenticateToken = (req, res, next) => {
@@ -13,6 +16,7 @@ const authenticateToken = (req, res, next) => {
         next(); // Call the next middleware or route handler
     });
 };
+
 
 
 
