@@ -5,7 +5,9 @@ import Cookies from "js-cookie";
 
 const Header = ({ activeTab, setActiveTab }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("");
+  const [userName, setUserName] = useState("asd");
+  const [userEmail, setUserEmail] = useState("asd@asd");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,7 +21,8 @@ const Header = ({ activeTab, setActiveTab }) => {
       if (userData) {
         try {
           const user = JSON.parse(userData);
-          setUserName(user.name || user.email.split('@')[0]);
+          setUserName("asd"); // Felülírva a kért értékkel
+          setUserEmail("asd@asd"); // Felülírva a kért értékkel
           setIsLoggedIn(true);
         } catch (error) {
           console.error("Error parsing user data:", error);
@@ -45,14 +48,14 @@ const Header = ({ activeTab, setActiveTab }) => {
         const data = await response.json();
         setIsLoggedIn(true);
         
-        // Extract username from JWT payload or response
-        const displayName = data.user.name || data.user.email.split('@')[0];
-        setUserName(displayName);
+        // Felülírva a kért értékekkel
+        setUserName("asd");
+        setUserEmail("asd@asd");
         
         // Save to localStorage for future use
         localStorage.setItem("user", JSON.stringify({
-          email: data.user.email,
-          name: displayName
+          email: "asd@asd",
+          name: "asd"
         }));
       } else {
         // Token invalid, remove it
@@ -68,8 +71,40 @@ const Header = ({ activeTab, setActiveTab }) => {
     localStorage.removeItem("user");
     setIsLoggedIn(false);
     setUserName("");
+    setUserEmail("");
+    setIsProfileOpen(false);
     navigate("/Homepage");
   };
+
+  const toggleProfileDropdown = () => {
+    setIsProfileOpen(!isProfileOpen);
+  };
+
+  // Function to get user initials for avatar
+  const getUserInitials = () => {
+    if (!userName) return "";
+    return userName.split(' ')
+      .map(name => name.charAt(0))
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // Close dropdown if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const dropdown = document.getElementById("userDropdown");
+      const avatar = document.getElementById("avatarButton");
+      
+      if (dropdown && !dropdown.contains(event.target) && 
+          avatar && !avatar.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <header className="backdrop-blur-md bg-slate-800/70 border-b border-slate-700/50 sticky top-0 z-50">
@@ -79,14 +114,51 @@ const Header = ({ activeTab, setActiveTab }) => {
           <div className="hidden md:flex items-center space-x-2">
             {isLoggedIn ? (
               <div className="flex items-center space-x-2">
-                <span className="text-white">{userName}</span>
-                <button 
-                  onClick={handleLogout}
-                  className="px-4 py-2 border border-white/20 text-white hover:bg-white/10 rounded flex items-center gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Kilépés</span>
-                </button>
+                <div className="relative">
+                  <button
+                    id="avatarButton"
+                    onClick={toggleProfileDropdown}
+                    className="relative inline-flex items-center justify-center w-10 h-10 rounded-full cursor-pointer bg-slate-700"
+                  >
+                    <span className="font-medium text-gray-100">{getUserInitials()}</span>
+                  </button>
+                  
+                  {isProfileOpen && (
+                    <div 
+                      id="userDropdown"
+                      className="z-10 absolute right-0 mt-2 bg-gray-700 divide-y divide-gray-600 rounded-lg shadow-sm w-44"
+                    >
+                      <div className="px-4 py-3 text-sm text-white">
+                        <div>Email: {userEmail}</div>
+                        <div className="font-medium truncate">Név: {userName}</div>
+                      </div>
+                      <ul className="py-2 text-sm text-gray-200" aria-labelledby="avatarButton">
+                        <li>
+                          <a href="/dashboard" className="block px-4 py-2 hover:bg-gray-600 hover:text-white">Irányítópult</a>
+                        </li>
+                        <li>
+                          <a href="/settings" className="block px-4 py-2 hover:bg-gray-600 hover:text-white">Beállítások</a>
+                        </li>
+                        <li>
+                          <a href="/profile" className="block px-4 py-2 hover:bg-gray-600 hover:text-white">Profil</a>
+                        </li>
+                      </ul>
+                      <div className="py-1">
+                        <a 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleLogout();
+                          }}
+                          className="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white flex items-center gap-2"
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>Kilépés</span>
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <>
@@ -100,7 +172,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             )}
           </div>
           <button className="md:hidden text-white">
-            <span className="sr-only">Open menu</span>
+            <span className="sr-only">Menü megnyitása</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -118,10 +190,10 @@ const Header = ({ activeTab, setActiveTab }) => {
       <div className="container mx-auto px-4 pb-4">
         <div className="flex space-x-4 bg-white/5 backdrop-blur-sm border border-white/10 p-1 rounded-lg">
           {[
-            { id: "stays", icon: Hotel, label: "Stays" },
-            { id: "flights", icon: Plane, label: "Flights" },
-            { id: "cars", icon: Car, label: "Car Rentals" },
-            { id: "attractions", icon: Map, label: "Attractions" },
+            { id: "stays", icon: Hotel, label: "Szállások" },
+            { id: "flights", icon: Plane, label: "Repülőjáratok" },
+            { id: "cars", icon: Car, label: "Autóbérlés" },
+            { id: "attractions", icon: Map, label: "Látnivalók" },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
