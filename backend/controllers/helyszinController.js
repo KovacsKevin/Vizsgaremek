@@ -14,23 +14,25 @@ const createHelyszin = async (req, res) => {
 
         const { Nev, Cim, Telepules, Iranyitoszam, Fedett, Oltozo, Parkolas, Leiras, Berles } = req.body;
 
-        if (!Nev || !Cim || !Telepules || !Iranyitoszam || !Fedett || !Oltozo || !Parkolas || !Leiras || !Berles) {
-            return res.status(400).json({ message: "Missing required fields for creating location!" });
-        }
+        // Update the validation in createHelyszin function
+if (!Nev || !Cim || !Telepules || !Iranyitoszam || !Parkolas) {
+    return res.status(400).json({ message: "Missing required fields for creating location!" });
+}
 
-        // Create a new location
-        const newHelyszin = await Helyszin.create({
-            Nev,
-            Cim,
-            Telepules,
-            Iranyitoszam,
-            Fedett,
-            Oltozo,
-            Parkolas,
-            Leiras,
-            Berles,
-            userId,  // Assuming each location has a userId field for the owner
-        });
+// When creating a new location, set default empty string for Leiras if not provided
+const newHelyszin = await Helyszin.create({
+    Nev,
+    Cim,
+    Telepules,
+    Iranyitoszam,
+    Fedett: Fedett !== undefined ? Fedett : false,
+    Oltozo: Oltozo !== undefined ? Oltozo : false,
+    Parkolas,
+    Leiras: Leiras || "",
+    Berles: Berles !== undefined ? Berles : false,
+    userId,
+});
+
 
         res.status(201).json({ message: "Location created successfully!", helyszin: newHelyszin });
     } catch (error) {

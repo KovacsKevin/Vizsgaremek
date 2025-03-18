@@ -6,16 +6,17 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     Cim: "",
     Telepules: "",
     Iranyitoszam: "",
-    Fedett: false,
-    Oltozo: false,
+    Fedett: false, // Default to false (No)
+    Oltozo: false, // Default to false (No)
     Parkolas: "",
     Leiras: "",
-    Berles: false
+    Berles: false  // Default to false (No)
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [formErrors, setFormErrors] = useState({})
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -23,6 +24,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
       ...formData,
       [name]: type === "checkbox" ? checked : value
     })
+    
+    // Clear error for this field when user starts typing
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: ""
+      })
+    }
   }
 
   const handleBooleanSelect = (name, value) => {
@@ -32,10 +41,34 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     })
   }
 
+  const validateForm = () => {
+    const errors = {}
+    
+    if (!formData.Nev.trim()) errors.Nev = "Helyszín neve kötelező"
+    if (!formData.Cim.trim()) errors.Cim = "Cím kötelező"
+    if (!formData.Telepules.trim()) errors.Telepules = "Település kötelező"
+    if (!formData.Iranyitoszam.trim()) errors.Iranyitoszam = "Irányítószám kötelező"
+    if (!formData.Parkolas) errors.Parkolas = "Parkolási lehetőség kötelező"
+    
+    // Validate irányítószám is numeric
+    if (formData.Iranyitoszam && !/^\d+$/.test(formData.Iranyitoszam)) {
+      errors.Iranyitoszam = "Az irányítószám csak számokat tartalmazhat"
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -44,13 +77,6 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
       
       if (!token) {
         setError("Nincs bejelentkezve! Kérjük, jelentkezzen be újra.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Validate required fields - Leírás is no longer required
-      if (!formData.Nev || !formData.Cim || !formData.Telepules || !formData.Iranyitoszam || !formData.Parkolas) {
-        setError("Kérjük, töltse ki az összes kötelező mezőt!");
         setIsSubmitting(false);
         return;
       }
@@ -180,10 +206,10 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   name="Nev"
                   value={formData.Nev}
                   onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500"
+                  className={`w-full bg-slate-700 border ${formErrors.Nev ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
                   placeholder="Pl. Városi Sportcsarnok"
-                  required
                 />
+                {formErrors.Nev && <p className="text-red-500 text-xs mt-1">{formErrors.Nev}</p>}
               </div>
 
               {/* Cím */}
@@ -196,10 +222,10 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   name="Cim"
                   value={formData.Cim}
                   onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500"
+                  className={`w-full bg-slate-700 border ${formErrors.Cim ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
                   placeholder="Pl. Árpád út 10."
-                  required
                 />
+                {formErrors.Cim && <p className="text-red-500 text-xs mt-1">{formErrors.Cim}</p>}
               </div>
 
               {/* Település */}
@@ -212,10 +238,10 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   name="Telepules"
                   value={formData.Telepules}
                   onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500"
+                  className={`w-full bg-slate-700 border ${formErrors.Telepules ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
                   placeholder="Pl. Budapest"
-                  required
                 />
+                {formErrors.Telepules && <p className="text-red-500 text-xs mt-1">{formErrors.Telepules}</p>}
               </div>
 
               {/* Irányítószám */}
@@ -228,12 +254,11 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   name="Iranyitoszam"
                   value={formData.Iranyitoszam}
                   onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500"
+                  className={`w-full bg-slate-700 border ${formErrors.Iranyitoszam ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
                   placeholder="Pl. 1051"
-                  pattern="[0-9]*"
                   inputMode="numeric"
-                  required
                 />
+                {formErrors.Iranyitoszam && <p className="text-red-500 text-xs mt-1">{formErrors.Iranyitoszam}</p>}
               </div>
 
               {/* Fedett - X és pipa egymás mellett */}
@@ -287,20 +312,20 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   name="Parkolas"
                   value={formData.Parkolas}
                   onChange={handleChange}
-                  className="w-full bg-slate-700 border border-slate-600 rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500"
-                  required
+                  className={`w-full bg-slate-700 border ${formErrors.Parkolas ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
                 >
                   <option value="">Válasszon...</option>
                   <option value="Ingyenes">Ingyenes</option>
                   <option value="Fizetős">Fizetős</option>
                   <option value="Nincs">Nincs</option>
                 </select>
+                {formErrors.Parkolas && <p className="text-red-500 text-xs mt-1">{formErrors.Parkolas}</p>}
               </div>
 
-              {/* Leírás - no longer required */}
+              {/* Leírás - optional */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Leírás
+                  Leírás (opcionális)
                 </label>
                 <textarea
                   name="Leiras"
@@ -342,7 +367,15 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                     isSubmitting ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
-                  {isSubmitting ? "Feldolgozás..." : "Helyszín létrehozása"}
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Feldolgozás...
+                    </div>
+                  ) : "Helyszín létrehozása"}
                 </button>
               </div>
             </div>

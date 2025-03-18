@@ -38,7 +38,7 @@ const Helyszin = sequelize.define("Helyszin", {
     },
     Leiras: {
         type: DataTypes.TEXT,
-        allowNull: false,
+        allowNull: true,
     },
     Berles: {
         type: DataTypes.BOOLEAN,
