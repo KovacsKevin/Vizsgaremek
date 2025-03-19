@@ -4,8 +4,9 @@ import Login from './pages/Auth/login';
 import Register from './pages/Auth/register';
 import Protected from './pages/protected';
 import SportList from './pages/sportok';
-import SearchResults from './pages/searchresult';
+//import SearchResults from './pages/searchresult';
 import HomePage from './pages/Main/Homepage';
+import SportMateFinder from './pages/sport-mate-finder';
 function App() {
   return (
     <Router> {/* Itt ágyazd be Router-be */}
@@ -16,8 +17,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/protected" element={<Protected />} />
           <Route path ="/sportok" element={<SportList />} />
-          <Route path ="/search" element={<SearchResults />} />
           <Route path ="/homepage" element={<HomePage />} />
+          <Route path ="/sportmate" element={<SportMateFinder />} />
           
         </Routes>
       </div>

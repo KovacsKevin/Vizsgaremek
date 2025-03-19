@@ -1,7 +1,9 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+const Helyszin = require("../models/helyszinModel")
 const Esemény = require("../models/esemenyModel");
+const Sportok = require("../models/sportokModel");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -281,6 +283,48 @@ const configureMulter = (req, res, next) => {
     });
 };
 
+const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
+    try {
+        const { telepules, sportNev } = req.params;
+
+        if (!telepules || !sportNev) {
+            return res.status(400).json({ message: "Both city (telepules) and sport name (sportNev) are required!" });
+        }
+
+        const events = await Esemény.findAll({
+            include: [
+                {
+                    model: Helyszin,
+                    where: { Telepules: telepules },
+                    attributes: ['id', 'Nev', 'Telepules', 'Cim']
+                },
+                {
+                    model: Sportok,
+                    where: { Nev: sportNev },
+                    attributes: ['Id', 'Nev']
+                }
+            ]
+        });
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found for the specified city and sport." });
+        }
+
+        res.json({ events });
+    } catch (error) {
+        console.error("❌ Error fetching events:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+
+
+
+
+
+
+
 module.exports = { 
     createEsemeny, 
     deleteEsemeny, 
@@ -288,5 +332,6 @@ module.exports = {
     getEsemenyById, 
     getAllEsemeny,
     getEsemenyByUserId,
-    configureMulter
+    configureMulter,
+    getEsemenyekByTelepulesAndSportNev
 };

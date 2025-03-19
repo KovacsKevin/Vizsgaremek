@@ -32,5 +32,7 @@ router.delete("/deleteEsemeny/:id", authenticateToken, esemenyController.deleteE
 
 // Get all events for the logged-in user (protected route)
 router.get("/getAllEsemeny", esemenyController.getAllEsemeny);
+router.get('/getEsemenyek/:telepules/:sportNev', esemenyController.getEsemenyekByTelepulesAndSportNev);
+
 
 module.exports = router;

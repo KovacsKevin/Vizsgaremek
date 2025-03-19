@@ -2,6 +2,7 @@ const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 const User = require("./userModel");
 const Helyszin = require("./helyszinModel");
+const Sportok = require("./sportokModel");
 
 // Define the Esemény model
 const Esemény = sequelize.define("Esemény", {
@@ -29,6 +30,10 @@ const Esemény = sequelize.define("Esemény", {
     sportId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+            model: Sportok,
+            key: 'Id', 
+        }
     },
     kezdoIdo: {
         type: DataTypes.DATE,
@@ -61,6 +66,7 @@ const Esemény = sequelize.define("Esemény", {
 // Establish associations
 Esemény.belongsTo(Helyszin, { foreignKey: 'helyszinId' });
 Esemény.belongsTo(User, { foreignKey: 'userId' });
+Esemény.belongsTo(Sportok, { foreignKey: 'sportId' })
 
 sequelize.sync()
     .then(() => console.log("✅ Esemény table created or updated!"))
