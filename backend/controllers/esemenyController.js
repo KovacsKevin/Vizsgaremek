@@ -287,31 +287,39 @@ const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
     try {
         const { telepules, sportNev } = req.params;
 
+        // Check if both city (telepules) and sport name (sportNev) are provided
         if (!telepules || !sportNev) {
             return res.status(400).json({ message: "Both city (telepules) and sport name (sportNev) are required!" });
         }
 
+        // Fetch events based on city and sport name using Sequelize ORM
         const events = await Esemény.findAll({
             include: [
                 {
                     model: Helyszin,
-                    where: { Telepules: telepules },
-                    attributes: ['id', 'Nev', 'Telepules', 'Cim']
+                    where: { Telepules: telepules },  // Match city in the Helyszin model
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo', 
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]  // Return all relevant attributes for Helyszin
                 },
                 {
                     model: Sportok,
-                    where: { Nev: sportNev },
-                    attributes: ['Id', 'Nev']
+                    where: { Nev: sportNev },  // Match sport name in the Sportok model
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']  // Return all relevant attributes for Sportok
                 }
             ]
         });
 
+        // If no events are found, return a 404 response
         if (events.length === 0) {
             return res.status(404).json({ message: "No events found for the specified city and sport." });
         }
 
+        // Return the found events as a response with full event details
         res.json({ events });
     } catch (error) {
+        // Log the error and send a 500 response in case of an exception
         console.error("❌ Error fetching events:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }

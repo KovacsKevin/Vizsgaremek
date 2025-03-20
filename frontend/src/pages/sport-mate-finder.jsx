@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Search,
   Calendar,
@@ -14,17 +14,19 @@ import {
   DoorOpen,
   Info,
   ChevronRight,
+  Loader,
 } from "lucide-react"
 
 // Placeholder Image component
 const Image = ({ src, alt, className }) => (
-  <img src={src || "/placeholder.svg?height=200&width=300"} alt={alt} className={className} />
+  <img src={src || "/api/placeholder/300/200"} alt={alt} className={className} />
 )
 
 const SportMateFinder = () => {
   const [ageRange, setAgeRange] = useState([15, 50])
   const [favorites, setFavorites] = useState([])
   const [selectedSport, setSelectedSport] = useState(null)
+  const [selectedLocation, setSelectedLocation] = useState("Budapest")
   const [skillLevel, setSkillLevel] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
   const [expandedDescriptions, setExpandedDescriptions] = useState([])
@@ -33,6 +35,37 @@ const SportMateFinder = () => {
     oltozo: false,
     parkolas: false,
   })
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Fetch events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const sport = selectedSport || "Kosárlabda" // Default to Kosárlabda if no sport selected
+        const location = selectedLocation || "Budapest" // Default to Budapest if no location selected
+        
+        const response = await fetch(`http://localhost:8081/api/v1/getEsemenyek/${location}/${sport}`)
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setEvents(data.events || [])
+      } catch (err) {
+        console.error("Failed to fetch events:", err)
+        setError("Nem sikerült betölteni az eseményeket. Kérjük, próbálja újra később.")
+        setEvents([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEvents()
+  }, [selectedSport, selectedLocation])
 
   const toggleFavorite = (id) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
@@ -48,109 +81,6 @@ const SportMateFinder = () => {
       [key]: !prev[key],
     }))
   }
-
-  // Sample data expanded with more events and facility information
-  const events = [
-    {
-      id: 1,
-      helyszinId: 1,
-      userId: 1,
-      sportId: 2,
-      kezdoIdo: "2025-03-07T09:19:00.000Z",
-      zaroIdo: "2025-03-07T11:19:00.000Z",
-      szint: "kezdő",
-      minimumEletkor: 15,
-      maximumEletkor: 30,
-      imageUrl: "/placeholder.svg?height=200&width=300",
-      createdAt: "2025-03-19T09:19:25.000Z",
-      updatedAt: "2025-03-19T09:19:25.000Z",
-      resztvevok: 3,
-      maxResztvevok: 10,
-      Helyszin: {
-        id: 1,
-        Nev: "Sportközpont",
-        Telepules: "Budapest",
-        Cim: "Váci út 45.",
-      },
-      Sportok: {
-        Id: 2,
-        Nev: "Kosárlabda",
-      },
-      Letesitmeny: {
-        fedett: true,
-        oltozo: true,
-        parkolas: true,
-      },
-      Leiras:
-        "Modern sportközpont 3 kosárlabdapályával. A pályák kiváló minőségűek, professzionális világítással. Kezdőknek is ideális, barátságos közösség. Minden szükséges felszerelés biztosított.",
-    },
-    {
-      id: 2,
-      helyszinId: 2,
-      userId: 2,
-      sportId: 1,
-      kezdoIdo: "2025-03-08T14:00:00.000Z",
-      zaroIdo: "2025-03-08T16:00:00.000Z",
-      szint: "haladó",
-      minimumEletkor: 18,
-      maximumEletkor: 40,
-      imageUrl: "/placeholder.svg?height=200&width=300",
-      createdAt: "2025-03-19T10:30:25.000Z",
-      updatedAt: "2025-03-19T10:30:25.000Z",
-      resztvevok: 8,
-      maxResztvevok: 22,
-      Helyszin: {
-        id: 2,
-        Nev: "Népliget",
-        Telepules: "Budapest",
-        Cim: "Népliget",
-      },
-      Sportok: {
-        Id: 1,
-        Nev: "Foci",
-      },
-      Letesitmeny: {
-        fedett: false,
-        oltozo: true,
-        parkolas: true,
-      },
-      Leiras:
-        "Szabadtéri focipálya a Népligetben. Műfüves pálya, jó állapotban. Öltözők és zuhanyzók rendelkezésre állnak. Parkolási lehetőség a közelben. Haladó szintű játékosokat várunk egy intenzív mérkőzésre.",
-    },
-    {
-      id: 3,
-      helyszinId: 3,
-      userId: 3,
-      sportId: 3,
-      kezdoIdo: "2025-03-10T18:30:00.000Z",
-      zaroIdo: "2025-03-10T20:00:00.000Z",
-      szint: "középhaladó",
-      minimumEletkor: 16,
-      maximumEletkor: 35,
-      imageUrl: "/placeholder.svg?height=200&width=300",
-      createdAt: "2025-03-19T11:45:25.000Z",
-      updatedAt: "2025-03-19T11:45:25.000Z",
-      resztvevok: 5,
-      maxResztvevok: 8,
-      Helyszin: {
-        id: 3,
-        Nev: "Teniszklub",
-        Telepules: "Budapest",
-        Cim: "Margitsziget",
-      },
-      Sportok: {
-        Id: 3,
-        Nev: "Tenisz",
-      },
-      Letesitmeny: {
-        fedett: true,
-        oltozo: true,
-        parkolas: false,
-      },
-      Leiras:
-        "Fedett teniszpályák a Margitszigeten. Kiváló minőségű pályák, professzionális környezet. Öltözők és zuhanyzók rendelkezésre állnak. Parkolás korlátozott, tömegközlekedéssel könnyen megközelíthető. Ütőt biztosítunk, ha szükséges.",
-    },
-  ]
 
   const sportok = [
     { id: 1, nev: "Foci" },
@@ -176,18 +106,38 @@ const SportMateFinder = () => {
 
   // Format time from date
   const formatTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString("hu-HU", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleTimeString("hu-HU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    } catch (error) {
+      return "N/A"
+    }
+  }
+
+  // Check if facility is available
+  const isFacilityAvailable = (event, facility) => {
+    if (!event.Helyszin) return false
+    
+    switch (facility) {
+      case "fedett":
+        return event.Helyszin.Fedett === true
+      case "oltozo":
+        return event.Helyszin.Oltozo === true
+      case "parkolas":
+        return event.Helyszin.Parkolas === "y" || event.Helyszin.Parkolas === true
+      default:
+        return false
+    }
   }
 
   // Filter events based on facility filters
   const filteredEvents = events.filter((event) => {
-    if (facilityFilters.fedett && !event.Letesitmeny.fedett) return false
-    if (facilityFilters.oltozo && !event.Letesitmeny.oltozo) return false
-    if (facilityFilters.parkolas && !event.Letesitmeny.parkolas) return false
+    if (facilityFilters.fedett && !isFacilityAvailable(event, "fedett")) return false
+    if (facilityFilters.oltozo && !isFacilityAvailable(event, "oltozo")) return false
+    if (facilityFilters.parkolas && !isFacilityAvailable(event, "parkolas")) return false
     return true
   })
 
@@ -218,6 +168,8 @@ const SportMateFinder = () => {
                   <input
                     type="text"
                     placeholder="Budapest"
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
                     className="w-full pl-10 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder:text-white/40 focus:border-white/30 focus:ring-white/20 focus:outline-none"
                   />
                 </div>
@@ -229,7 +181,7 @@ const SportMateFinder = () => {
                     {sportok.map((sport) => (
                       <button
                         key={sport.id}
-                        onClick={() => setSelectedSport(selectedSport === sport.nev ? null : sport.nev)}
+                        onClick={() => setSelectedSport(sport.nev)}
                         className={`py-2 px-3 text-sm rounded-md transition-colors ${
                           selectedSport === sport.nev
                             ? "bg-blue-600 text-white"
@@ -358,172 +310,191 @@ const SportMateFinder = () => {
 
           {/* Search Results */}
           <div className="flex-1">
-            <div className="space-y-6">
-              {filteredEvents.length === 0 ? (
-                <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
-                  <p className="text-lg">Nincs a keresési feltételeknek megfelelő esemény.</p>
-                  <p className="text-white/60 mt-2">Próbáld módosítani a szűrőket vagy hozz létre egy új eseményt.</p>
-                </div>
-              ) : (
-                filteredEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg overflow-hidden hover:border-white/40 transition-all duration-300"
-                  >
-                    <div className="flex flex-col md:flex-row">
-                      <div className="w-full md:w-72 relative">
-                        <Image
-                          src={event.imageUrl || "/placeholder.svg"}
-                          alt={event.Sportok.Nev}
-                          className="w-full h-48 md:h-full object-cover"
-                        />
-                        <div className="absolute top-0 left-0 bg-blue-600 text-white px-3 py-1 rounded-br-lg font-medium">
-                          {event.Sportok.Nev}
-                        </div>
-                        <button
-                          onClick={() => toggleFavorite(event.id)}
-                          className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
-                        >
-                          <Heart
-                            className={`h-5 w-5 transition-colors ${
-                              favorites.includes(event.id) ? "fill-red-500 text-red-500" : ""
-                            }`}
+            {loading ? (
+              <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
+                <Loader className="h-8 w-8 animate-spin mx-auto text-blue-400" />
+                <p className="mt-4">Események betöltése...</p>
+              </div>
+            ) : error ? (
+              <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
+                <p className="text-red-400 text-lg">{error}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Újra próbálkozás
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filteredEvents.length === 0 ? (
+                  <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
+                    <p className="text-lg">Nincs a keresési feltételeknek megfelelő esemény.</p>
+                    <p className="text-white/60 mt-2">Próbáld módosítani a szűrőket vagy hozz létre egy új eseményt.</p>
+                  </div>
+                ) : (
+                  filteredEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg overflow-hidden hover:border-white/40 transition-all duration-300"
+                    >
+                      <div className="flex flex-col md:flex-row">
+                        <div className="w-full md:w-72 relative">
+                          <Image
+                            src={event.imageUrl}
+                            alt={event.Sportok?.Nev || "Sport esemény"}
+                            className="w-full h-48 md:h-full object-cover"
                           />
-                        </button>
-                      </div>
-
-                      <div className="flex-1 p-6">
-                        <div className="flex flex-col md:flex-row justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-xl font-bold">{event.Helyszin.Nev}</h3>
-                              <span className="px-2 py-0.5 bg-white/10 text-white/80 rounded text-xs">
-                                {event.szint}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-1 text-white/60">
-                              <MapPin className="h-4 w-4 flex-shrink-0" />
-                              <span>
-                                {event.Helyszin.Telepules}, {event.Helyszin.Cim}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-1 text-white/60">
-                              <Calendar className="h-4 w-4 flex-shrink-0" />
-                              <span>{formatDate(event.kezdoIdo)}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-1 text-white/60">
-                              <Clock className="h-4 w-4 flex-shrink-0" />
-                              <span>
-                                {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
-                              </span>
-                            </div>
+                          <div className="absolute top-0 left-0 bg-blue-600 text-white px-3 py-1 rounded-br-lg font-medium">
+                            {event.Sportok?.Nev || "Sport"}
                           </div>
-
-                          <div className="text-right mt-4 md:mt-0">
-                            <div className="inline-flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full">
-                              <Users className="h-4 w-4" />
-                              <span>
-                                {event.resztvevok}/{event.maxResztvevok} résztvevő
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Facility Icons */}
-                        <div className="mt-4 flex flex-wrap gap-3">
-                          <div
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
-                              event.Letesitmeny.fedett
-                                ? "bg-green-500/20 text-green-300"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            <Home className="h-3 w-3" />
-                            <span>{event.Letesitmeny.fedett ? "Fedett" : "Szabadtéri"}</span>
-                          </div>
-
-                          <div
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
-                              event.Letesitmeny.oltozo
-                                ? "bg-green-500/20 text-green-300"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            <DoorOpen className="h-3 w-3" />
-                            <span>{event.Letesitmeny.oltozo ? "Öltöző" : "Nincs öltöző"}</span>
-                          </div>
-
-                          <div
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
-                              event.Letesitmeny.parkolas
-                                ? "bg-green-500/20 text-green-300"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            <Car className="h-3 w-3" />
-                            <span>{event.Letesitmeny.parkolas ? "Parkolás" : "Nincs parkolás"}</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-white/60">Korosztály:</span>
-                            <span>
-                              {event.minimumEletkor} - {event.maximumEletkor} év
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        <div className="mt-3">
                           <button
-                            onClick={() => toggleDescription(event.id)}
-                            className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors text-sm"
+                            onClick={() => toggleFavorite(event.id)}
+                            className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
                           >
-                            <Info className="h-4 w-4" />
-                            <span>Leírás</span>
-                            <ChevronRight
-                              className={`h-4 w-4 transition-transform ${
-                                expandedDescriptions.includes(event.id) ? "rotate-90" : ""
+                            <Heart
+                              className={`h-5 w-5 transition-colors ${
+                                favorites.includes(event.id) ? "fill-red-500 text-red-500" : ""
                               }`}
                             />
                           </button>
-
-                          {expandedDescriptions.includes(event.id) && (
-                            <div className="mt-2 text-sm text-white/80 bg-white/5 p-3 rounded-md">{event.Leiras}</div>
-                          )}
                         </div>
 
-                        <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <div className="flex -space-x-2">
-                              {[...Array(Math.min(3, event.resztvevok))].map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-slate-800 flex items-center justify-center text-xs font-bold"
-                                >
-                                  {String.fromCharCode(65 + i)}
-                                </div>
-                              ))}
+                        <div className="flex-1 p-6">
+                          <div className="flex flex-col md:flex-row justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-xl font-bold">{event.Helyszin?.Nev || "Helyszín"}</h3>
+                                <span className="px-2 py-0.5 bg-white/10 text-white/80 rounded text-xs">
+                                  {event.szint || "Ismeretlen szint"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1 text-white/60">
+                                <MapPin className="h-4 w-4 flex-shrink-0" />
+                                <span>
+                                  {event.Helyszin?.Telepules || "Város"}, {event.Helyszin?.Cim || "Cím"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1 text-white/60">
+                                <Calendar className="h-4 w-4 flex-shrink-0" />
+                                <span>{formatDate(event.kezdoIdo)}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1 text-white/60">
+                                <Clock className="h-4 w-4 flex-shrink-0" />
+                                <span>
+                                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
+                                </span>
+                              </div>
                             </div>
-                            {event.resztvevok > 3 && (
-                              <span className="text-white/60 text-sm">+{event.resztvevok - 3} további</span>
+
+                            <div className="text-right mt-4 md:mt-0">
+                              <div className="inline-flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full">
+                                <Users className="h-4 w-4" />
+                                <span>
+                                  {event.resztvevok || 0}/{event.maxResztvevok || 10} résztvevő
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Facility Icons */}
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            <div
+                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                                isFacilityAvailable(event, "fedett")
+                                  ? "bg-green-500/20 text-green-300"
+                                  : "bg-red-500/20 text-red-300"
+                              }`}
+                            >
+                              <Home className="h-3 w-3" />
+                              <span>{isFacilityAvailable(event, "fedett") ? "Fedett" : "Szabadtéri"}</span>
+                            </div>
+
+                            <div
+                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                                isFacilityAvailable(event, "oltozo")
+                                  ? "bg-green-500/20 text-green-300"
+                                  : "bg-red-500/20 text-red-300"
+                              }`}
+                            >
+                              <DoorOpen className="h-3 w-3" />
+                              <span>{isFacilityAvailable(event, "oltozo") ? "Öltöző" : "Nincs öltöző"}</span>
+                            </div>
+
+                            <div
+                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs ${
+                                isFacilityAvailable(event, "parkolas")
+                                  ? "bg-green-500/20 text-green-300"
+                                  : "bg-red-500/20 text-red-300"
+                              }`}
+                            >
+                              <Car className="h-3 w-3" />
+                              <span>{isFacilityAvailable(event, "parkolas") ? "Parkolás" : "Nincs parkolás"}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white/60">Korosztály:</span>
+                              <span>
+                                {event.minimumEletkor || "?"} - {event.maximumEletkor || "?"} év
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          <div className="mt-3">
+                            <button
+                              onClick={() => toggleDescription(event.id)}
+                              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors text-sm"
+                            >
+                              <Info className="h-4 w-4" />
+                              <span>Leírás</span>
+                              <ChevronRight
+                                className={`h-4 w-4 transition-transform ${
+                                  expandedDescriptions.includes(event.id) ? "rotate-90" : ""
+                                }`}
+                              />
+                            </button>
+
+                            {expandedDescriptions.includes(event.id) && (
+                              <div className="mt-2 text-sm text-white/80 bg-white/5 p-3 rounded-md">
+                                {event.Helyszin?.Leiras || "Nincs leírás."}
+                              </div>
                             )}
                           </div>
 
-                          <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors w-full sm:w-auto">
-                            Csatlakozás
-                          </button>
+                          <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <div className="flex -space-x-2">
+                                {[...Array(Math.min(3, event.resztvevok || 0))].map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 border-2 border-slate-800 flex items-center justify-center text-xs font-bold"
+                                  >
+                                    {String.fromCharCode(65 + i)}
+                                  </div>
+                                ))}
+                              </div>
+                              {(event.resztvevok || 0) > 3 && (
+                                <span className="text-white/60 text-sm">+{event.resztvevok - 3} további</span>
+                              )}
+                            </div>
+
+                            <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors w-full sm:w-auto">
+                              Csatlakozás
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
