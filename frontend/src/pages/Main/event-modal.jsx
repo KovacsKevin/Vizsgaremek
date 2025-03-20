@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal }) {
+export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, openSportModal }) {
   const [formData, setFormData] = useState({
     helyszinId: "",
     sportId: "",
@@ -18,11 +18,14 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal })
   const [success, setSuccess] = useState(false);
   const [locations, setLocations] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [sports, setSports] = useState([]);
+  const [loadingSports, setLoadingSports] = useState(false);
 
-  // Fetch locations when modal opens
+  // Fetch locations and sports when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchLocations();
+      fetchSports();
     }
   }, [isOpen]);
 
@@ -58,6 +61,41 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal })
       setErrorMessage(error.message || "An error occurred while fetching locations");
     } finally {
       setLoadingLocations(false);
+    }
+  };
+
+  const fetchSports = async () => {
+    setLoadingSports(true);
+    setErrorMessage("");
+    
+    try {
+      const token = localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+      
+      if (!token) {
+        setErrorMessage("Authentication token is missing. Please login again.");
+        setLoadingSports(false);
+        return;
+      }
+      
+      const response = await fetch("http://localhost:8081/api/v1/allSportok", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to fetch sports");
+      }
+      
+      const data = await response.json();
+      setSports(data.sportok || []);
+    } catch (error) {
+      setErrorMessage(error.message || "An error occurred while fetching sports");
+    } finally {
+      setLoadingSports(false);
     }
   };
 
@@ -159,9 +197,13 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal })
     openHelyszinModal();
   };
 
-  // Refresh locations after creating a new one
-  const handleAfterLocationCreate = () => {
-    fetchLocations();
+  // Handler for opening the sport modal
+  const handleCreateSport = (e) => {
+    e.preventDefault();
+    // Close the event modal temporarily
+    onClose();
+    // Open the sport modal
+    openSportModal();
   };
 
   if (!isOpen) return null;
@@ -236,20 +278,41 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal })
               )}
             </div>
             
+            {/* Sport selector - now with dynamic data */}
             <div>
               <label htmlFor="sportId" className="block mb-2 text-sm font-medium text-gray-300">
                 Sport
               </label>
-              <input
-                type="text"
-                id="sportId"
-                className="bg-slate-700 border border-slate-600 text-gray-100 text-sm rounded-lg focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5"
-                placeholder="Sport azonosító"
-                value={formData.sportId}
-                onChange={handleChange}
-                required
-              />
+              <div className="flex gap-2">
+                <select
+                  id="sportId"
+                  className="bg-slate-700 border border-slate-600 text-gray-100 text-sm rounded-lg focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5"
+                  value={formData.sportId}
+                  onChange={handleChange}
+                  required
+                  disabled={loadingSports}
+                >
+                  <option value="">Válassz sportot</option>
+                  {sports.map(sport => (
+                    <option key={sport.Id} value={sport.Id}>
+                      {sport.Nev}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleCreateSport}
+                  className="bg-zinc-600 hover:bg-zinc-500 text-white text-sm rounded-lg px-3 transition duration-300"
+                  title="Új sport létrehozása"
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
+              {loadingSports && (
+                <p className="text-gray-400 text-xs mt-1">Sportok betöltése...</p>
+              )}
             </div>
+            
             <div>
               <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
                 Kezdő időpont
