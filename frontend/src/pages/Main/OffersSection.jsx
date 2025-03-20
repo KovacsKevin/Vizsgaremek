@@ -3,19 +3,45 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { EventModal } from "./event-modal" 
-import { HelyszinModal } from "./helyszin-modal" // Import the new location modal component
+import { HelyszinModal } from "./helyszin-modal"
 
 export function OffersSection() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
   const [modalContent, setModalContent] = useState({ title: "", description: "" })
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [locations, setLocations] = useState([])
   const navigate = useNavigate()
 
   // Check authentication status when component mounts
   useEffect(() => {
     checkAuthStatus()
+    fetchLocations()
   }, [])
+
+  // Function to fetch locations
+  const fetchLocations = async () => {
+    try {
+      const token = localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1")
+      
+      if (!token) return
+      
+      const response = await fetch("http://localhost:8081/api/v1/helyszinek", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setLocations(data)
+      }
+    } catch (error) {
+      console.error("Error fetching locations:", error)
+    }
+  }
 
   // Function to check if user is authenticated
   const checkAuthStatus = async () => {
@@ -143,6 +169,12 @@ export function OffersSection() {
     }
   }
 
+  // Handle successful location creation
+  const handleLocationSuccess = (newLocation) => {
+    // Add the new location to the locations state
+    setLocations(prevLocations => [...prevLocations, newLocation])
+  }
+
   return (
     <section className="py-12 bg-slate-900">
       <div className="container mx-auto px-4">
@@ -196,7 +228,9 @@ export function OffersSection() {
       <EventModal 
         isOpen={isEventModalOpen} 
         onClose={() => setIsEventModalOpen(false)} 
-        modalContent={modalContent} 
+        modalContent={modalContent}
+        locations={locations}
+        openHelyszinModal={openHelyszinModal}
       />
 
       {/* Location Modal for creating locations */}
@@ -204,6 +238,7 @@ export function OffersSection() {
         isOpen={isHelyszinModalOpen}
         onClose={() => setIsHelyszinModalOpen(false)}
         modalContent={modalContent}
+        onSuccess={handleLocationSuccess}
       />
     </section>
   )

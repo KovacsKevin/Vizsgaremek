@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export function EventModal({ isOpen, onClose, modalContent }) {
+export function EventModal({ isOpen, onClose, modalContent, locations = [], openHelyszinModal }) {
   const [formData, setFormData] = useState({
     helyszinId: "",
     sportId: "",
@@ -106,6 +106,15 @@ export function EventModal({ isOpen, onClose, modalContent }) {
     }
   };
 
+  // Handler for opening the location modal
+  const handleCreateLocation = (e) => {
+    e.preventDefault();
+    // Close the event modal temporarily
+    onClose();
+    // Open the location modal
+    openHelyszinModal();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -143,21 +152,36 @@ export function EventModal({ isOpen, onClose, modalContent }) {
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6 mb-6 md:grid-cols-2">
-            {/* Other form fields */}
+            {/* Location selector - replacing the helyszinId input field */}
             <div>
               <label htmlFor="helyszinId" className="block mb-2 text-sm font-medium text-gray-300">
                 Helyszín
               </label>
-              <input
-                type="text"
-                id="helyszinId"
-                className="bg-slate-700 border border-slate-600 text-gray-100 text-sm rounded-lg focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5"
-                placeholder="Helyszín azonosító"
-                value={formData.helyszinId}
-                onChange={handleChange}
-                required
-              />
+              <div className="flex gap-2">
+                <select
+                  id="helyszinId"
+                  className="bg-slate-700 border border-slate-600 text-gray-100 text-sm rounded-lg focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5"
+                  value={formData.helyszinId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Válassz helyszínt</option>
+                  {locations.map(location => (
+                    <option key={location.id} value={location.id}>
+                      {location.Nev} - {location.Telepules}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleCreateLocation}
+                  className="bg-zinc-600 hover:bg-zinc-500 text-white text-sm rounded-lg px-3 transition duration-300"
+                  title="Új helyszín létrehozása"
+                >
+                  +
+                </button>
+              </div>
             </div>
+            
             <div>
               <label htmlFor="sportId" className="block mb-2 text-sm font-medium text-gray-300">
                 Sport
