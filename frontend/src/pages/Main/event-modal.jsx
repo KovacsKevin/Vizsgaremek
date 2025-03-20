@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export function EventModal({ isOpen, onClose, modalContent, locations = [], openHelyszinModal }) {
+export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal }) {
   const [formData, setFormData] = useState({
     helyszinId: "",
     sportId: "",
@@ -16,6 +16,50 @@ export function EventModal({ isOpen, onClose, modalContent, locations = [], open
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Fetch locations when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchLocations();
+    }
+  }, [isOpen]);
+
+  const fetchLocations = async () => {
+    setLoadingLocations(true);
+    setErrorMessage("");
+    
+    try {
+      const token = localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1");
+      
+      if (!token) {
+        setErrorMessage("Authentication token is missing. Please login again.");
+        setLoadingLocations(false);
+        return;
+      }
+      
+      const response = await fetch("http://localhost:8081/api/v1/getOwnHelyszin", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to fetch locations");
+      }
+      
+      const data = await response.json();
+      setLocations(data.locations || []);
+    } catch (error) {
+      setErrorMessage(error.message || "An error occurred while fetching locations");
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -115,6 +159,11 @@ export function EventModal({ isOpen, onClose, modalContent, locations = [], open
     openHelyszinModal();
   };
 
+  // Refresh locations after creating a new one
+  const handleAfterLocationCreate = () => {
+    fetchLocations();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -152,7 +201,7 @@ export function EventModal({ isOpen, onClose, modalContent, locations = [], open
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6 mb-6 md:grid-cols-2">
-            {/* Location selector - replacing the helyszinId input field */}
+            {/* Location selector - now with dynamic data */}
             <div>
               <label htmlFor="helyszinId" className="block mb-2 text-sm font-medium text-gray-300">
                 Helyszín
@@ -164,10 +213,11 @@ export function EventModal({ isOpen, onClose, modalContent, locations = [], open
                   value={formData.helyszinId}
                   onChange={handleChange}
                   required
+                  disabled={loadingLocations}
                 >
                   <option value="">Válassz helyszínt</option>
                   {locations.map(location => (
-                    <option key={location.id} value={location.id}>
+                    <option key={location.Id} value={location.Id}>
                       {location.Nev} - {location.Telepules}
                     </option>
                   ))}
@@ -176,10 +226,14 @@ export function EventModal({ isOpen, onClose, modalContent, locations = [], open
                   onClick={handleCreateLocation}
                   className="bg-zinc-600 hover:bg-zinc-500 text-white text-sm rounded-lg px-3 transition duration-300"
                   title="Új helyszín létrehozása"
+                  type="button"
                 >
                   +
                 </button>
               </div>
+              {loadingLocations && (
+                <p className="text-gray-400 text-xs mt-1">Helyszínek betöltése...</p>
+              )}
             </div>
             
             <div>

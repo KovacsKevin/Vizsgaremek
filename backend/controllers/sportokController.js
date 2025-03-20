@@ -139,6 +139,11 @@ const deleteSportok = async (req, res) => {
     }
 };
 
+
+
+
+
+
 module.exports = {
     createSportok,
     getAllSportok,

@@ -155,10 +155,40 @@ const deleteHelyszin = async (req, res) => {
     }
 };
 
+const getMyOwnHelyszin = async (req, res) => {
+    try {
+        const userId = req.user?.userId; // Accessing userId instead of id
+        
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is missing in the request." });
+        }
+
+        // Find the locations associated with the authenticated user
+        const helyszin = await Helyszin.findAll({
+            where: {
+                userId: userId // Assuming `user_id` is the column that associates helyszin with the user
+            }
+        });
+
+        if (helyszin.length === 0) {
+            return res.status(404).json({ message: "No locations found for this user!" });
+        }
+
+        res.json({ locations: helyszin });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching locations", error });
+    }
+};
+
+
+
+
 module.exports = {
     createHelyszin,
     getAllHelyszin,
     getHelyszinById,
     updateHelyszin,
     deleteHelyszin,
+    getMyOwnHelyszin
 };

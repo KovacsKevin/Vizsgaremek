@@ -12,11 +12,11 @@ const authenticateToken = (req, res, next) => {
 
     jwt.verify(token, "secretkey", (err, user) => {
         if (err) return res.sendStatus(403); // Forbidden
+        console.log(user); // Check what user contains
         req.user = user; // Attach user info to the request
         next(); // Call the next middleware or route handler
     });
 };
-
 
 
 
@@ -26,5 +26,5 @@ router.get("/allHelyszin", helyszinController.getAllHelyszin); // Get all locati
 router.get("/getHelyszinById",authenticateToken, helyszinController.getHelyszinById); // Get location by ID
 router.put("updateHelyszin", authenticateToken,helyszinController.updateHelyszin); // Update location
 router.delete("deleteHelyszin", authenticateToken, helyszinController.deleteHelyszin); // Delete location
-
+router.get("/getOwnHelyszin",authenticateToken, helyszinController.getMyOwnHelyszin); 
 module.exports = router;
