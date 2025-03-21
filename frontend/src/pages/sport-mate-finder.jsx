@@ -35,7 +35,7 @@ const SportMateFinder = () => {
   const [ageRange, setAgeRange] = useState([15, 50])
   const [favorites, setFavorites] = useState([])
   const [selectedSport, setSelectedSport] = useState(null)
-  const [selectedLocation, setSelectedLocation] = useState("Budapest")
+  const [selectedLocation, setSelectedLocation] = useState(null)
   const [skillLevel, setSkillLevel] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
   const [expandedDescriptions, setExpandedDescriptions] = useState([])
