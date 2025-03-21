@@ -108,6 +108,18 @@ const SearchForm = () => {
     setShowSportSuggestions(false);
   };
 
+  // Handle search button click
+  const handleSearchClick = () => {
+    // Check if both location and sport are selected
+    if (!searchTerm || !sportSearchTerm) {
+      alert("Kérjük válassz települést és sportot a kereséshez!");
+      return;
+    }
+    
+    // Navigate to the SportMate page with query parameters using browser API
+    window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&sport=${encodeURIComponent(sportSearchTerm)}`;
+  };
+
   // Handle click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -172,7 +184,7 @@ const SearchForm = () => {
                   className="w-full pl-10 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder:text-white/40 focus:border-white/30 focus:ring-white/20"
                   value={sportSearchTerm}
                   onChange={handleSportInputChange}
-                  onFocus={() => setShowSportSuggestions(true)}
+                  onFocus={() => sportSearchTerm && setShowSportSuggestions(true)}
                 />
                 
                 {/* Sport autocomplete suggestions */}
@@ -193,7 +205,10 @@ const SearchForm = () => {
             </div>
 
             <div className="flex items-end">
-              <button className="w-full py-2 bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30 rounded-md">
+              <button 
+                onClick={handleSearchClick}
+                className="w-full py-2 bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30 rounded-md"
+              >
                 Keresés
               </button>
             </div>
