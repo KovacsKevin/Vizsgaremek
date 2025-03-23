@@ -1,4 +1,4 @@
-// Módosítsuk a SportMate komponenst a router használatának kiküszöbölésére
+"use client"
 
 import { useState, useEffect } from "react"
 import {
@@ -12,10 +12,10 @@ import {
   Car,
   Home,
   DoorOpen,
-  Info,
   ChevronRight,
   Loader,
 } from "lucide-react"
+import EventModal from "./sport-event-details-modal"
 
 // Placeholder Image component
 const Image = ({ src, alt, className }) => (
@@ -25,13 +25,13 @@ const Image = ({ src, alt, className }) => (
 const SportMateFinder = () => {
   // Új függvény URL paraméterek olvasására
   const getQueryParams = () => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search)
     return {
-      telepules: params.get('telepules'),
-      sport: params.get('sport')
-    };
-  };
-  
+      telepules: params.get("telepules"),
+      sport: params.get("sport"),
+    }
+  }
+
   const [ageRange, setAgeRange] = useState([15, 50])
   const [favorites, setFavorites] = useState([])
   const [selectedSport, setSelectedSport] = useState(null)
@@ -47,82 +47,84 @@ const SportMateFinder = () => {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [showModal, setShowModal] = useState(false)
 
   // Inicializálás URL paraméterekből
   useEffect(() => {
-    const { telepules, sport } = getQueryParams();
-    
+    const { telepules, sport } = getQueryParams()
+
     // Update selected location and sport from query parameters if they exist
     if (telepules) {
-      setSelectedLocation(decodeURIComponent(telepules));
+      setSelectedLocation(decodeURIComponent(telepules))
     }
-    
+
     if (sport) {
-      setSelectedSport(decodeURIComponent(sport));
+      setSelectedSport(decodeURIComponent(sport))
     }
-  }, []);
+  }, [])
 
   // Fetch events from API
   useEffect(() => {
     const fetchEvents = async () => {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
       try {
         // Use query params or defaults
-        const sportParam = selectedSport || "Kosárlabda"; // Default to Kosárlabda if no sport selected
-        const locationParam = selectedLocation || "Budapest"; // Default to Budapest if no location selected
-        
+        const sportParam = selectedSport || "Kosárlabda" // Default to Kosárlabda if no sport selected
+        const locationParam = selectedLocation || "Budapest" // Default to Budapest if no location selected
+
         // Build the API URL using the filtered parameters
-        const apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(locationParam)}/${encodeURIComponent(sportParam)}`;
-        
-        const response = await fetch(apiUrl);
+        const apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(locationParam)}/${encodeURIComponent(sportParam)}`
+
+        const response = await fetch(apiUrl)
         if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
+          throw new Error(`API request failed with status ${response.status}`)
         }
-        
-        const data = await response.json();
-        setEvents(data.events || []);
+
+        const data = await response.json()
+        setEvents(data.events || [])
       } catch (err) {
-        console.error("Failed to fetch events:", err);
-        setError("Nem sikerült betölteni az eseményeket. Kérjük, próbálja újra később.");
-        setEvents([]);
+        console.error("Failed to fetch events:", err)
+        setError("Nem sikerült betölteni az eseményeket. Kérjük, próbálja újra később.")
+        setEvents([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     // Only fetch if we have both parameters or if we're using defaults
     if (selectedLocation || selectedSport) {
-      fetchEvents();
+      fetchEvents()
     }
-  }, [selectedSport, selectedLocation]);
+  }, [selectedSport, selectedLocation])
 
   // URL frissítése a filterek változásakor - browser API-t használva
   const updateURL = () => {
-    const url = new URL(window.location);
-    
+    const url = new URL(window.location)
+
     if (selectedLocation) {
-      url.searchParams.set('telepules', selectedLocation);
+      url.searchParams.set("telepules", selectedLocation)
     } else {
-      url.searchParams.delete('telepules');
+      url.searchParams.delete("telepules")
     }
-    
+
     if (selectedSport) {
-      url.searchParams.set('sport', selectedSport);
+      url.searchParams.set("sport", selectedSport)
     } else {
-      url.searchParams.delete('sport');
+      url.searchParams.delete("sport")
     }
-    
+
     // Update URL without causing a full page reload
-    window.history.pushState({}, '', url);
-  };
+    window.history.pushState({}, "", url)
+  }
 
   // Keresőgomb kezelése
   const handleSearch = () => {
-    updateURL();
-    setLoading(true);
+    updateURL()
+    setLoading(true)
     // Újra betöltjük az adatokat (az előző useEffect le fogja kezelni)
-  };
+  }
 
   const toggleFavorite = (id) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
@@ -137,6 +139,16 @@ const SportMateFinder = () => {
       ...prev,
       [key]: !prev[key],
     }))
+  }
+
+  const openEventModal = (event) => {
+    setSelectedEvent(event)
+    setShowModal(true)
+  }
+
+  const closeEventModal = () => {
+    setShowModal(false)
+    setSelectedEvent(null)
   }
 
   const sportok = [
@@ -177,7 +189,7 @@ const SportMateFinder = () => {
   // Check if facility is available
   const isFacilityAvailable = (event, facility) => {
     if (!event.Helyszin) return false
-    
+
     switch (facility) {
       case "fedett":
         return event.Helyszin.Fedett === true
@@ -202,13 +214,13 @@ const SportMateFinder = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-2 text-center">SportMate - Találj Sporttársakat</h1>
-        
+
         {/* Display active filters */}
         {(selectedLocation || selectedSport) && (
           <div className="mb-6 text-center">
             <p className="text-white/70">
-              Szűrés: {selectedLocation && `Település: ${selectedLocation}`} 
-              {selectedLocation && selectedSport && ' | '}
+              Szűrés: {selectedLocation && `Település: ${selectedLocation}`}
+              {selectedLocation && selectedSport && " | "}
               {selectedSport && `Sport: ${selectedSport}`}
             </p>
           </div>
@@ -263,7 +275,7 @@ const SportMateFinder = () => {
                 </div>
 
                 {/* Apply Filters Button */}
-                <button 
+                <button
                   onClick={handleSearch}
                   className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
                 >
@@ -280,9 +292,7 @@ const SportMateFinder = () => {
                         key={szint}
                         onClick={() => setSkillLevel(skillLevel === szint ? null : szint)}
                         className={`py-2 px-3 text-sm rounded-md transition-colors ${
-                          skillLevel === szint
-                            ? "bg-blue-600 text-white"
-                            : "bg-white/5 hover:bg-white/10 text-white/80"
+                          skillLevel === szint ? "bg-blue-600 text-white" : "bg-white/5 hover:bg-white/10 text-white/80"
                         }`}
                       >
                         {szint}
@@ -395,8 +405,8 @@ const SportMateFinder = () => {
             ) : error ? (
               <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
                 <p className="text-red-400 text-lg">{error}</p>
-                <button 
-                  onClick={() => window.location.reload()} 
+                <button
+                  onClick={() => window.location.reload()}
                   className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
                   Újra próbálkozás
@@ -408,9 +418,9 @@ const SportMateFinder = () => {
                   <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
                     <p className="text-lg">Nincs a keresési feltételeknek megfelelő esemény.</p>
                     <p className="text-white/60 mt-2">
-                      {selectedLocation && selectedSport ? 
-                        `Nem találtunk eseményeket "${selectedLocation}" településen "${selectedSport}" sportágban.` : 
-                        "Próbáld módosítani a szűrőket vagy hozz létre egy új eseményt."}
+                      {selectedLocation && selectedSport
+                        ? `Nem találtunk eseményeket "${selectedLocation}" településen "${selectedSport}" sportágban.`
+                        : "Próbáld módosítani a szűrőket vagy hozz létre egy új eseményt."}
                     </p>
                   </div>
                 ) : (
@@ -422,7 +432,7 @@ const SportMateFinder = () => {
                       <div className="flex flex-col md:flex-row">
                         <div className="w-full md:w-72 relative">
                           <Image
-                            src={event.imageUrl}
+                            src={event.imageUrl || "/placeholder.svg"}
                             alt={event.Sportok?.Nev || "Sport esemény"}
                             className="w-full h-48 md:h-full object-cover"
                           />
@@ -454,7 +464,8 @@ const SportMateFinder = () => {
                               <div className="flex items-center gap-2 mt-1 text-white/60">
                                 <MapPin className="h-4 w-4 flex-shrink-0" />
                                 <span>
-                                  {event.Helyszin?.Telepules || selectedLocation || "Város"}, {event.Helyszin?.Cim || "Cím"}
+                                  {event.Helyszin?.Telepules || selectedLocation || "Város"},{" "}
+                                  {event.Helyszin?.Cim || "Cím"}
                                 </span>
                               </div>
 
@@ -502,9 +513,7 @@ const SportMateFinder = () => {
                           <div className="mt-4">
                             <div
                               className={`${
-                                expandedDescriptions.includes(event.id)
-                                  ? ""
-                                  : "line-clamp-2"
+                                expandedDescriptions.includes(event.id) ? "" : "line-clamp-2"
                               } text-white/80`}
                             >
                               {event.leiras || "Nincs megadott leírás."}
@@ -514,25 +523,22 @@ const SportMateFinder = () => {
                               onClick={() => toggleDescription(event.id)}
                               className="mt-2 text-blue-400 hover:text-blue-300 transition-colors text-sm inline-flex items-center"
                             >
-                              {expandedDescriptions.includes(event.id)
-                                ? "Kevesebb"
-                                : "Tovább"}
+                              {expandedDescriptions.includes(event.id) ? "Kevesebb" : "Tovább"}
                               <ChevronRight
                                 className={`h-4 w-4 transition-transform ${
-                                  expandedDescriptions.includes(event.id)
-                                    ? "rotate-90"
-                                    : ""
+                                  expandedDescriptions.includes(event.id) ? "rotate-90" : ""
                                 }`}
                               />
                             </button>
                           </div>
 
                           <div className="mt-6 flex justify-between items-center">
-                            <div className="text-white/60 text-sm">
-                              Ár: {event.ar ? `${event.ar} Ft` : "Ingyenes"}
-                            </div>
-                            <button className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
-                              Csatlakozás
+                            <div className="text-white/60 text-sm">Ár: {event.ar ? `${event.ar} Ft` : "Ingyenes"}</div>
+                            <button
+                              onClick={() => openEventModal(event)}
+                              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                            >
+                              Megtekintés
                             </button>
                           </div>
                         </div>
@@ -545,8 +551,12 @@ const SportMateFinder = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
-};
 
-export default SportMateFinder;
+      {/* Event Modal */}
+      {showModal && selectedEvent && <EventModal event={selectedEvent} onClose={closeEventModal} />}
+    </div>
+  )
+}
+
+export default SportMateFinder
+
