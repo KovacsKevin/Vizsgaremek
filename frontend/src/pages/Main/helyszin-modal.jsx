@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 
 export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
@@ -10,9 +12,9 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     Oltozo: false, // Default to false (No)
     Parkolas: "",
     Leiras: "",
-    Berles: false  // Default to false (No)
+    Berles: false, // Default to false (No)
   })
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -22,14 +24,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     const { name, value, type, checked } = e.target
     setFormData({
       ...formData,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     })
-    
+
     // Clear error for this field when user starts typing
     if (formErrors[name]) {
       setFormErrors({
         ...formErrors,
-        [name]: ""
+        [name]: "",
       })
     }
   }
@@ -37,48 +39,49 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
   const handleBooleanSelect = (name, value) => {
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     })
   }
 
   const validateForm = () => {
     const errors = {}
-    
+
     if (!formData.Nev.trim()) errors.Nev = "Helyszín neve kötelező"
     if (!formData.Cim.trim()) errors.Cim = "Cím kötelező"
     if (!formData.Telepules.trim()) errors.Telepules = "Település kötelező"
     if (!formData.Iranyitoszam.trim()) errors.Iranyitoszam = "Irányítószám kötelező"
     if (!formData.Parkolas) errors.Parkolas = "Parkolási lehetőség kötelező"
-    
+
     // Validate irányítószám is numeric
     if (formData.Iranyitoszam && !/^\d+$/.test(formData.Iranyitoszam)) {
       errors.Iranyitoszam = "Az irányítószám csak számokat tartalmazhat"
     }
-    
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+
     // Validate form
     if (!validateForm()) {
-      return;
+      return
     }
-    
-    setIsSubmitting(true);
+
+    setIsSubmitting(true)
 
     try {
       // Get the auth token
-      const token = localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1");
-      
+      const token =
+        localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1")
+
       if (!token) {
-        setError("Nincs bejelentkezve! Kérjük, jelentkezzen be újra.");
-        setIsSubmitting(false);
-        return;
+        setError("Nincs bejelentkezve! Kérjük, jelentkezzen be újra.")
+        setIsSubmitting(false)
+        return
       }
 
       // Prepare data to send
@@ -89,50 +92,50 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         Berles: Boolean(formData.Berles),
         Iranyitoszam: formData.Iranyitoszam.toString(),
         // Ensure Leiras is at least an empty string
-        Leiras: formData.Leiras || ""
-      };
+        Leiras: formData.Leiras || "",
+      }
 
-      console.log("Sending request to:", "http://localhost:8081/api/v1/createHelyszin");
-      console.log("With data:", dataToSend);
-      console.log("Using token:", token.substring(0, 10) + "...");
+      console.log("Sending request to:", "http://localhost:8081/api/v1/createHelyszin")
+      console.log("With data:", dataToSend)
+      console.log("Using token:", token.substring(0, 10) + "...")
 
       // Submit the form data to create a new location
       const response = await fetch("http://localhost:8081/api/v1/createHelyszin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(dataToSend)
-      });
+        body: JSON.stringify(dataToSend),
+      })
 
-      console.log("Response status:", response.status);
-      
+      console.log("Response status:", response.status)
+
       // Handle non-OK responses
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server error response:", errorText);
-        setError(`Hiba történt: ${response.status} - ${response.statusText}`);
-        setIsSubmitting(false);
-        return;
+        const errorText = await response.text()
+        console.error("Server error response:", errorText)
+        setError(`Hiba történt: ${response.status} - ${response.statusText}`)
+        setIsSubmitting(false)
+        return
       }
-      
+
       // Try to parse the response as JSON
-      let data;
+      let data
       try {
-        const responseText = await response.text();
-        console.log("Raw response:", responseText);
-        data = JSON.parse(responseText);
+        const responseText = await response.text()
+        console.log("Raw response:", responseText)
+        data = JSON.parse(responseText)
       } catch (parseError) {
-        console.error("Failed to parse response as JSON:", parseError);
-        setError("A szerver válasza nem értelmezhető");
-        setIsSubmitting(false);
-        return;
+        console.error("Failed to parse response as JSON:", parseError)
+        setError("A szerver válasza nem értelmezhető")
+        setIsSubmitting(false)
+        return
       }
 
       // Success handling
-      setSuccess("Helyszín sikeresen létrehozva!");
-      
+      setSuccess("Helyszín sikeresen létrehozva!")
+
       // Reset form
       setFormData({
         Nev: "",
@@ -143,217 +146,408 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         Oltozo: false,
         Parkolas: "",
         Leiras: "",
-        Berles: false
-      });
-      
+        Berles: false,
+      })
+
       // If an onSuccess callback was provided, call it with the new location data
-      if (onSuccess && typeof onSuccess === 'function') {
-        onSuccess(data.helyszin);
+      if (onSuccess && typeof onSuccess === "function") {
+        onSuccess(data.helyszin)
       }
-      
+
       // Close the modal after 2 seconds
       setTimeout(() => {
-        onClose();
-      }, 2000);
-      
+        onClose()
+      }, 2000)
     } catch (error) {
-      console.error("Error creating location:", error);
-      setError("Hiba történt a szerver kommunikáció során: " + error.message);
+      console.error("Error creating location:", error)
+      setError("Hiba történt a szerver kommunikáció során: " + error.message)
     }
 
-    setIsSubmitting(false);
-  };
+    setIsSubmitting(false)
+  }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
+      <div
+        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50"
+        style={{
+          animation: "modal-appear 0.3s ease-out forwards",
+          transform: "scale(0.95)",
+          opacity: 0,
+        }}
+      >
+        <style jsx>{`
+          @keyframes modal-appear {
+            0% {
+              transform: scale(0.95);
+              opacity: 0;
+            }
+            100% {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+          @keyframes pulse-glow {
+            0% {
+              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+            }
+            50% {
+              box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+            }
+            100% {
+              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+            }
+          }
+        `}</style>
+
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-100">{modalContent.title}</h2>
-            <button 
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
+                {modalContent.title}
+              </h2>
+              <p className="text-gray-400 mt-1">{modalContent.description}</p>
+            </div>
+            <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-100"
+              className="text-gray-400 hover:text-white bg-slate-700/50 hover:bg-slate-600/50 rounded-full p-2 transition-all duration-300"
             >
-              ✕
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
             </button>
           </div>
-          
-          <p className="text-gray-400 mb-4">{modalContent.description}</p>
-          
+
           {error && (
-            <div className="bg-red-500 bg-opacity-20 text-red-100 p-3 rounded mb-4">
-              {error}
+            <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 flex items-center">
+              <div className="mr-3 flex-shrink-0 bg-red-500/20 rounded-full p-2">
+                <svg
+                  className="w-5 h-5 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </div>
+              <p>{error}</p>
             </div>
           )}
-          
+
           {success && (
-            <div className="bg-green-500 bg-opacity-20 text-green-100 p-3 rounded mb-4">
-              {success}
+            <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-300 p-4 rounded-xl mb-6 flex items-center">
+              <div className="mr-3 flex-shrink-0 bg-green-500/20 rounded-full p-2">
+                <svg
+                  className="w-5 h-5 text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <p>{success}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Helyszín neve */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Helyszín neve*
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Helyszín neve*</label>
                 <input
                   type="text"
                   name="Nev"
                   value={formData.Nev}
                   onChange={handleChange}
-                  className={`w-full bg-slate-700 border ${formErrors.Nev ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
+                  className={`w-full bg-slate-800/80 border ${formErrors.Nev ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                   placeholder="Pl. Városi Sportcsarnok"
                 />
-                {formErrors.Nev && <p className="text-red-500 text-xs mt-1">{formErrors.Nev}</p>}
+                {formErrors.Nev && <p className="text-red-400 text-xs mt-1">{formErrors.Nev}</p>}
               </div>
 
               {/* Cím */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Cím*
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Cím*</label>
                 <input
                   type="text"
                   name="Cim"
                   value={formData.Cim}
                   onChange={handleChange}
-                  className={`w-full bg-slate-700 border ${formErrors.Cim ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
+                  className={`w-full bg-slate-800/80 border ${formErrors.Cim ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                   placeholder="Pl. Árpád út 10."
                 />
-                {formErrors.Cim && <p className="text-red-500 text-xs mt-1">{formErrors.Cim}</p>}
+                {formErrors.Cim && <p className="text-red-400 text-xs mt-1">{formErrors.Cim}</p>}
               </div>
 
               {/* Település */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Település*
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Település*</label>
                 <input
                   type="text"
                   name="Telepules"
                   value={formData.Telepules}
                   onChange={handleChange}
-                  className={`w-full bg-slate-700 border ${formErrors.Telepules ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
+                  className={`w-full bg-slate-800/80 border ${formErrors.Telepules ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                   placeholder="Pl. Budapest"
                 />
-                {formErrors.Telepules && <p className="text-red-500 text-xs mt-1">{formErrors.Telepules}</p>}
+                {formErrors.Telepules && <p className="text-red-400 text-xs mt-1">{formErrors.Telepules}</p>}
               </div>
 
               {/* Irányítószám */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Irányítószám*
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Irányítószám*</label>
                 <input
                   type="text"
                   name="Iranyitoszam"
                   value={formData.Iranyitoszam}
                   onChange={handleChange}
-                  className={`w-full bg-slate-700 border ${formErrors.Iranyitoszam ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
+                  className={`w-full bg-slate-800/80 border ${formErrors.Iranyitoszam ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                   placeholder="Pl. 1051"
                   inputMode="numeric"
                 />
-                {formErrors.Iranyitoszam && <p className="text-red-500 text-xs mt-1">{formErrors.Iranyitoszam}</p>}
+                {formErrors.Iranyitoszam && <p className="text-red-400 text-xs mt-1">{formErrors.Iranyitoszam}</p>}
               </div>
 
               {/* Fedett - X és pipa egymás mellett */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Fedett helyszín
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Fedett helyszín</label>
                 <div className="flex items-center space-x-4">
-                  <div 
+                  <div
                     onClick={() => handleBooleanSelect("Fedett", false)}
-                    className={`cursor-pointer px-3 py-1 rounded ${formData.Fedett === false ? 'bg-slate-600 text-white' : 'bg-slate-700 text-gray-400'}`}
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      formData.Fedett === false
+                        ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
+                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
+                    }`}
                   >
-                    ✕ Nem
+                    <span
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
+                        formData.Fedett === false ? "bg-red-500" : "bg-slate-700"
+                      }`}
+                    >
+                      {formData.Fedett === false && (
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            d="M6 18L18 6M6 6l12 12"
+                          ></path>
+                        </svg>
+                      )}
+                    </span>
+                    Nem
                   </div>
-                  <div 
+                  <div
                     onClick={() => handleBooleanSelect("Fedett", true)}
-                    className={`cursor-pointer px-3 py-1 rounded ${formData.Fedett === true ? 'bg-slate-600 text-white' : 'bg-slate-700 text-gray-400'}`}
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      formData.Fedett === true
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
+                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
+                    }`}
                   >
-                    ✓ Igen
+                    <span
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
+                        formData.Fedett === true ? "bg-white" : "bg-slate-700"
+                      }`}
+                    >
+                      {formData.Fedett === true && (
+                        <svg
+                          className="w-3 h-3 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      )}
+                    </span>
+                    Igen
                   </div>
                 </div>
               </div>
 
               {/* Öltöző - X és pipa egymás mellett */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Öltöző elérhető
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Öltöző elérhető</label>
                 <div className="flex items-center space-x-4">
-                  <div 
+                  <div
                     onClick={() => handleBooleanSelect("Oltozo", false)}
-                    className={`cursor-pointer px-3 py-1 rounded ${formData.Oltozo === false ? 'bg-slate-600 text-white' : 'bg-slate-700 text-gray-400'}`}
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      formData.Oltozo === false
+                        ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
+                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
+                    }`}
                   >
-                    ✕ Nem
+                    <span
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
+                        formData.Oltozo === false ? "bg-red-500" : "bg-slate-700"
+                      }`}
+                    >
+                      {formData.Oltozo === false && (
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            d="M6 18L18 6M6 6l12 12"
+                          ></path>
+                        </svg>
+                      )}
+                    </span>
+                    Nem
                   </div>
-                  <div 
+                  <div
                     onClick={() => handleBooleanSelect("Oltozo", true)}
-                    className={`cursor-pointer px-3 py-1 rounded ${formData.Oltozo === true ? 'bg-slate-600 text-white' : 'bg-slate-700 text-gray-400'}`}
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      formData.Oltozo === true
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
+                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
+                    }`}
                   >
-                    ✓ Igen
+                    <span
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
+                        formData.Oltozo === true ? "bg-white" : "bg-slate-700"
+                      }`}
+                    >
+                      {formData.Oltozo === true && (
+                        <svg
+                          className="w-3 h-3 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      )}
+                    </span>
+                    Igen
                   </div>
                 </div>
               </div>
 
               {/* Parkolás */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Parkolási lehetőség*
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Parkolási lehetőség*</label>
                 <select
                   name="Parkolas"
                   value={formData.Parkolas}
                   onChange={handleChange}
-                  className={`w-full bg-slate-700 border ${formErrors.Parkolas ? 'border-red-500' : 'border-slate-600'} rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500`}
+                  className={`w-full bg-slate-800/80 border ${formErrors.Parkolas ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                 >
                   <option value="">Válasszon...</option>
                   <option value="Ingyenes">Ingyenes</option>
                   <option value="Fizetős">Fizetős</option>
                   <option value="Nincs">Nincs</option>
                 </select>
-                {formErrors.Parkolas && <p className="text-red-500 text-xs mt-1">{formErrors.Parkolas}</p>}
+                {formErrors.Parkolas && <p className="text-red-400 text-xs mt-1">{formErrors.Parkolas}</p>}
               </div>
 
               {/* Leírás - optional */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Leírás (opcionális)
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Leírás (opcionális)</label>
                 <textarea
                   name="Leiras"
                   value={formData.Leiras}
                   onChange={handleChange}
                   rows="4"
-                  className="w-full bg-slate-700 border border-slate-600 rounded py-2 px-3 text-gray-200 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-slate-800/80 border border-slate-600/50 rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30"
                   placeholder="Részletes leírás a helyszínről..."
                 ></textarea>
               </div>
 
               {/* Bérlés - X és pipa egymás mellett */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Bérlési lehetőség
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Bérlési lehetőség</label>
                 <div className="flex items-center space-x-4">
-                  <div 
+                  <div
                     onClick={() => handleBooleanSelect("Berles", false)}
-                    className={`cursor-pointer px-3 py-1 rounded ${formData.Berles === false ? 'bg-slate-600 text-white' : 'bg-slate-700 text-gray-400'}`}
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      formData.Berles === false
+                        ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
+                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
+                    }`}
                   >
-                    ✕ Nem
+                    <span
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
+                        formData.Berles === false ? "bg-red-500" : "bg-slate-700"
+                      }`}
+                    >
+                      {formData.Berles === false && (
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="3"
+                            d="M6 18L18 6M6 6l12 12"
+                          ></path>
+                        </svg>
+                      )}
+                    </span>
+                    Nem
                   </div>
-                  <div 
+                  <div
                     onClick={() => handleBooleanSelect("Berles", true)}
-                    className={`cursor-pointer px-3 py-1 rounded ${formData.Berles === true ? 'bg-slate-600 text-white' : 'bg-slate-700 text-gray-400'}`}
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      formData.Berles === true
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
+                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
+                    }`}
                   >
-                    ✓ Igen
+                    <span
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
+                        formData.Berles === true ? "bg-white" : "bg-slate-700"
+                      }`}
+                    >
+                      {formData.Berles === true && (
+                        <svg
+                          className="w-3 h-3 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      )}
+                    </span>
+                    Igen
                   </div>
                 </div>
               </div>
@@ -363,19 +557,42 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                  className={`w-full font-medium py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300 ${
+                    isSubmitting
+                      ? "bg-purple-700/50 text-white/70 cursor-not-allowed"
+                      : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-700/20 hover:shadow-purple-700/40"
                   }`}
+                  style={{
+                    animation: isSubmitting ? "none" : "pulse-glow 2s infinite",
+                  }}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Feldolgozás...
                     </div>
-                  ) : "Helyszín létrehozása"}
+                  ) : (
+                    "Helyszín létrehozása"
+                  )}
                 </button>
               </div>
             </div>
@@ -385,3 +602,4 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     </div>
   )
 }
+
