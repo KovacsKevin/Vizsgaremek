@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User } from "lucide-react"
 
 // Placeholder Image component
@@ -16,11 +16,76 @@ const getCookie = (name) => {
   return null;
 };
 
-const EventModal = ({ event, onClose }) => {
+// Helper to get current user from token
+const getCurrentUser = () => {
+  try {
+    const token = getCookie('token');
+    if (!token) return null;
+    
+    // Parse the JWT token to get user information
+    // Note: In production, you should use a proper JWT library
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error parsing user token:", error);
+    return null;
+  }
+};
+
+const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
   const [isJoining, setIsJoining] = useState(false)
   const [joinError, setJoinError] = useState(null)
+  const [isParticipant, setIsParticipant] = useState(false)
+  const [participants, setParticipants] = useState(event.resztvevok_lista || [])
+  const [currentUser, setCurrentUser] = useState(null)
+
+  // Get current user and check participation status on mount
+  useEffect(() => {
+    const user = getCurrentUser();
+    setCurrentUser(user);
+    
+    // Check if user is already a participant
+    if (user && event.id) {
+      checkParticipation(event.id, user);
+    }
+  }, [event.id]);
+
+  // Check if the current user is already a participant
+  const checkParticipation = async (eventId, user) => {
+    if (!user || !eventId) return;
+    
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
+      
+      if (!token) {
+        return; // User is not logged in
+      }
+      
+      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        // Important: Don't use credentials with wildcard origins
+        // credentials: 'include' 
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsParticipant(data.isParticipant || false);
+      }
+    } catch (error) {
+      console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
+    }
+  };
 
   // Format date to Hungarian format
   const formatDate = (dateString) => {
@@ -99,7 +164,8 @@ const EventModal = ({ event, onClose }) => {
         body: JSON.stringify({
           eseményId: event.id
         }),
-        credentials: 'include' 
+        // Important: Don't use credentials with wildcard origins
+        // credentials: 'include' 
       });
       
       if (!response.ok) {
@@ -108,8 +174,27 @@ const EventModal = ({ event, onClose }) => {
       }
       
       // Success handling
-      // You can add code here to update the UI after successful join
-      // For example, refreshing the participants list or showing a success message
+      const responseData = await response.json();
+      
+      // Update participation status
+      setIsParticipant(true);
+      
+      // Add current user to participants list if available
+      if (currentUser) {
+        const newParticipant = {
+          id: currentUser.userId,
+          name: currentUser.name || "Felhasználó", // Use name if available
+          image: "/api/placeholder/100/100", // Placeholder image
+          // Add other details as needed
+        };
+        
+        setParticipants(prev => [newParticipant, ...prev]);
+        
+        // Call parent update function if provided
+        if (onParticipantUpdate) {
+          onParticipantUpdate(event.id, true, newParticipant);
+        }
+      }
       
     } catch (error) {
       console.error("Hiba a csatlakozás során:", error);
@@ -118,14 +203,6 @@ const EventModal = ({ event, onClose }) => {
       setIsJoining(false);
     }
   };
-
-  // Mock participants data (replace with actual data in production)
-  const participants = event.resztvevok_lista || [
-    { id: 1, name: "Kovács Péter", image: "/api/placeholder/100/100", age: 28, level: "haladó" },
-    { id: 2, name: "Nagy Anna", image: "/api/placeholder/100/100", age: 24, level: "középhaladó" },
-    { id: 3, name: "Szabó Gábor", image: "/api/placeholder/100/100", age: 32, level: "profi" },
-    { id: 4, name: "Tóth Eszter", image: "/api/placeholder/100/100", age: 26, level: "kezdő" },
-  ]
 
   return (
     <>
@@ -213,17 +290,26 @@ const EventModal = ({ event, onClose }) => {
                   Ár: <span className="font-semibold">{event.ar ? `${event.ar} Ft` : "Ingyenes"}</span>
                 </div>
                 <div className="w-full sm:w-auto">
-                  <button 
-                    className={`w-full sm:w-auto px-6 py-2 ${
-                      isJoining 
-                        ? "bg-blue-800 cursor-not-allowed" 
-                        : "bg-blue-600 hover:bg-blue-700"
-                    } text-white rounded-md transition-colors flex items-center justify-center`}
-                    onClick={handleJoinEvent}
-                    disabled={isJoining}
-                  >
-                    {isJoining ? "Csatlakozás..." : "Csatlakozás"}
-                  </button>
+                  {isParticipant ? (
+                    <button 
+                      className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
+                      disabled
+                    >
+                      Csatlakozva
+                    </button>
+                  ) : (
+                    <button 
+                      className={`w-full sm:w-auto px-6 py-2 ${
+                        isJoining 
+                          ? "bg-blue-800 cursor-not-allowed" 
+                          : "bg-blue-600 hover:bg-blue-700"
+                      } text-white rounded-md transition-colors flex items-center justify-center`}
+                      onClick={handleJoinEvent}
+                      disabled={isJoining}
+                    >
+                      {isJoining ? "Csatlakozás..." : "Csatlakozás"}
+                    </button>
+                  )}
                   {joinError && (
                     <p className="text-red-400 text-sm mt-2">{joinError}</p>
                   )}
@@ -253,7 +339,8 @@ const EventModal = ({ event, onClose }) => {
                       <div>
                         <h4 className="font-medium">{participant.name}</h4>
                         <p className="text-sm text-white/60">
-                          {participant.age} éves • {participant.level}
+                          {participant.age ? `${participant.age} éves • ` : ""}
+                          {participant.level || ""}
                         </p>
                       </div>
                     </div>
@@ -284,7 +371,8 @@ const EventModal = ({ event, onClose }) => {
               />
               <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
               <p className="text-white/60 mb-4">
-                {selectedParticipant.age} éves • {selectedParticipant.level}
+                {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
+                {selectedParticipant.level || ""}
               </p>
 
               <div className="w-full space-y-4 mt-2">
