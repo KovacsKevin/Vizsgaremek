@@ -4,7 +4,7 @@ const User = require("./userModel");
 const Helyszin = require("./helyszinModel");
 const Sportok = require("./sportokModel");
 
-// Define the Esemény model
+
 const Esemény = sequelize.define("Esemény", {
     id: {
         type: DataTypes.INTEGER,
@@ -55,15 +55,14 @@ const Esemény = sequelize.define("Esemény", {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    imageUrl: {  // New column for image
-        type: DataTypes.STRING,  // Stores the image URL
-        allowNull: true,  // Optional field
+    imageUrl: { 
+        type: DataTypes.STRING,  
+        allowNull: true,  
     }
 }, {
     timestamps: true,
 });
 
-// Establish associations
 Esemény.belongsTo(Helyszin, { foreignKey: 'helyszinId' });
 Esemény.belongsTo(User, { foreignKey: 'userId' });
 Esemény.belongsTo(Sportok, { foreignKey: 'sportId' })

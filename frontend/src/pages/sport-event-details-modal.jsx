@@ -8,9 +8,19 @@ const Image = ({ src, alt, className }) => (
   <img src={src || "/api/placeholder/300/200"} alt={alt} className={className} />
 )
 
+// Helper function to get cookie by name
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
+
 const EventModal = ({ event, onClose }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
+  const [isJoining, setIsJoining] = useState(false)
+  const [joinError, setJoinError] = useState(null)
 
   // Format date to Hungarian format
   const formatDate = (dateString) => {
@@ -61,6 +71,53 @@ const EventModal = ({ event, onClose }) => {
     setShowProfileModal(false)
     setSelectedParticipant(null)
   }
+
+  // Handle join event functionality
+  const handleJoinEvent = async () => {
+    if (!event.id) {
+      setJoinError("Esemény azonosító hiányzik");
+      return;
+    }
+    
+    setIsJoining(true);
+    setJoinError(null);
+    
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
+      
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a csatlakozáshoz");
+      }
+      
+      const response = await fetch("http://localhost:8081/api/v1/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // Include token in the request
+        },
+        body: JSON.stringify({
+          eseményId: event.id
+        }),
+        credentials: 'include' 
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || "Sikertelen csatlakozás");
+      }
+      
+      // Success handling
+      // You can add code here to update the UI after successful join
+      // For example, refreshing the participants list or showing a success message
+      
+    } catch (error) {
+      console.error("Hiba a csatlakozás során:", error);
+      setJoinError(error.message || "Sikertelen csatlakozás. Kérjük, próbáld újra később.");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   // Mock participants data (replace with actual data in production)
   const participants = event.resztvevok_lista || [
@@ -151,13 +208,26 @@ const EventModal = ({ event, onClose }) => {
                 <p className="text-white/80 whitespace-pre-line">{event.leiras || "Nincs megadott leírás."}</p>
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="text-white/80">
                   Ár: <span className="font-semibold">{event.ar ? `${event.ar} Ft` : "Ingyenes"}</span>
                 </div>
-                <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
-                  Csatlakozás
-                </button>
+                <div className="w-full sm:w-auto">
+                  <button 
+                    className={`w-full sm:w-auto px-6 py-2 ${
+                      isJoining 
+                        ? "bg-blue-800 cursor-not-allowed" 
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white rounded-md transition-colors flex items-center justify-center`}
+                    onClick={handleJoinEvent}
+                    disabled={isJoining}
+                  >
+                    {isJoining ? "Csatlakozás..." : "Csatlakozás"}
+                  </button>
+                  {joinError && (
+                    <p className="text-red-400 text-sm mt-2">{joinError}</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -251,4 +321,3 @@ const EventModal = ({ event, onClose }) => {
 }
 
 export default EventModal
-
