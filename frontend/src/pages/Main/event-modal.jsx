@@ -11,6 +11,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     szint: "",
     minimumEletkor: "",
     maximumEletkor: "",
+    maximumLetszam: "",
   })
 
   const [imageFile, setImageFile] = useState(null)
@@ -176,6 +177,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         szint: "",
         minimumEletkor: "",
         maximumEletkor: "",
+        maximumLetszam: "",
       })
       setImageFile(null)
       setImagePreview("")
@@ -448,6 +450,22 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                 id="zaroIdo"
                 className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
                 value={formData.zaroIdo}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="maximumLetszam" className="block mb-2 text-sm font-medium text-gray-300">
+                Létszám
+              </label>
+              <input
+                type="number"
+                id="maximumLetszam"
+                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                placeholder="Pl. 5"
+                min="1"
+                max="100"
+                value={formData.maximumLetszam}
                 onChange={handleChange}
                 required
               />

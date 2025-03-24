@@ -55,6 +55,12 @@ const Esemény = sequelize.define("Esemény", {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+
+    maximumLetszam: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
+
     imageUrl: { 
         type: DataTypes.STRING,  
         allowNull: true,  

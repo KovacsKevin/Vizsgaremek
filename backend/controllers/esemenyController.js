@@ -61,9 +61,9 @@ const createEsemeny = async (req, res) => {
             const decoded = jwt.verify(token, "secretkey");
             const userId = decoded.userId;
             
-            const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor } = req.body;
+            const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor, maximumLetszam } = req.body;
             
-            if (!helyszinId || !sportId || !kezdoIdo || !zaroIdo || !szint || !minimumEletkor || !maximumEletkor) {
+            if (!helyszinId || !sportId || !kezdoIdo || !zaroIdo || !szint || !minimumEletkor || !maximumEletkor || !maximumLetszam) {
                 return res.status(400).json({ message: "Missing required fields for creating event!" });
             }
             
@@ -84,6 +84,7 @@ const createEsemeny = async (req, res) => {
                     szint,
                     minimumEletkor,
                     maximumEletkor,
+                    maximumLetszam,
                     userId,
                     imageUrl // This will be null if no file was uploaded
                 }, { transaction: t });
@@ -173,7 +174,7 @@ const updateEsemeny = async (req, res) => {
             const userId = decoded.userId;
 
             const { id } = req.params;
-            const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor } = req.body;
+            const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor, maximumLetszam } = req.body;
 
             const esemeny = await Esemény.findByPk(id);
 
@@ -221,6 +222,7 @@ const updateEsemeny = async (req, res) => {
                 szint,
                 minimumEletkor,
                 maximumEletkor,
+                maximumLetszam,
                 imageUrl
             });
 
