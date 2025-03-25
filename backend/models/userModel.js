@@ -1,4 +1,3 @@
-// models/User.js
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
@@ -34,6 +33,17 @@ const User = sequelize.define("User", {
     birthDate: {
         type: DataTypes.DATE,
     },
+    // Új mezők a felhasználói beállításokhoz
+    profileBackground: {
+        type: DataTypes.STRING,
+        defaultValue: "gradient1"
+    },
+    customBackground: {
+        type: DataTypes.TEXT,  // BLOB vagy TEXT típus a nagy méretű képadatokhoz
+    },
+    profilePicture: {
+        type: DataTypes.TEXT,  // BLOB vagy TEXT típus a nagy méretű képadatokhoz
+    }
 }, {
     timestamps: true,
 });

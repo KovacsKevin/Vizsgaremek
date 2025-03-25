@@ -3,8 +3,6 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const Esemény = require("../models/esemenyModel");
 
-
-
 // Create User
 const createUser = async (req, res) => {
     try {
@@ -32,8 +30,23 @@ const authenticateUser = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Invalid email or password!" });
 
-        const token = jwt.sign({ userId: user.id, email: user.email }, "secretkey", { expiresIn: "1h" });
-        res.json({ message: "Login successful!", token, user });
+        const token = jwt.sign({ 
+            userId: user.id, 
+            email: user.email,
+            name: user.username // Hozzáadva a felhasználónév a tokenhez
+        }, "secretkey", { expiresIn: "1h" });
+        
+        res.json({ 
+            message: "Login successful!", 
+            token, 
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName
+            } 
+        });
     } catch (error) {
         res.status(500).json({ message: "Error during authentication", error });
     }
@@ -86,8 +99,6 @@ const deleteUser = async (req, res) => {
     }
 };
 
-
-
 // Create Esemény (Event)
 const createEsemeny = async (req, res) => {
     try {
@@ -128,15 +139,82 @@ const createEsemeny = async (req, res) => {
     }
 };
 
+// Új függvények a felhasználói beállítások kezeléséhez
 
+// Felhasználói beállítások lekérése
+const getUserSettings = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Ellenőrizzük, hogy a token tulajdonosa kéri-e a saját adatait
+        if (req.user.userId != id) {
+            return res.status(403).json({ message: "Unauthorized to access these settings" });
+        }
+        
+        const user = await User.findByPk(id, { 
+            attributes: ['id', 'profileBackground', 'customBackground', 'profilePicture'] 
+        });
 
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
+        res.json({
+            id: user.id,
+            profileBackground: user.profileBackground,
+            customBackground: user.customBackground,
+            profilePicture: user.profilePicture
+        });
+    } catch (error) {
+        console.error("Error fetching user settings:", error);
+        res.status(500).json({ message: "Error fetching user settings", error });
+    }
+};
 
+// Felhasználói beállítások mentése
+const saveUserSettings = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { profileBackground, customBackground, profilePicture } = req.body;
+        
+        // Ellenőrizzük, hogy a token tulajdonosa módosítja-e a saját adatait
+        if (req.user.userId != id) {
+            return res.status(403).json({ message: "Unauthorized to modify these settings" });
+        }
+        
+        const user = await User.findByPk(id);
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Csak a megadott mezőket frissítjük
+        const updates = {};
+        if (profileBackground !== undefined) updates.profileBackground = profileBackground;
+        if (customBackground !== undefined) updates.customBackground = customBackground;
+        if (profilePicture !== undefined) updates.profilePicture = profilePicture;
+        
+        await User.update(updates, { where: { id } });
+        
+        res.json({ 
+            message: "User settings updated successfully",
+            settings: {
+                ...updates
+            }
+        });
+    } catch (error) {
+        console.error("Error saving user settings:", error);
+        res.status(500).json({ message: "Error saving user settings", error });
+    }
+};
 
-
-
-
-
-
-
-module.exports = { createUser, authenticateUser, getUser, updateUser, deleteUser, createEsemeny };
+module.exports = { 
+    createUser, 
+    authenticateUser, 
+    getUser, 
+    updateUser, 
+    deleteUser, 
+    createEsemeny,
+    getUserSettings,
+    saveUserSettings
+};

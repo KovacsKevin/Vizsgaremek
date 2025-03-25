@@ -20,8 +20,9 @@ import Cookies from "js-cookie"
 
 const Header = ({ activeTab, setActiveTab }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [userName, setUserName] = useState("asd")
-  const [userEmail, setUserEmail] = useState("asd@asd")
+  const [userName, setUserName] = useState("")
+  const [userEmail, setUserEmail] = useState("")
+  const [userId, setUserId] = useState(null)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [notificationCount, setNotificationCount] = useState(3)
   const [selectedBackground, setSelectedBackground] = useState("gradient1")
@@ -64,50 +65,52 @@ const Header = ({ activeTab, setActiveTab }) => {
 
   // Inicializálás a komponens betöltésekor
   useEffect(() => {
-    // Beállítások betöltése localStorage-ból
-    loadUserSettings()
-
     // Token ellenőrzése
     const token = Cookies.get("token")
     if (token) {
-      // Try to get user data from localStorage
-      const userData = localStorage.getItem("user")
-
-      if (userData) {
-        try {
-          const user = JSON.parse(userData)
-          setUserName("asd") // Felülírva a kért értékkel
-          setUserEmail("asd@asd") // Felülírva a kért értékkel
-          setIsLoggedIn(true)
-        } catch (error) {
-          console.error("Error parsing user data:", error)
-        }
-      } else {
-        // If no local data, verify token with backend
-        verifyToken(token)
-      }
+      // Verify token with backend
+      verifyToken(token)
     }
   }, [])
 
   // Felhasználói beállítások betöltése
-  const loadUserSettings = () => {
+  const loadUserSettings = async (userId) => {
     try {
-      // Háttér beállítás betöltése
-      const savedBackground = localStorage.getItem("profileBackground")
-      if (savedBackground && backgrounds[savedBackground]) {
-        setSelectedBackground(savedBackground)
-      }
+      const token = Cookies.get("token")
+      if (!token || !userId) return
 
-      // Egyéni háttérkép betöltése
-      const savedCustomBackground = localStorage.getItem("customBackground")
-      if (savedCustomBackground) {
-        setCustomBackground(savedCustomBackground)
-      }
+      // Adatbázisból lekérjük a felhasználó beállításait
+      const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
 
-      // Profilkép betöltése
-      const savedProfilePicture = localStorage.getItem("profilePicture")
-      if (savedProfilePicture) {
-        setProfilePicture(savedProfilePicture)
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Háttér beállítás betöltése
+        if (data.profileBackground && backgrounds[data.profileBackground]) {
+          setSelectedBackground(data.profileBackground)
+        }
+
+        // Egyéni háttérkép betöltése
+        if (data.customBackground) {
+          setCustomBackground(data.customBackground)
+        }
+
+        // Profilkép betöltése
+        if (data.profilePicture) {
+          setProfilePicture(data.profilePicture)
+        }
+      } else {
+        console.log("Nem sikerült betölteni a felhasználói beállításokat")
+        // Alapértelmezett beállítások
+        setSelectedBackground("gradient1")
+        setCustomBackground(null)
+        setProfilePicture(null)
       }
     } catch (error) {
       console.error("Hiba a beállítások betöltésekor:", error)
@@ -115,13 +118,24 @@ const Header = ({ activeTab, setActiveTab }) => {
   }
 
   // Beállítások mentése
-  const saveUserSettings = (settings) => {
+  const saveUserSettings = async (settings) => {
     try {
-      Object.entries(settings).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          localStorage.setItem(key, value)
-        }
+      const token = Cookies.get("token")
+      if (!token || !userId) return
+
+      // Adatbázisba mentjük a felhasználó beállításait
+      const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(settings)
       })
+
+      if (!response.ok) {
+        console.error("Nem sikerült menteni a beállításokat az adatbázisba")
+      }
     } catch (error) {
       console.error("Hiba a beállítások mentésekor:", error)
     }
@@ -140,19 +154,14 @@ const Header = ({ activeTab, setActiveTab }) => {
       if (response.ok) {
         const data = await response.json()
         setIsLoggedIn(true)
+        
+        // Valós adatok beállítása a válaszból
+        setUserName(data.user.name || data.user.username)
+        setUserEmail(data.user.email)
+        setUserId(data.user.userId)
 
-        // Felülírva a kért értékekkel
-        setUserName("asd")
-        setUserEmail("asd@asd")
-
-        // Save to localStorage for future use
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            email: "asd@asd",
-            name: "asd",
-          }),
-        )
+        // Felhasználói beállítások betöltése
+        await loadUserSettings(data.user.userId)
       } else {
         // Token invalid, remove it
         Cookies.remove("token")
@@ -164,11 +173,15 @@ const Header = ({ activeTab, setActiveTab }) => {
 
   const handleLogout = () => {
     Cookies.remove("token")
-    localStorage.removeItem("user")
     setIsLoggedIn(false)
     setUserName("")
     setUserEmail("")
+    setUserId(null)
     setIsProfileOpen(false)
+    // Alapértelmezett beállítások visszaállítása
+    setSelectedBackground("gradient1")
+    setCustomBackground(null)
+    setProfilePicture(null)
     navigate("/Homepage")
   }
 
@@ -199,6 +212,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
 
     document.addEventListener("mousedown", handleClickOutside)
+    return () =>document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
@@ -227,7 +241,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         setCustomBackground(imageDataUrl)
         setSelectedBackground("custom")
 
-        // Mentés localStorage-ba
+        // Mentés adatbázisba
         saveUserSettings({
           customBackground: imageDataUrl,
           profileBackground: "custom",
@@ -251,7 +265,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         const imageDataUrl = e.target.result
         setProfilePicture(imageDataUrl)
 
-        // Mentés localStorage-ba
+        // Mentés adatbázisba
         saveUserSettings({
           profilePicture: imageDataUrl,
         })
@@ -269,7 +283,7 @@ const Header = ({ activeTab, setActiveTab }) => {
   const handleBackgroundSelect = (bg) => {
     setSelectedBackground(bg)
 
-    // Mentés localStorage-ba
+    // Mentés adatbázisba
     saveUserSettings({
       profileBackground: bg,
     })
@@ -508,8 +522,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/20 flex items-center justify-center text-green-400 group-hover:text-green-300 transition-colors">
                                   <Calendar className="h-5 w-5" />
-                                </div>
-                                <span className="font-medium">Foglalásaim</span>
+                                </div> <span className="font-medium">Foglalásaim</span>
                               </div>
                               <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-colors opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all" />
                             </a>
@@ -608,4 +621,3 @@ const Header = ({ activeTab, setActiveTab }) => {
 }
 
 export default Header
-

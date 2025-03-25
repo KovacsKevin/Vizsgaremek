@@ -22,8 +22,12 @@ router.post("/login", userController.authenticateUser); // Authenticate a user
 router.get("/getUser/:id", userController.getUser); // Get user by ID
 router.put("/updateUser/:id", userController.updateUser); // Update user by ID
 router.delete("/deleteUser/:id", userController.deleteUser); // Delete user by ID
-// Changed from /protected to /login to verify a token and return user info
 
+// Új útvonalak a felhasználói beállítások kezeléséhez
+router.get("/users/:id/settings", authenticateToken, userController.getUserSettings); // Beállítások lekérése
+router.post("/users/:id/settings", authenticateToken, userController.saveUserSettings); // Beállítások mentése
+
+// Changed from /protected to /login to verify a token and return user info
 router.get("/login", authenticateToken, (req, res) => {
     res.json({ 
         message: "Login successful", 
