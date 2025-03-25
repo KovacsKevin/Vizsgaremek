@@ -52,16 +52,29 @@ const authenticateUser = async (req, res) => {
     }
 };
 
-// Get User by ID
+// Get User by ID - módosított verzió
 const getUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = await User.findByPk(id, { attributes: { exclude: ["password"] } });
+        // Explicit módon kérjük le a képmezőket is
+        const user = await User.findByPk(id, { 
+            attributes: { 
+                exclude: ["password"],
+                include: ["profileBackground", "customBackground", "profilePicture"] 
+            } 
+        });
 
         if (!user) return res.status(404).json({ message: "User not found!" });
 
+        console.log(`Felhasználó adatok lekérve: userId=${id}`, {
+            hasProfilePicture: !!user.profilePicture,
+            hasCustomBackground: !!user.customBackground,
+            profileBackground: user.profileBackground
+        });
+
         res.json(user);
     } catch (error) {
+        console.error("Error fetching user:", error);
         res.status(500).json({ message: "Error fetching user", error });
     }
 };
@@ -141,7 +154,7 @@ const createEsemeny = async (req, res) => {
 
 // Új függvények a felhasználói beállítások kezeléséhez
 
-// Felhasználói beállítások lekérése
+// Felhasználói beállítások lekérése - javított verzió
 const getUserSettings = async (req, res) => {
     try {
         const { id } = req.params;
@@ -151,27 +164,33 @@ const getUserSettings = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized to access these settings" });
         }
         
-        const user = await User.findByPk(id, { 
-            attributes: ['id', 'profileBackground', 'customBackground', 'profilePicture'] 
+        console.log(`Felhasználói beállítások lekérése: userId=${id}`);
+        
+        // Explicit módon lekérjük a szükséges mezőket
+        const user = await User.findByPk(id, {
+            attributes: ['id', 'profileBackground', 'customBackground', 'profilePicture']
         });
 
         if (!user) {
+            console.log(`Felhasználó nem található: userId=${id}`);
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.json({
-            id: user.id,
+        console.log(`Felhasználói beállítások sikeresen lekérve: userId=${id}`, {
             profileBackground: user.profileBackground,
-            customBackground: user.customBackground,
-            profilePicture: user.profilePicture
+            hasCustomBackground: !!user.customBackground,
+            hasProfilePicture: !!user.profilePicture
         });
+        
+        // Közvetlenül adjuk vissza a user objektumot
+        res.json(user);
     } catch (error) {
         console.error("Error fetching user settings:", error);
-        res.status(500).json({ message: "Error fetching user settings", error });
+        res.status(500).json({ message: "Error fetching user settings", error: error.message });
     }
 };
 
-// Felhasználói beállítások mentése
+// Felhasználói beállítások mentése - javított verzió
 const saveUserSettings = async (req, res) => {
     try {
         const { id } = req.params;
@@ -182,9 +201,16 @@ const saveUserSettings = async (req, res) => {
             return res.status(403).json({ message: "Unauthorized to modify these settings" });
         }
         
+        console.log(`Felhasználói beállítások mentése: userId=${id}`, {
+            profileBackground: profileBackground ? "provided" : "not provided",
+            hasCustomBackground: !!customBackground,
+            hasProfilePicture: !!profilePicture
+        });
+        
         const user = await User.findByPk(id);
         
         if (!user) {
+            console.log(`Felhasználó nem található: userId=${id}`);
             return res.status(404).json({ message: "User not found" });
         }
         
@@ -194,17 +220,25 @@ const saveUserSettings = async (req, res) => {
         if (customBackground !== undefined) updates.customBackground = customBackground;
         if (profilePicture !== undefined) updates.profilePicture = profilePicture;
         
+        console.log(`Felhasználói beállítások frissítése: userId=${id}`, {
+            updatedFields: Object.keys(updates)
+        });
+        
+        // Frissítjük a felhasználót
         await User.update(updates, { where: { id } });
+        
+        // Frissített felhasználó lekérése
+        const updatedUser = await User.findByPk(id, {
+            attributes: ['id', 'profileBackground', 'customBackground', 'profilePicture']
+        });
         
         res.json({ 
             message: "User settings updated successfully",
-            settings: {
-                ...updates
-            }
+            settings: updatedUser
         });
     } catch (error) {
         console.error("Error saving user settings:", error);
-        res.status(500).json({ message: "Error saving user settings", error });
+        res.status(500).json({ message: "Error saving user settings", error: error.message });
     }
 };
 

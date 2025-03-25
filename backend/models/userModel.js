@@ -33,16 +33,16 @@ const User = sequelize.define("User", {
     birthDate: {
         type: DataTypes.DATE,
     },
-    // Új mezők a felhasználói beállításokhoz
+    // Ellenőrizzük, hogy a mezők típusa megfelelő-e
     profileBackground: {
         type: DataTypes.STRING,
         defaultValue: "gradient1"
     },
     customBackground: {
-        type: DataTypes.TEXT,  // BLOB vagy TEXT típus a nagy méretű képadatokhoz
+        type: DataTypes.TEXT('long'),  // Nagyobb méretű TEXT típus a képadatokhoz
     },
     profilePicture: {
-        type: DataTypes.TEXT,  // BLOB vagy TEXT típus a nagy méretű képadatokhoz
+        type: DataTypes.TEXT('long'),  // Nagyobb méretű TEXT típus a képadatokhoz
     }
 }, {
     timestamps: true,

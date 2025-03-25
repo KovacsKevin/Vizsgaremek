@@ -63,57 +63,90 @@ const Header = ({ activeTab, setActiveTab }) => {
     },
   }
 
-  // Inicializálás a komponens betöltésekor
-  useEffect(() => {
-    // Token ellenőrzése
-    const token = Cookies.get("token")
-    if (token) {
-      // Verify token with backend
-      verifyToken(token)
-    }
-  }, [])
+  // Inicializálás a komponens betöltésekor - javított verzió
+useEffect(() => {
+  // Token ellenőrzése
+  const token = Cookies.get("token")
+  if (token) {
+    console.log("Token megtalálva, ellenőrzés...")
+    // Verify token with backend
+    verifyToken(token)
+  } else {
+    console.log("Nincs token, kijelentkezett állapot")
+    // Alapértelmezett beállítások visszaállítása
+    setIsLoggedIn(false)
+    setUserName("")
+    setUserEmail("")
+    setUserId(null)
+    setSelectedBackground("gradient1")
+    setCustomBackground(null)
+    setProfilePicture(null)
+  }
+}, []) // Csak egyszer fusson le a komponens betöltésekor
 
-  // Felhasználói beállítások betöltése
-  const loadUserSettings = async (userId) => {
+  // Egyszerűsített verifyToken függvény
+  const verifyToken = async (token) => {
     try {
-      const token = Cookies.get("token")
-      if (!token || !userId) return
-
-      // Adatbázisból lekérjük a felhasználó beállításait
-      const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
+      // Először ellenőrizzük a tokent
+      const authResponse = await fetch("http://localhost:8081/api/v1/login", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (authResponse.ok) {
+        const authData = await authResponse.json();
+        setIsLoggedIn(true);
+        setUserName(authData.user.name || authData.user.username);
+        setUserEmail(authData.user.email);
+        setUserId(authData.user.userId);
         
-        // Háttér beállítás betöltése
-        if (data.profileBackground && backgrounds[data.profileBackground]) {
-          setSelectedBackground(data.profileBackground)
-        }
-
-        // Egyéni háttérkép betöltése
-        if (data.customBackground) {
-          setCustomBackground(data.customBackground)
-        }
-
-        // Profilkép betöltése
-        if (data.profilePicture) {
-          setProfilePicture(data.profilePicture)
-        }
+        // Most közvetlenül lekérjük a felhasználó adatait (beleértve a képeket)
+        await loadUserSettings(authData.user.userId);
       } else {
-        console.log("Nem sikerült betölteni a felhasználói beállításokat")
-        // Alapértelmezett beállítások
-        setSelectedBackground("gradient1")
-        setCustomBackground(null)
-        setProfilePicture(null)
+        Cookies.remove("token");
+        setIsLoggedIn(false);
       }
     } catch (error) {
-      console.error("Hiba a beállítások betöltésekor:", error)
+      console.error("Hiba:", error);
+      Cookies.remove("token");
+      setIsLoggedIn(false);
+    }
+  }
+
+  // Egyszerűsített loadUserSettings függvény
+  const loadUserSettings = async (userId) => {
+    try {
+      const token = Cookies.get("token");
+      
+      // Közvetlen API hívás a felhasználói beállítások lekéréséhez
+      const response = await fetch(`http://localhost:8081/api/v1/getUser/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log("Felhasználói adatok betöltve:", userData);
+        
+        // Közvetlenül a felhasználói objektumból olvassuk ki az adatokat
+        if (userData.profileBackground) {
+          setSelectedBackground(userData.profileBackground);
+        }
+        
+        if (userData.customBackground) {
+          setCustomBackground(userData.customBackground);
+          if (userData.profileBackground === "custom") {
+            setSelectedBackground("custom");
+          }
+        }
+        
+        if (userData.profilePicture) {
+          setProfilePicture(userData.profilePicture);
+        }
+      } else {
+        console.error("Hiba a felhasználói adatok lekérésekor");
+      }
+    } catch (error) {
+      console.error("Hiba:", error);
     }
   }
 
@@ -121,7 +154,16 @@ const Header = ({ activeTab, setActiveTab }) => {
   const saveUserSettings = async (settings) => {
     try {
       const token = Cookies.get("token")
-      if (!token || !userId) return
+      if (!token || !userId) {
+        console.error("Nincs token vagy userId a beállítások mentéséhez")
+        return
+      }
+
+      console.log("Beállítások mentése:", {
+        profileBackground: settings.profileBackground,
+        hasCustomBackground: !!settings.customBackground,
+        hasProfilePicture: !!settings.profilePicture
+      })
 
       // Adatbázisba mentjük a felhasználó beállításait
       const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
@@ -133,41 +175,14 @@ const Header = ({ activeTab, setActiveTab }) => {
         body: JSON.stringify(settings)
       })
 
-      if (!response.ok) {
-        console.error("Nem sikerült menteni a beállításokat az adatbázisba")
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Beállítások sikeresen mentve:", data)
+      } else {
+        console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text())
       }
     } catch (error) {
       console.error("Hiba a beállítások mentésekor:", error)
-    }
-  }
-
-  // Function to verify token with backend
-  const verifyToken = async (token) => {
-    try {
-      const response = await fetch("http://localhost:8081/api/v1/login", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setIsLoggedIn(true)
-        
-        // Valós adatok beállítása a válaszból
-        setUserName(data.user.name || data.user.username)
-        setUserEmail(data.user.email)
-        setUserId(data.user.userId)
-
-        // Felhasználói beállítások betöltése
-        await loadUserSettings(data.user.userId)
-      } else {
-        // Token invalid, remove it
-        Cookies.remove("token")
-      }
-    } catch (error) {
-      console.error("Error verifying token:", error)
     }
   }
 
@@ -231,23 +246,55 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }, [isProfileOpen])
 
+  // Add image compression before upload
+  const compressImage = (imageDataUrl, maxWidth = 800) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = imageDataUrl;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Get compressed image data (adjust quality as needed)
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+    });
+  };
+
   // Handle file upload for custom background
   const handleFileUpload = (event) => {
-    const file = event.target.files[0]
+    const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageDataUrl = e.target.result
-        setCustomBackground(imageDataUrl)
-        setSelectedBackground("custom")
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const imageDataUrl = e.target.result;
+        
+        // Compress the image before setting and saving
+        const compressedImage = await compressImage(imageDataUrl);
+        
+        setCustomBackground(compressedImage);
+        setSelectedBackground("custom");
 
         // Mentés adatbázisba
         saveUserSettings({
-          customBackground: imageDataUrl,
+          customBackground: compressedImage,
           profileBackground: "custom",
-        })
-      }
-      reader.readAsDataURL(file)
+        });
+      };
+      reader.readAsDataURL(file);
     }
   }
 
@@ -258,19 +305,23 @@ const Header = ({ activeTab, setActiveTab }) => {
 
   // Handle file upload for profile picture
   const handleProfilePicUpload = (event) => {
-    const file = event.target.files[0]
+    const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageDataUrl = e.target.result
-        setProfilePicture(imageDataUrl)
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const imageDataUrl = e.target.result;
+        
+        // Compress the image before setting and saving
+        const compressedImage = await compressImage(imageDataUrl, 400); // Smaller for profile pics
+        
+        setProfilePicture(compressedImage);
 
         // Mentés adatbázisba
         saveUserSettings({
-          profilePicture: imageDataUrl,
-        })
-      }
-      reader.readAsDataURL(file)
+          profilePicture: compressedImage,
+        });
+      };
+      reader.readAsDataURL(file);
     }
   }
 
@@ -279,14 +330,33 @@ const Header = ({ activeTab, setActiveTab }) => {
     profilePicInputRef.current.click()
   }
 
-  // Handle background selection
-  const handleBackgroundSelect = (bg) => {
-    setSelectedBackground(bg)
-
-    // Mentés adatbázisba
-    saveUserSettings({
-      profileBackground: bg,
-    })
+  // Módosított handleBackgroundSelect függvény
+  const handleBackgroundSelect = async (bg) => {
+    // Először frissítjük a helyi állapotot
+    setSelectedBackground(bg);
+    
+    // Majd mentjük az adatbázisba
+    try {
+      const token = Cookies.get("token");
+      const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          profileBackground: bg
+        })
+      });
+      
+      if (response.ok) {
+        console.log("Háttér beállítás sikeresen mentve");
+      } else {
+        console.error("Hiba a háttér beállítás mentésekor");
+      }
+    } catch (error) {
+      console.error("Hiba:", error);
+    }
   }
 
   return (
