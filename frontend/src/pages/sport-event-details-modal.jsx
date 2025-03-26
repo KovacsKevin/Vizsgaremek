@@ -5,7 +5,7 @@ import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User } from "lu
 
 // Placeholder Image component
 const Image = ({ src, alt, className }) => (
-  <img src={src || "/api/placeholder/300/200"} alt={alt} className={className} />
+  <img src={src || "/api/placeholder/300/200"} alt={alt || ''} className={className || ''} />
 )
 
 // Helper function to get cookie by name
@@ -21,7 +21,7 @@ const getCurrentUser = () => {
   try {
     const token = getCookie('token');
     if (!token) return null;
-    
+
     // Parse the JWT token to get user information
     // Note: In production, you should use a proper JWT library
     const base64Url = token.split('.')[1];
@@ -41,43 +41,60 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
   const [isJoining, setIsJoining] = useState(false)
-  const [joinError, setJoinError] = useState(null)
+  const [joinError, setJoinError] = useState('')
   const [isParticipant, setIsParticipant] = useState(false)
   const [participants, setParticipants] = useState(event.resztvevok_lista || [])
   const [currentUser, setCurrentUser] = useState(null)
 
   // Get current user and check participation status on mount
+  // Function to fetch the latest participants
+  const fetchParticipants = async (eventId) => {
+    if (!eventId) return;
+
+    try {
+      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setParticipants(data.participants || []);
+      }
+    } catch (error) {
+      console.error("Error fetching participants:", error);
+    }
+  };
+
+  // Add this to useEffect to fetch participants when the modal opens
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
-    
-    // Check if user is already a participant
-    if (user && event.id) {
-      checkParticipation(event.id, user);
+
+    if (event.id) {
+      fetchParticipants(event.id);
+      if (user) {
+        checkParticipation(event.id, user);
+      }
     }
   }, [event.id]);
 
   // Check if the current user is already a participant
   const checkParticipation = async (eventId, user) => {
     if (!user || !eventId) return;
-    
+
     try {
       // Get authentication token from cookie
       const token = getCookie('token');
-      
+
       if (!token) {
         return; // User is not logged in
       }
-      
+
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`
-        },
-        // Important: Don't use credentials with wildcard origins
-        // credentials: 'include' 
+        }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setIsParticipant(data.isParticipant || false);
@@ -143,65 +160,77 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
       setJoinError("Esemény azonosító hiányzik");
       return;
     }
-    
+
+    // Check if event is at capacity before making the API call
+    if (participants.length >= event.maximumLetszam) {
+      setJoinError("Az esemény betelt, nem lehet több résztvevő");
+      return;
+    }
+
     setIsJoining(true);
-    setJoinError(null);
-    
+    setJoinError('');
+
     try {
       // Get authentication token from cookie
       const token = getCookie('token');
-      
+
       if (!token) {
         throw new Error("Bejelentkezés szükséges a csatlakozáshoz");
       }
-      
+
       const response = await fetch("http://localhost:8081/api/v1/join", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // Include token in the request
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           eseményId: event.id
         }),
-        // Important: Don't use credentials with wildcard origins
-        // credentials: 'include' 
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || "Sikertelen csatlakozás");
       }
-      
+
       // Success handling
       const responseData = await response.json();
-      
+
       // Update participation status
       setIsParticipant(true);
-      
+
       // Add current user to participants list if available
       if (currentUser) {
         const newParticipant = {
           id: currentUser.userId,
-          name: currentUser.name || "Felhasználó", // Use name if available
-          image: "/api/placeholder/100/100", // Placeholder image
-          // Add other details as needed
+          name: currentUser.name || "Felhasználó",
+          image: currentUser.profileImage || "/api/placeholder/100/100",
         };
-        
-        setParticipants(prev => [newParticipant, ...prev]);
-        
+
+        // Only add if not already in the list
+        if (!participants.some(p => p.id === currentUser.userId)) {
+          setParticipants(prev => [newParticipant, ...prev]);
+        }
+
         // Call parent update function if provided
         if (onParticipantUpdate) {
           onParticipantUpdate(event.id, true, newParticipant);
         }
       }
-      
+
     } catch (error) {
       console.error("Hiba a csatlakozás során:", error);
       setJoinError(error.message || "Sikertelen csatlakozás. Kérjük, próbáld újra később.");
     } finally {
       setIsJoining(false);
     }
+  };
+
+  // Add a function to handle participant click, including the current user
+  const handleParticipantClick = (participant) => {
+    // If the participant is the current user, show their profile too
+    openProfileModal(participant);
   };
 
   return (
@@ -253,66 +282,77 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   </span>
                 </div>
 
+                {/* Participant count display */}
                 <div className="flex items-center gap-2 text-white/80">
                   <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <span>
-                    {participants.length}/{event.maxResztvevok || 10} résztvevő
+                    {participants.length}/{event.maximumLetszam || 10} résztvevő
+                    {participants.length >= event.maximumLetszam && (
+                      <span className="ml-2 text-yellow-400 text-sm">(Betelt)</span>
+                    )}
                   </span>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-2 mb-6">
-                <span className="px-3 py-1 bg-white/10 rounded-full text-sm">{event.szint || "Ismeretlen szint"}</span>
-                {isFacilityAvailable(event, "fedett") && (
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
-                    <Home className="h-4 w-4" /> Fedett
-                  </span>
-                )}
-                {isFacilityAvailable(event, "oltozo") && (
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
-                    <DoorOpen className="h-4 w-4" /> Öltöző
-                  </span>
-                )}
-                {isFacilityAvailable(event, "parkolas") && (
-                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
-                    <Car className="h-4 w-4" /> Parkolás
-                  </span>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Leírás</h3>
-                <p className="text-white/80 whitespace-pre-line">{event.leiras || "Nincs megadott leírás."}</p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="text-white/80">
-                  Ár: <span className="font-semibold">{event.ar ? `${event.ar} Ft` : "Ingyenes"}</span>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm">{event.szint || "Ismeretlen szint"}</span>
+                  {isFacilityAvailable(event, "fedett") && (
+                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
+                      <Home className="h-4 w-4" /> Fedett
+                    </span>
+                  )}
+                  {isFacilityAvailable(event, "oltozo") && (
+                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
+                      <DoorOpen className="h-4 w-4" /> Öltöző
+                    </span>
+                  )}
+                  {isFacilityAvailable(event, "parkolas") && (
+                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
+                      <Car className="h-4 w-4" /> Parkolás
+                    </span>
+                  )}
                 </div>
-                <div className="w-full sm:w-auto">
-                  {isParticipant ? (
-                    <button 
-                      className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
-                      disabled
-                    >
-                      Csatlakozva
-                    </button>
-                  ) : (
-                    <button 
-                      className={`w-full sm:w-auto px-6 py-2 ${
-                        isJoining 
-                          ? "bg-blue-800 cursor-not-allowed" 
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-2">Leírás</h3>
+                  <p className="text-white/80 whitespace-pre-line">{event.leiras || "Nincs megadott leírás."}</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="text-white/80">
+                    Ár: <span className="font-semibold">{event.ar ? `${event.ar} Ft` : "Ingyenes"}</span>
+                  </div>
+                  <div className="w-full sm:w-auto">
+                    {isParticipant ? (
+                      <button
+                        className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
+                        disabled
+                      >
+                        Csatlakozva
+                      </button>
+                    ) : participants.length >= event.maximumLetszam ? (
+                      <button
+                        className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
+                        disabled
+                      >
+                        Betelt
+                      </button>
+                    ) : (
+                      <button
+                        className={`w-full sm:w-auto px-6 py-2 ${isJoining
+                          ? "bg-blue-800 cursor-not-allowed"
                           : "bg-blue-600 hover:bg-blue-700"
-                      } text-white rounded-md transition-colors flex items-center justify-center`}
-                      onClick={handleJoinEvent}
-                      disabled={isJoining}
-                    >
-                      {isJoining ? "Csatlakozás..." : "Csatlakozás"}
-                    </button>
-                  )}
-                  {joinError && (
-                    <p className="text-red-400 text-sm mt-2">{joinError}</p>
-                  )}
+                          } text-white rounded-md transition-colors flex items-center justify-center`}
+                        onClick={handleJoinEvent}
+                        disabled={isJoining}
+                      >
+                        {isJoining ? "Csatlakozás..." : "Csatlakozás"}
+                      </button>
+                    )}
+
+                    {joinError && (
+                      <p className="text-red-400 text-sm mt-2">{joinError}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -321,6 +361,16 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
             <div className="w-full md:w-2/5 p-6">
               <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
 
+              <div className="flex items-center gap-2 text-white/80 mb-4">
+                <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                <span>
+                  {participants.length}/{event.maximumLetszam || 10} résztvevő
+                  {participants.length >= event.maximumLetszam && (
+                    <span className="ml-2 text-yellow-400 text-sm">(Betelt)</span>
+                  )}
+                </span>
+              </div>
+
               <div className="space-y-4">
                 {participants.length === 0 ? (
                   <p className="text-white/60">Még nincsenek résztvevők.</p>
@@ -328,7 +378,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   participants.map((participant) => (
                     <div
                       key={participant.id}
-                      onClick={() => openProfileModal(participant)}
+                      onClick={() => handleParticipantClick(participant)}
                       className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
                     >
                       <Image
@@ -337,7 +387,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                       <div>
-                        <h4 className="font-medium">{participant.name}</h4>
+                        <h4 className="font-medium">
+                          {participant.name}
+                          {currentUser && participant.id === currentUser.userId && (
+                            <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                          )}
+                        </h4>
                         <p className="text-sm text-white/60">
                           {participant.age ? `${participant.age} éves • ` : ""}
                           {participant.level || ""}
@@ -405,7 +460,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         </div>
       )}
     </>
-  )
+  );
 }
 
-export default EventModal
+export default EventModal;
+

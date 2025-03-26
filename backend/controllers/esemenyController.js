@@ -12,34 +12,34 @@ const sequelize = require("../config/db");
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = 'uploads/';
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads/';
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
     }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
 });
 
-const upload = multer({ 
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
-  fileFilter: function (req, file, cb) {
-    // Check file type
-    const filetypes = /jpeg|jpg|png|gif/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error("Only image files are allowed!"));
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Limit to 5MB
+    fileFilter: function (req, file, cb) {
+        // Check file type
+        const filetypes = /jpeg|jpg|png|gif/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error("Only image files are allowed!"));
+        }
     }
-  }
 }).single('imageFile'); // 'imageFile' should match the field name in the form
 
 const createEsemeny = async (req, res) => {
@@ -51,28 +51,28 @@ const createEsemeny = async (req, res) => {
             // An unknown error occurred
             return res.status(500).json({ message: `Error: ${err.message}` });
         }
-        
+
         try {
             const token = req.headers.authorization?.split(" ")[1];
             if (!token) {
                 return res.status(401).json({ message: "Authentication token is required!" });
             }
-            
+
             const decoded = jwt.verify(token, "secretkey");
             const userId = decoded.userId;
-            
+
             const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor, maximumLetszam } = req.body;
-            
+
             if (!helyszinId || !sportId || !kezdoIdo || !zaroIdo || !szint || !minimumEletkor || !maximumEletkor || !maximumLetszam) {
                 return res.status(400).json({ message: "Missing required fields for creating event!" });
             }
-            
+
             // Get the file path if a file was uploaded
             let imageUrl = null;
             if (req.file) {
                 imageUrl = `/uploads/${req.file.filename}`;
             }
-            
+
             // Use a transaction to ensure both operations succeed or fail together
             const result = await sequelize.transaction(async (t) => {
                 // Create the event
@@ -88,7 +88,7 @@ const createEsemeny = async (req, res) => {
                     userId,
                     imageUrl // This will be null if no file was uploaded
                 }, { transaction: t });
-                
+
                 // Add the creator as a participant with "szervező" role
                 const résztvevő = await Résztvevő.create({
                     eseményId: newEsemény.id,
@@ -97,12 +97,12 @@ const createEsemeny = async (req, res) => {
                     státusz: 'elfogadva',
                     csatlakozásDátuma: new Date()
                 }, { transaction: t });
-                
+
                 return { newEsemény, résztvevő };
             });
-            
-            res.status(201).json({ 
-                message: "Event created successfully!", 
+
+            res.status(201).json({
+                message: "Event created successfully!",
                 esemeny: result.newEsemény,
                 creator: {
                     userId: result.résztvevő.userId,
@@ -163,7 +163,7 @@ const updateEsemeny = async (req, res) => {
         } else if (err) {
             return res.status(500).json({ message: `Error: ${err.message}` });
         }
-        
+
         try {
             const token = req.headers.authorization?.split(" ")[1];
             if (!token) {
@@ -188,7 +188,7 @@ const updateEsemeny = async (req, res) => {
 
             // Handle image update
             let imageUrl = esemeny.imageUrl; // Keep the existing image by default
-            
+
             if (req.file) {
                 // If a new image was uploaded, delete the old one if it exists
                 if (esemeny.imageUrl) {
@@ -197,7 +197,7 @@ const updateEsemeny = async (req, res) => {
                         fs.unlinkSync(oldImagePath);
                     }
                 }
-                
+
                 // Set the new image URL
                 imageUrl = `/uploads/${req.file.filename}`;
             }
@@ -325,7 +325,7 @@ const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
                     model: Helyszin,
                     where: { Telepules: telepules },  // Match city in the Helyszin model
                     attributes: [
-                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo', 
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
                         'Parkolas', 'Leiras', 'Berles', 'userId'
                     ]  // Return all relevant attributes for Helyszin
                 },
@@ -352,6 +352,7 @@ const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
 };
 
 
+// Update the joinEsemeny function to properly check capacity
 const joinEsemeny = async (req, res) => {
     try {
         // Authenticate user
@@ -359,24 +360,24 @@ const joinEsemeny = async (req, res) => {
         if (!token) {
             return res.status(401).json({ message: "Authentication token is required!" });
         }
-        
+
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
-        
+
         // Get event ID from route parameters
         const { eseményId } = req.body;
         const { megjegyzés } = req.body;
-        
+
         if (!eseményId) {
             return res.status(400).json({ message: "Event ID is required!" });
         }
-        
+
         // Check if event exists
         const esemény = await Esemény.findByPk(eseményId);
         if (!esemény) {
             return res.status(404).json({ message: "Event not found!" });
         }
-        
+
         // Check if user is already a participant
         const existingParticipant = await Résztvevő.findOne({
             where: {
@@ -384,15 +385,27 @@ const joinEsemeny = async (req, res) => {
                 userId: userId
             }
         });
-        
+
         if (existingParticipant) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 message: "You are already a participant in this event!",
                 status: existingParticipant.státusz,
                 role: existingParticipant.szerep
             });
         }
-        
+
+        // Check if the event is at capacity
+        const participantCount = await Résztvevő.count({
+            where: {
+                eseményId: eseményId,
+                státusz: 'elfogadva'
+            }
+        });
+
+        if (participantCount >= esemény.maximumLetszam) {
+            return res.status(400).json({ message: "This event is at full capacity!" });
+        }
+
         // Create a new participant record - automatically accepted
         const newParticipant = await Résztvevő.create({
             eseményId: eseményId,
@@ -402,17 +415,25 @@ const joinEsemeny = async (req, res) => {
             csatlakozásDátuma: new Date(),
             megjegyzés: megjegyzés || null
         });
-        
+
+        // Get user details to return in response
+        const user = await User.findByPk(userId, {
+            attributes: ['id', 'name', 'email', 'profileImage']
+        });
+
         res.status(201).json({
             message: "You have successfully joined the event!",
             participant: {
                 id: newParticipant.id,
+                userId: userId,
+                name: user.name,
+                image: user.profileImage,
                 status: newParticipant.státusz,
                 role: newParticipant.szerep,
                 joinDate: newParticipant.csatlakozásDátuma
             }
         });
-        
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error joining event", error: error.message });
@@ -420,15 +441,17 @@ const joinEsemeny = async (req, res) => {
 };
 
 
+
+
 const getEsemenyMinimal = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Check if the event exists by ID
         const esemeny = await Esemény.findByPk(id, {
             attributes: ['id'] // Only fetch the ID field to minimize data transfer
         });
-        
+
         // Return true if event exists, false otherwise
         if (esemeny) {
             res.json({ exists: true });
@@ -437,27 +460,129 @@ const getEsemenyMinimal = async (req, res) => {
         }
     } catch (error) {
         console.error("Error checking event existence:", error);
-        res.status(500).json({ 
-            message: "Error checking event existence", 
-            error: error.message 
+        res.status(500).json({
+            message: "Error checking event existence",
+            error: error.message
         });
     }
 };
 
+// Add this function before the module.exports
+const checkParticipation = async (req, res) => {
+    try {
+        const { id: eseményId } = req.params;
+        const token = req.headers.authorization?.split(" ")[1];
+
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the user is a participant
+        const participant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: userId
+            }
+        });
+
+        res.json({
+            isParticipant: !!participant,
+            status: participant ? participant.státusz : null,
+            role: participant ? participant.szerep : null
+        });
+    } catch (error) {
+        console.error("Error checking participation:", error);
+        res.status(500).json({ message: "Error checking participation status", error: error.message });
+    }
+};
+
+// Add this function as well
+const getEventParticipants = async (req, res) => {
+    try {
+      const { id: eseményId } = req.params;
+  
+      // Check if the event exists
+      const esemény = await Esemény.findByPk(eseményId);
+      if (!esemény) {
+        return res.status(404).json({ message: "Event not found!" });
+      }
+  
+      // Get all participants for this event
+      const participants = await Résztvevő.findAll({
+        where: {
+          eseményId: eseményId,
+          státusz: 'elfogadva' // Only include accepted participants
+        },
+        include: [
+          {
+            model: User,
+            attributes: ['id', 'email', 'username', 'firstName', 'lastName', 'profilePicture', 'birthDate'] // Use the correct field names
+          }
+        ]
+      });
+  
+      // Format the participant data
+      const formattedParticipants = participants.map(participant => ({
+        id: participant.userId,
+        name: participant.User.username || `${participant.User.firstName || ''} ${participant.User.lastName || ''}`.trim(), // Use username or combine firstName and lastName
+        email: participant.User.email,
+        image: participant.User.profilePicture || null,
+        bio: null, // This field doesn't exist in your model
+        age: participant.User.birthDate ? calculateAge(participant.User.birthDate) : null, // Calculate age from birthDate
+        role: participant.szerep,
+        joinDate: participant.csatlakozásDátuma
+      }));
+  
+      res.json({
+        participants: formattedParticipants,
+        count: formattedParticipants.length,
+        maxParticipants: esemény.maximumLetszam
+      });
+    } catch (error) {
+      console.error("Error fetching participants:", error);
+      res.status(500).json({ message: "Error fetching event participants", error: error.message });
+    }
+  };
+  
+  // Helper function to calculate age from birthDate
+  const calculateAge = (birthDate) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+  
 
 
 
 
 
-module.exports = { 
-    createEsemeny, 
-    deleteEsemeny, 
-    updateEsemeny, 
-    getEsemenyById, 
+module.exports = {
+    createEsemeny,
+    deleteEsemeny,
+    updateEsemeny,
+    getEsemenyById,
     getAllEsemeny,
     getEsemenyByUserId,
     configureMulter,
     getEsemenyekByTelepulesAndSportNev,
     joinEsemeny,
-    getEsemenyMinimal
+    getEsemenyMinimal,
+    checkParticipation,
+    getEventParticipants
 };

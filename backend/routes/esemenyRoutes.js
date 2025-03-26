@@ -36,6 +36,14 @@ router.get('/getEsemenyek/:telepules/:sportNev', esemenyController.getEsemenyekB
 router.post("/join",authenticateToken, esemenyController.joinEsemeny);
 router.get('/getesemenyimin/:id',authenticateToken,  esemenyController.getEsemenyMinimal);
 
+// Get event participants
+router.get("/events/:id/participants", esemenyController.getEventParticipants);
+
+// Check if user is a participant
+router.get("/events/:id/check-participation", authenticateToken, esemenyController.checkParticipation);
+
+
+
 
 
 module.exports = router;
