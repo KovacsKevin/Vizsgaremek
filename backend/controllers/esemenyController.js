@@ -364,9 +364,9 @@ const joinEsemeny = async (req, res) => {
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
 
-        // Get event ID from route parameters
+        // Get event ID from request body
         const { eseményId } = req.body;
-        const { megjegyzés } = req.body;
+        const { megjegyzés } = req.body || { megjegyzés: '' };
 
         if (!eseményId) {
             return res.status(400).json({ message: "Event ID is required!" });
@@ -413,21 +413,24 @@ const joinEsemeny = async (req, res) => {
             szerep: 'játékos', // Default role is player
             státusz: 'elfogadva', // Auto-accept the participant
             csatlakozásDátuma: new Date(),
-            megjegyzés: megjegyzés || null
+            megjegyzés: megjegyzés || ''
         });
 
-        // Get user details to return in response
+        // Get user details to return in response - FIXED: use correct field names
         const user = await User.findByPk(userId, {
-            attributes: ['id', 'name', 'email', 'profileImage']
+            attributes: ['id', 'username', 'email', 'firstName', 'lastName', 'profilePicture'] // Changed 'name' to 'username'
         });
+
+        // Prepare user name from available fields
+        const userName = user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Felhasználó';
 
         res.status(201).json({
             message: "You have successfully joined the event!",
             participant: {
                 id: newParticipant.id,
                 userId: userId,
-                name: user.name,
-                image: user.profileImage,
+                name: userName, // Use the constructed name
+                image: user.profilePicture || '', // Changed from profileImage to profilePicture
                 status: newParticipant.státusz,
                 role: newParticipant.szerep,
                 joinDate: newParticipant.csatlakozásDátuma
@@ -435,10 +438,11 @@ const joinEsemeny = async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Error joining event:", error);
         res.status(500).json({ message: "Error joining event", error: error.message });
     }
 };
+
 
 
 
@@ -496,8 +500,8 @@ const checkParticipation = async (req, res) => {
 
         res.json({
             isParticipant: !!participant,
-            status: participant ? participant.státusz : null,
-            role: participant ? participant.szerep : null
+            status: participant ? participant.státusz : '',
+            role: participant ? participant.szerep : ''
         });
     } catch (error) {
         console.error("Error checking participation:", error);
@@ -505,68 +509,89 @@ const checkParticipation = async (req, res) => {
     }
 };
 
+
 // Add this function as well
 const getEventParticipants = async (req, res) => {
     try {
-      const { id: eseményId } = req.params;
-  
-      // Check if the event exists
-      const esemény = await Esemény.findByPk(eseményId);
-      if (!esemény) {
-        return res.status(404).json({ message: "Event not found!" });
-      }
-  
-      // Get all participants for this event
-      const participants = await Résztvevő.findAll({
-        where: {
-          eseményId: eseményId,
-          státusz: 'elfogadva' // Only include accepted participants
-        },
-        include: [
-          {
-            model: User,
-            attributes: ['id', 'email', 'username', 'firstName', 'lastName', 'profilePicture', 'birthDate'] // Use the correct field names
-          }
-        ]
-      });
-  
-      // Format the participant data
-      const formattedParticipants = participants.map(participant => ({
-        id: participant.userId,
-        name: participant.User.username || `${participant.User.firstName || ''} ${participant.User.lastName || ''}`.trim(), // Use username or combine firstName and lastName
-        email: participant.User.email,
-        image: participant.User.profilePicture || null,
-        bio: null, // This field doesn't exist in your model
-        age: participant.User.birthDate ? calculateAge(participant.User.birthDate) : null, // Calculate age from birthDate
-        role: participant.szerep,
-        joinDate: participant.csatlakozásDátuma
-      }));
-  
-      res.json({
-        participants: formattedParticipants,
-        count: formattedParticipants.length,
-        maxParticipants: esemény.maximumLetszam
-      });
+        const { id: eseményId } = req.params;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Get all participants for this event
+        const participants = await Résztvevő.findAll({
+            where: {
+                eseményId: eseményId,
+                státusz: 'elfogadva' // Only include accepted participants
+            },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'birthDate'] // Include relevant user details
+                }
+            ]
+        });
+
+        // Format the participant data
+        const formattedParticipants = participants.map(participant => {
+            // Calculate age if birthDate is available
+            let age = null;
+            if (participant.User.birthDate) {
+                const birthDate = new Date(participant.User.birthDate);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+            }
+
+            // Prepare user name from available fields
+            const name = participant.User.username ||
+                `${participant.User.firstName || ''} ${participant.User.lastName || ''}`.trim() ||
+                'Felhasználó';
+
+            return {
+                id: participant.userId,
+                name: name,
+                email: participant.User.email,
+                image: participant.User.profilePicture || '',
+                bio: participant.User.bio || '',
+                age: age,
+                role: participant.szerep,
+                joinDate: participant.csatlakozásDátuma
+            };
+        });
+
+        res.json({
+            participants: formattedParticipants,
+            count: formattedParticipants.length,
+            maxParticipants: esemény.maximumLetszam
+        });
     } catch (error) {
-      console.error("Error fetching participants:", error);
-      res.status(500).json({ message: "Error fetching event participants", error: error.message });
+        console.error("Error fetching participants:", error);
+        res.status(500).json({ message: "Error fetching event participants", error: error.message });
     }
-  };
-  
-  // Helper function to calculate age from birthDate
-  const calculateAge = (birthDate) => {
+};
+
+
+// Helper function to calculate age from birthDate
+const calculateAge = (birthDate) => {
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
+        age--;
     }
-    
+
     return age;
-  };
-  
+};
+
 
 
 
@@ -586,3 +611,4 @@ module.exports = {
     checkParticipation,
     getEventParticipants
 };
+

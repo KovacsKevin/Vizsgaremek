@@ -48,27 +48,35 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
   // Get current user and check participation status on mount
   // Function to fetch the latest participants
+  // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
     if (!eventId) return;
 
     try {
+      console.log("Fetching participants for event:", eventId);
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Participants data:", data);
         setParticipants(data.participants || []);
+      } else {
+        console.error("Error fetching participants, status:", response.status);
       }
     } catch (error) {
       console.error("Error fetching participants:", error);
     }
   };
 
+
+  // Add this to useEffect to fetch participants when the modal opens
   // Add this to useEffect to fetch participants when the modal opens
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
 
     if (event.id) {
+      console.log("Modal opened for event:", event.id);
       fetchParticipants(event.id);
       if (user) {
         checkParticipation(event.id, user);
@@ -76,6 +84,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     }
   }, [event.id]);
 
+
+  // Check if the current user is already a participant
   // Check if the current user is already a participant
   const checkParticipation = async (eventId, user) => {
     if (!user || !eventId) return;
@@ -97,12 +107,22 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Participation check result:", data);
         setIsParticipant(data.isParticipant || false);
+
+        // If the user is a participant, make sure they're in the participants list
+        if (data.isParticipant && currentUser && !participants.some(p => p.id === currentUser.userId)) {
+          // Refresh the participants list
+          fetchParticipants(eventId);
+        }
       }
     } catch (error) {
       console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
+      // Even if there's an error, try to fetch participants to ensure UI is up to date
+      fetchParticipants(eventId);
     }
   };
+
 
   // Format date to Hungarian format
   const formatDate = (dateString) => {
@@ -155,6 +175,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   }
 
   // Handle join event functionality
+  // Handle join event functionality
+  // Handle join event functionality
   const handleJoinEvent = async () => {
     if (!event.id) {
       setJoinError("Esemény azonosító hiányzik");
@@ -178,6 +200,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         throw new Error("Bejelentkezés szükséges a csatlakozáshoz");
       }
 
+      console.log("Sending join request for event:", event.id);
       const response = await fetch("http://localhost:8081/api/v1/join", {
         method: "POST",
         headers: {
@@ -189,27 +212,44 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || "Sikertelen csatlakozás");
+      // Try to parse the response JSON
+      let responseData = {};
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.error("Failed to parse response JSON:", e);
       }
 
-      // Success handling
-      const responseData = await response.json();
+      if (!response.ok) {
+        // If the error is that the user is already a participant, treat it as success
+        if (responseData.message && responseData.message.includes("already a participant")) {
+          console.log("User is already a participant, updating UI accordingly");
+          setIsParticipant(true);
+          // Refresh participants list
+          fetchParticipants(event.id);
+          return;
+        }
+
+        throw new Error(responseData.message || "Sikertelen csatlakozás");
+      }
+
+      console.log("Join successful:", responseData);
 
       // Update participation status
       setIsParticipant(true);
 
-      // Add current user to participants list if available
-      if (currentUser) {
+      // Add the new participant to the list if we have the data
+      if (responseData.participant) {
         const newParticipant = {
-          id: currentUser.userId,
-          name: currentUser.name || "Felhasználó",
-          image: currentUser.profileImage || "/api/placeholder/100/100",
+          id: responseData.participant.userId,
+          name: responseData.participant.name,
+          image: responseData.participant.image || "/api/placeholder/100/100",
+          role: responseData.participant.role,
+          joinDate: responseData.participant.joinDate
         };
 
         // Only add if not already in the list
-        if (!participants.some(p => p.id === currentUser.userId)) {
+        if (!participants.some(p => p.id === newParticipant.id)) {
           setParticipants(prev => [newParticipant, ...prev]);
         }
 
@@ -217,15 +257,28 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         if (onParticipantUpdate) {
           onParticipantUpdate(event.id, true, newParticipant);
         }
+      } else {
+        // If we don't have participant data in the response, refresh the list
+        fetchParticipants(event.id);
       }
 
     } catch (error) {
       console.error("Hiba a csatlakozás során:", error);
       setJoinError(error.message || "Sikertelen csatlakozás. Kérjük, próbáld újra később.");
+
+      // Even if there's an error, check if the user might have joined successfully
+      if (event.id && currentUser) {
+        setTimeout(() => {
+          checkParticipation(event.id, currentUser);
+          fetchParticipants(event.id);
+        }, 1000); // Add a small delay to allow the server to process the join
+      }
     } finally {
       setIsJoining(false);
     }
   };
+
+
 
   // Add a function to handle participant click, including the current user
   const handleParticipantClick = (participant) => {
