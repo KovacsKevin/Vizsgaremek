@@ -47,42 +47,38 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const [currentUser, setCurrentUser] = useState(null)
 
   // Function to fetch the latest participants
-// Function to fetch the latest participants
-// Function to fetch the latest participants
-const fetchParticipants = async (eventId) => {
-  if (!eventId) return;
+  const fetchParticipants = async (eventId) => {
+    if (!eventId) return;
 
-  try {
-    console.log("Fetching participants for event:", eventId);
-    const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
+    try {
+      console.log("Fetching participants for event:", eventId);
+      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log("Participants data:", data);
-      const newParticipants = data.participants || [];
-      
-      // Only update if the count has actually changed
-      if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
-        setParticipants(newParticipants);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Participants data:", data);
+        const newParticipants = data.participants || [];
         
-        // Only update the parent component if the callback exists
-        // and only when the participant count actually changes
-        if (onParticipantUpdate) {
-          onParticipantUpdate(eventId, true, { 
-            userId: 'count-update',
-            fullParticipantsList: newParticipants 
-          });
+        // Only update if the count has actually changed
+        if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
+          setParticipants(newParticipants);
+          
+          // Only update the parent component if the callback exists
+          // and only when the participant count actually changes
+          if (onParticipantUpdate) {
+            onParticipantUpdate(eventId, true, { 
+              userId: 'count-update',
+              fullParticipantsList: newParticipants 
+            });
+          }
         }
+      } else {
+        console.error("Error fetching participants, status:", response.status);
       }
-    } else {
-      console.error("Error fetching participants, status:", response.status);
+    } catch (error) {
+      console.error("Error fetching participants:", error);
     }
-  } catch (error) {
-    console.error("Error fetching participants:", error);
-  }
-};
-
-
+  };
 
   // Add this to useEffect to fetch participants when the modal opens
   useEffect(() => {
@@ -431,36 +427,81 @@ const fetchParticipants = async (eventId) => {
                 </span>
               </div>
 
-              <div className="space-y-4">
-                {participants.length === 0 ? (
-                  <p className="text-white/60">Még nincsenek résztvevők.</p>
-                ) : (
-                  participants.map((participant) => (
-                    <div
-                      key={participant.id}
-                      onClick={() => handleParticipantClick(participant)}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                    >
-                      <Image
-                        src={participant.image || "/placeholder.svg"}
-                        alt={participant.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h4 className="font-medium">
-                          {participant.name}
-                          {currentUser && participant.id === currentUser.userId && (
-                            <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                          )}
-                        </h4>
-                        <p className="text-sm text-white/60">
-                          {participant.age ? `${participant.age} éves • ` : ""}
-                          {participant.level || ""}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
+              {/* Szervező szekció */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Szervező</h4>
+                <div className="space-y-4">
+                  {participants.filter(p => p.role === 'szervező').length === 0 ? (
+                    <p className="text-white/60">Nincs megjelenítendő szervező.</p>
+                  ) : (
+                    participants
+                      .filter(p => p.role === 'szervező')
+                      .map((participant) => (
+                        <div
+                          key={participant.id}
+                          onClick={() => handleParticipantClick(participant)}
+                          className="flex items-center gap-4 p-3 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 transition-colors cursor-pointer"
+                        >
+                          <Image
+                            src={participant.image || "/placeholder.svg"}
+                            alt={participant.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div>
+                            <h4 className="font-medium">
+                              {participant.name}
+                              {currentUser && participant.id === currentUser.userId && (
+                                <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                              )}
+                            </h4>
+                            <p className="text-sm text-white/60">
+                              <span className="text-blue-300">Szervező</span>
+                              {participant.age ? ` • ${participant.age} éves` : ""}
+                              {participant.level ? ` • ${participant.level}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              {/* Játékosok szekció */}
+              <div>
+                <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Játékosok</h4>
+                <div className="space-y-4">
+                  {participants.filter(p => p.role !== 'szervező').length === 0 ? (
+                    <p className="text-white/60">Még nincsenek játékosok.</p>
+                  ) : (
+                    participants
+                      .filter(p => p.role !== 'szervező')
+                      .map((participant) => (
+                        <div
+                          key={participant.id}
+                          onClick={() => handleParticipantClick(participant)}
+                          className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                        >
+                          <Image
+                            src={participant.image || "/placeholder.svg"}
+                            alt={participant.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                          <div>
+                            <h4 className="font-medium">
+                              {participant.name}
+                              {currentUser && participant.id === currentUser.userId && (
+                                <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                              )}
+                            </h4>
+                            <p className="text-sm text-white/60">
+                              {participant.age ? `${participant.age} éves • ` : ""}
+                              {participant.level || ""}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -486,6 +527,9 @@ const fetchParticipants = async (eventId) => {
               />
               <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
               <p className="text-white/60 mb-4">
+                {selectedParticipant.role === 'szervező' && (
+                  <span className="text-blue-300 mr-1">Szervező</span>
+                )}
                 {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
                 {selectedParticipant.level || ""}
               </p>
