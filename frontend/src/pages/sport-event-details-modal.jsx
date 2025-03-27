@@ -45,6 +45,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const [isParticipant, setIsParticipant] = useState(false)
   const [participants, setParticipants] = useState(event.resztvevok_lista || [])
   const [currentUser, setCurrentUser] = useState(null)
+  // Új állapot a kilépés folyamatának követésére
+  const [isLeaving, setIsLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
 
   // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
@@ -283,6 +286,72 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     }
   };
 
+  // Kilépés kezelése
+  const handleLeaveEvent = async () => {
+    if (!event.id) {
+      setLeaveError("Esemény azonosító hiányzik");
+      return;
+    }
+
+    setIsLeaving(true);
+    setLeaveError('');
+
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
+
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a kilépéshez");
+      }
+
+      console.log("Sending leave request for event:", event.id);
+      const response = await fetch("http://localhost:8081/api/v1/leave", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eseményId: event.id
+        }),
+      });
+
+      // Try to parse the response JSON
+      let responseData = {};
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.error("Failed to parse response JSON:", e);
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData.message || "Sikertelen kilépés");
+      }
+
+      console.log("Leave successful:", responseData);
+
+      // Update participation status
+      setIsParticipant(false);
+
+      // Remove the user from the participants list
+      if (currentUser) {
+        const updatedParticipants = participants.filter(p => p.id !== currentUser.userId);
+        setParticipants(updatedParticipants);
+        
+        // Call parent update function if provided
+        if (onParticipantUpdate) {
+          onParticipantUpdate(event.id, false, { userId: currentUser.userId });
+        }
+      }
+
+    } catch (error) {
+      console.error("Hiba a kilépés során:", error);
+      setLeaveError(error.message || "Sikertelen kilépés. Kérjük, próbáld újra később.");
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
   // Add a function to handle participant click, including the current user
   const handleParticipantClick = (participant) => {
     // If the participant is the current user, show their profile too
@@ -334,7 +403,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                 <div className="flex items-center gap-2 text-white/80">
                   <Clock className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <span>
-                    {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
+                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
                   </span>
                 </div>
 
@@ -374,17 +443,31 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="text-white/80">
+                  <div className="text-white/80">
                     Ár: <span className="font-semibold">{event.ar ? `${event.ar} Ft` : "Ingyenes"}</span>
                   </div>
-                  <div className="w-full sm:w-auto">
+                  <div className="w-full sm:w-auto flex gap-2">
                     {isParticipant ? (
-                      <button
-                        className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
-                        disabled
-                      >
-                        Csatlakozva
-                      </button>
+                      <>
+                        <button
+                          className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
+                          disabled
+                        >
+                          Csatlakozva
+                        </button>
+                        {/* Kilépés gomb csak akkor jelenik meg, ha a felhasználó szerepe "játékos" */}
+                        {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && (
+                          <button
+                            onClick={handleLeaveEvent}
+                            className={`w-full sm:w-auto px-6 py-2 ${
+                              isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                            } text-white rounded-md transition-colors flex items-center justify-center`}
+                            disabled={isLeaving}
+                          >
+                            {isLeaving ? "Kilépés..." : "Kilépés"}
+                          </button>
+                        )}
+                      </>
                     ) : participants.length >= event.maximumLetszam ? (
                       <button
                         className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
@@ -394,10 +477,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                       </button>
                     ) : (
                       <button
-                        className={`w-full sm:w-auto px-6 py-2 ${isJoining
-                          ? "bg-blue-800 cursor-not-allowed"
-                          : "bg-blue-600 hover:bg-blue-700"
-                          } text-white rounded-md transition-colors flex items-center justify-center`}
+                        className={`w-full sm:w-auto px-6 py-2 ${
+                          isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                        } text-white rounded-md transition-colors flex items-center justify-center`}
                         onClick={handleJoinEvent}
                         disabled={isJoining}
                       >
@@ -407,6 +489,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
                     {joinError && (
                       <p className="text-red-400 text-sm mt-2">{joinError}</p>
+                    )}
+                    {leaveError && (
+                      <p className="text-red-400 text-sm mt-2">{leaveError}</p>
                     )}
                   </div>
                 </div>

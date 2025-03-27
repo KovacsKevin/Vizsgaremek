@@ -235,6 +235,62 @@ const updateEsemeny = async (req, res) => {
     });
 };
 
+// Kilépés egy eseményből
+const leaveEsemeny = async (req, res) => {
+    try {
+        // Authenticate user
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Get event ID from request body
+        const { eseményId } = req.body;
+
+        if (!eseményId) {
+            return res.status(400).json({ message: "Event ID is required!" });
+        }
+
+        // Check if event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if user is a participant
+        const participant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: userId
+            }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: "You are not a participant in this event!" });
+        }
+
+        // Check if user is a player (only players can leave)
+        if (participant.szerep !== 'játékos') {
+            return res.status(403).json({ message: "Only players can leave an event. Organizers must delete the event instead." });
+        }
+
+        // Delete the participant
+        await participant.destroy();
+
+        res.status(200).json({
+            message: "You have successfully left the event!"
+        });
+
+    } catch (error) {
+        console.error("Error leaving event:", error);
+        res.status(500).json({ message: "Error leaving event", error: error.message });
+    }
+};
+
+
 // Get Event by ID (Public - No authentication required)
 const getEsemenyById = async (req, res) => {
     try {
@@ -362,13 +418,13 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
-        
+
         // Get user details to calculate age
         const user = await User.findByPk(userId);
         if (!user || !user.birthDate) {
             return res.status(400).json({ message: "User birth date is not available!" });
         }
-        
+
         // Calculate user's age
         const birthDate = new Date(user.birthDate);
         const today = new Date();
@@ -377,15 +433,15 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
             age--;
         }
-        
+
         // Get telepules and sportNev from params
         const { telepules, sportNev } = req.params;
-        
+
         // Check if both city (telepules) and sport name (sportNev) are provided
         if (!telepules || !sportNev) {
             return res.status(400).json({ message: "Both city (telepules) and sport name (sportNev) are required!" });
         }
-        
+
         // Fetch events based on city and sport name, and filter by user age
         const events = await Esemény.findAll({
             where: {
@@ -408,17 +464,17 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
                 }
             ]
         });
-        
+
         // If no events are found, return a 404 response
         if (events.length === 0) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 message: "No events found for the specified city, sport, and your age range.",
                 userAge: age
             });
         }
-        
+
         // Return the found events as a response with full event details
-        res.json({ 
+        res.json({
             events,
             userAge: age
         });
@@ -676,6 +732,7 @@ module.exports = {
     getEsemenyMinimal,
     checkParticipation,
     getEventParticipants,
-    getEsemenyekFilteredByUserAge
+    getEsemenyekFilteredByUserAge,
+    leaveEsemeny
 };
 

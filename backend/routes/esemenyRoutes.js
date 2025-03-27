@@ -43,6 +43,10 @@ router.get("/events/:id/participants", esemenyController.getEventParticipants);
 router.get("/events/:id/check-participation", authenticateToken, esemenyController.checkParticipation);
 router.get('/getEsemenyekByAge/:telepules/:sportNev', authenticateToken, esemenyController.getEsemenyekFilteredByUserAge);
 
+// Új végpont a kilépéshez
+router.post("/leave", authenticateToken, esemenyController.leaveEsemeny);
+
+
 
 
 
