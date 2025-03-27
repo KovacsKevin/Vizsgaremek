@@ -46,30 +46,44 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const [participants, setParticipants] = useState(event.resztvevok_lista || [])
   const [currentUser, setCurrentUser] = useState(null)
 
-  // Get current user and check participation status on mount
   // Function to fetch the latest participants
-  // Function to fetch the latest participants
-  const fetchParticipants = async (eventId) => {
-    if (!eventId) return;
+// Function to fetch the latest participants
+// Function to fetch the latest participants
+const fetchParticipants = async (eventId) => {
+  if (!eventId) return;
 
-    try {
-      console.log("Fetching participants for event:", eventId);
-      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
+  try {
+    console.log("Fetching participants for event:", eventId);
+    const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Participants data:", data);
-        setParticipants(data.participants || []);
-      } else {
-        console.error("Error fetching participants, status:", response.status);
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Participants data:", data);
+      const newParticipants = data.participants || [];
+      
+      // Only update if the count has actually changed
+      if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
+        setParticipants(newParticipants);
+        
+        // Only update the parent component if the callback exists
+        // and only when the participant count actually changes
+        if (onParticipantUpdate) {
+          onParticipantUpdate(eventId, true, { 
+            userId: 'count-update',
+            fullParticipantsList: newParticipants 
+          });
+        }
       }
-    } catch (error) {
-      console.error("Error fetching participants:", error);
+    } else {
+      console.error("Error fetching participants, status:", response.status);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching participants:", error);
+  }
+};
 
 
-  // Add this to useEffect to fetch participants when the modal opens
+
   // Add this to useEffect to fetch participants when the modal opens
   useEffect(() => {
     const user = getCurrentUser();
@@ -84,8 +98,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     }
   }, [event.id]);
 
-
-  // Check if the current user is already a participant
   // Check if the current user is already a participant
   const checkParticipation = async (eventId, user) => {
     if (!user || !eventId) return;
@@ -122,7 +134,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
       fetchParticipants(eventId);
     }
   };
-
 
   // Format date to Hungarian format
   const formatDate = (dateString) => {
@@ -174,8 +185,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     setSelectedParticipant(null)
   }
 
-  // Handle join event functionality
-  // Handle join event functionality
   // Handle join event functionality
   const handleJoinEvent = async () => {
     if (!event.id) {
@@ -251,11 +260,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         // Only add if not already in the list
         if (!participants.some(p => p.id === newParticipant.id)) {
           setParticipants(prev => [newParticipant, ...prev]);
-        }
-
-        // Call parent update function if provided
-        if (onParticipantUpdate) {
-          onParticipantUpdate(event.id, true, newParticipant);
+          
+          // Call parent update function if provided
+          if (onParticipantUpdate) {
+            onParticipantUpdate(event.id, true, newParticipant);
+          }
         }
       } else {
         // If we don't have participant data in the response, refresh the list
@@ -277,8 +286,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
       setIsJoining(false);
     }
   };
-
-
 
   // Add a function to handle participant click, including the current user
   const handleParticipantClick = (participant) => {
@@ -371,7 +378,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div className="text-white/80">
+                <div className="text-white/80">
                     Ár: <span className="font-semibold">{event.ar ? `${event.ar} Ft` : "Ingyenes"}</span>
                   </div>
                   <div className="w-full sm:w-auto">

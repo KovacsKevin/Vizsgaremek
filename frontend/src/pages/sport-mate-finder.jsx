@@ -97,10 +97,33 @@ const SportMateFinder = () => {
         }
 
         const data = await response.json();
-        setEvents(data.events || []);
+        const fetchedEvents = data.events || [];
+        
+        // Now fetch participant data for each event
+        const eventsWithParticipants = await Promise.all(
+          fetchedEvents.map(async (event) => {
+            try {
+              const participantsResponse = await fetch(`http://localhost:8081/api/v1/events/${event.id}/participants`);
+              if (participantsResponse.ok) {
+                const participantsData = await participantsResponse.json();
+                return {
+                  ...event,
+                  resztvevok_lista: participantsData.participants || []
+                };
+              }
+              return event;
+            } catch (err) {
+              console.error(`Failed to fetch participants for event ${event.id}:`, err);
+              return event;
+            }
+          })
+        );
+        
+        setEvents(eventsWithParticipants);
 
         // If we got user age information, we can display it
         if (data.userAge) {
+          setUserAge(data.userAge);
           console.log(`Events filtered for user age: ${data.userAge}`);
         }
       } catch (err) {
@@ -114,9 +137,49 @@ const SportMateFinder = () => {
 
     // Only fetch if we have both parameters or if we're using defaults
     if (selectedLocation || selectedSport) {
-      fetchEvents()
+      fetchEvents();
     }
-  }, [selectedSport, selectedLocation])
+  }, [selectedSport, selectedLocation]);
+
+  // Add this function to handle participant updates from the modal
+  const handleParticipantUpdate = (eventId, isJoined, participant) => {
+    // Update the events array with the new participant count
+    setEvents(prevEvents => 
+      prevEvents.map(event => {
+        if (event.id === eventId) {
+          // If we received a full participants list, use it directly
+          // This replaces the current list instead of adding to it
+          if (participant.fullParticipantsList) {
+            return {
+              ...event,
+              resztvevok_lista: participant.fullParticipantsList
+            };
+          }
+          
+          // Otherwise handle individual participant updates
+          const currentParticipants = event.resztvevok_lista || [];
+          
+          // If the user joined, add them to the list if not already there
+          if (isJoined && participant.userId !== 'count-update' && 
+              !currentParticipants.some(p => p.id === participant.userId)) {
+            return {
+              ...event,
+              resztvevok_lista: [...currentParticipants, participant]
+            };
+          }
+          
+          // If the user left, remove them from the list
+          if (!isJoined) {
+            return {
+              ...event,
+              resztvevok_lista: currentParticipants.filter(p => p.id !== participant.userId)
+            };
+          }
+        }
+        return event;
+      })
+    );
+  };
 
   const toggleFavorite = (id) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
@@ -283,7 +346,7 @@ const SportMateFinder = () => {
                             <div className="inline-flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full">
                               <Users className="h-4 w-4" />
                               <span>
-                                {event.resztvevok || 0}/{event.maximumLetszam || 10} résztvevő
+                                {(event.resztvevok_lista || []).length}/{event.maximumLetszam || 10} résztvevő
                               </span>
                             </div>
                           </div>
@@ -348,11 +411,17 @@ const SportMateFinder = () => {
         </div>
       </div>
 
-            {/* Event Modal */}
-            {showModal && selectedEvent && <EventModal event={selectedEvent} onClose={closeEventModal} />}
+      {/* Event Modal */}
+      {showModal && selectedEvent && (
+        <EventModal 
+          event={selectedEvent} 
+          onClose={closeEventModal} 
+          onParticipantUpdate={handleParticipantUpdate}
+        />
+      )}
     </div>
   )
 }
 
 export default SportMateFinder
-
+                            
