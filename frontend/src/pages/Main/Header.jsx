@@ -14,8 +14,10 @@ import {
   Heart,
   ImageIcon,
   Upload,
+  Menu,
+  X
 } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import Cookies from "js-cookie"
 
 const Header = ({ activeTab, setActiveTab }) => {
@@ -29,7 +31,11 @@ const Header = ({ activeTab, setActiveTab }) => {
   const [customBackground, setCustomBackground] = useState(null)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
-
+  const location = useLocation()
+  
+  // Mobilnézet kezeléséhez
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  
   // Add these new state variables after the existing state declarations
   const [profilePicture, setProfilePicture] = useState(null)
   const profilePicInputRef = useRef(null)
@@ -63,26 +69,35 @@ const Header = ({ activeTab, setActiveTab }) => {
     },
   }
 
+  // Navigációs elemek
+  const navigationItems = [
+    { id: "home", icon: Hotel, label: "Főoldal", path: "/" },
+    { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/create-event" },
+    { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/latest-events" },
+    { id: "contact", icon: Map, label: "Elérhetőségek", path: "/contact" },
+    { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
+  ];
+
   // Inicializálás a komponens betöltésekor - javított verzió
-useEffect(() => {
-  // Token ellenőrzése
-  const token = Cookies.get("token")
-  if (token) {
-    console.log("Token megtalálva, ellenőrzés...")
-    // Verify token with backend
-    verifyToken(token)
-  } else {
-    console.log("Nincs token, kijelentkezett állapot")
-    // Alapértelmezett beállítások visszaállítása
-    setIsLoggedIn(false)
-    setUserName("")
-    setUserEmail("")
-    setUserId(null)
-    setSelectedBackground("gradient1")
-    setCustomBackground(null)
-    setProfilePicture(null)
-  }
-}, []) // Csak egyszer fusson le a komponens betöltésekor
+  useEffect(() => {
+    // Token ellenőrzése
+    const token = Cookies.get("token")
+    if (token) {
+      console.log("Token megtalálva, ellenőrzés...")
+      // Verify token with backend
+      verifyToken(token)
+    } else {
+      console.log("Nincs token, kijelentkezett állapot")
+      // Alapértelmezett beállítások visszaállítása
+      setIsLoggedIn(false)
+      setUserName("")
+      setUserEmail("")
+      setUserId(null)
+      setSelectedBackground("gradient1")
+      setCustomBackground(null)
+      setProfilePicture(null)
+    }
+  }, []) // Csak egyszer fusson le a komponens betöltésekor
 
   // Egyszerűsített verifyToken függvény
   const verifyToken = async (token) => {
@@ -165,347 +180,368 @@ useEffect(() => {
         hasProfilePicture: !!settings.profilePicture
       })
 
-      // Adatbázisba mentjük a felhasználó beállításait
-      const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(settings)
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log("Beállítások sikeresen mentve:", data)
-      } else {
-        console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text())
-      }
-    } catch (error) {
-      console.error("Hiba a beállítások mentésekor:", error)
-    }
-  }
-
-  const handleLogout = () => {
-    Cookies.remove("token")
-    setIsLoggedIn(false)
-    setUserName("")
-    setUserEmail("")
-    setUserId(null)
-    setIsProfileOpen(false)
-    // Alapértelmezett beállítások visszaállítása
-    setSelectedBackground("gradient1")
-    setCustomBackground(null)
-    setProfilePicture(null)
-    navigate("/Homepage")
-  }
-
-  const toggleProfileDropdown = () => {
-    setIsProfileOpen(!isProfileOpen)
-  }
-
-  // Function to get user initials for avatar
-  const getUserInitials = () => {
-    if (!userName) return ""
-    return userName
-      .split(" ")
-      .map((name) => name.charAt(0))
-      .join("")
-      .toUpperCase()
-      .substring(0, 2)
-  }
-
-  // Close dropdown if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      const dropdown = document.getElementById("userDropdown")
-      const avatar = document.getElementById("avatarButton")
-
-      if (dropdown && !dropdown.contains(event.target) && avatar && !avatar.contains(event.target)) {
-        setIsProfileOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside)
-    return () =>document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  // Animation for profile dropdown
-  useEffect(() => {
-    const dropdown = document.getElementById("userDropdown")
-    if (dropdown) {
-      if (isProfileOpen) {
-        dropdown.style.opacity = "0"
-        dropdown.style.transform = "translateY(10px) scale(0.95)"
-        setTimeout(() => {
-          dropdown.style.opacity = "1"
-          dropdown.style.transform = "translateY(0) scale(1)"
-        }, 50)
-      }
-    }
-  }, [isProfileOpen])
-
-  // Add image compression before upload
-  const compressImage = (imageDataUrl, maxWidth = 800) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = imageDataUrl;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Calculate new dimensions
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Get compressed image data (adjust quality as needed)
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-      };
-    });
-  };
-
-  // Handle file upload for custom background
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const imageDataUrl = e.target.result;
-        
-        // Compress the image before setting and saving
-        const compressedImage = await compressImage(imageDataUrl);
-        
-        setCustomBackground(compressedImage);
-        setSelectedBackground("custom");
-
-        // Mentés adatbázisba
-        saveUserSettings({
-          customBackground: compressedImage,
-          profileBackground: "custom",
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  // Trigger file input click
-  const handleCustomBackgroundClick = () => {
-    fileInputRef.current.click()
-  }
-
-  // Handle file upload for profile picture
-  const handleProfilePicUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const imageDataUrl = e.target.result;
-        
-        // Compress the image before setting and saving
-        const compressedImage = await compressImage(imageDataUrl, 400); // Smaller for profile pics
-        
-        setProfilePicture(compressedImage);
-
-        // Mentés adatbázisba
-        saveUserSettings({
-          profilePicture: compressedImage,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  // Trigger profile picture file input click
-  const handleProfilePicClick = () => {
-    profilePicInputRef.current.click()
-  }
-
-  // Módosított handleBackgroundSelect függvény
-  const handleBackgroundSelect = async (bg) => {
-    // Először frissítjük a helyi állapotot
-    setSelectedBackground(bg);
-    
-    // Majd mentjük az adatbázisba
-    try {
-      const token = Cookies.get("token");
-      const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          profileBackground: bg
-        })
-      });
+            // Adatbázisba mentjük a felhasználó beállításait
+            const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(settings)
+            })
       
-      if (response.ok) {
-        console.log("Háttér beállítás sikeresen mentve");
-      } else {
-        console.error("Hiba a háttér beállítás mentésekor");
-      }
-    } catch (error) {
-      console.error("Hiba:", error);
-    }
-  }
-
-  return (
-    <header className="backdrop-blur-md bg-gradient-to-r from-slate-900/90 to-slate-800/90 border-b border-slate-700/50 sticky top-0 z-50 shadow-lg">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex justify-between items-center">
-          <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-            Sporthaver
-          </div>
-          <div className="hidden md:flex items-center space-x-4">
-            {isLoggedIn ? (
-              <div className="flex items-center space-x-4">
-                {/* Notification Bell */}
-                <div className="relative">
-                  <button className="relative p-2 rounded-full bg-slate-700/50 hover:bg-slate-600/50 transition-all duration-300 text-slate-300 hover:text-white">
-                    <Bell className="h-5 w-5" />
-                    {notificationCount > 0 && (
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-full transform -translate-y-1/3 translate-x-1/3">
-                        {notificationCount}
-                      </span>
-                    )}
-                  </button>
+            if (response.ok) {
+              const data = await response.json()
+              console.log("Beállítások sikeresen mentve:", data)
+            } else {
+              console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text())
+            }
+          } catch (error) {
+            console.error("Hiba a beállítások mentésekor:", error)
+          }
+        }
+      
+        const handleLogout = () => {
+          Cookies.remove("token")
+          setIsLoggedIn(false)
+          setUserName("")
+          setUserEmail("")
+          setUserId(null)
+          setIsProfileOpen(false)
+          // Alapértelmezett beállítások visszaállítása
+          setSelectedBackground("gradient1")
+          setCustomBackground(null)
+          setProfilePicture(null)
+          navigate("/Homepage")
+        }
+      
+        const toggleProfileDropdown = () => {
+          setIsProfileOpen(!isProfileOpen)
+          if (isMobileMenuOpen) setIsMobileMenuOpen(false)
+        }
+      
+        // Mobilmenü kezelése
+        const toggleMobileMenu = () => {
+          setIsMobileMenuOpen(!isMobileMenuOpen)
+          if (isProfileOpen) setIsProfileOpen(false)
+        }
+      
+        // Function to get user initials for avatar
+        const getUserInitials = () => {
+          if (!userName) return ""
+          return userName
+            .split(" ")
+            .map((name) => name.charAt(0))
+            .join("")
+            .toUpperCase()
+            .substring(0, 2)
+        }
+      
+        // Close dropdown if clicked outside
+        useEffect(() => {
+          const handleClickOutside = (event) => {
+            const dropdown = document.getElementById("userDropdown")
+            const avatar = document.getElementById("avatarButton")
+            const mobileMenu = document.getElementById("mobileMenu")
+            const hamburgerButton = document.getElementById("hamburgerButton")
+      
+            if (dropdown && !dropdown.contains(event.target) && avatar && !avatar.contains(event.target)) {
+              setIsProfileOpen(false)
+            }
+      
+            if (mobileMenu && !mobileMenu.contains(event.target) && hamburgerButton && !hamburgerButton.contains(event.target)) {
+              setIsMobileMenuOpen(false)
+            }
+          }
+      
+          document.addEventListener("mousedown", handleClickOutside)
+          return () => document.removeEventListener("mousedown", handleClickOutside)
+        }, [])
+      
+        // Animation for profile dropdown
+        useEffect(() => {
+          const dropdown = document.getElementById("userDropdown")
+          if (dropdown) {
+            if (isProfileOpen) {
+              dropdown.style.opacity = "0"
+              dropdown.style.transform = "translateY(10px) scale(0.95)"
+              setTimeout(() => {
+                dropdown.style.opacity = "1"
+                dropdown.style.transform = "translateY(0) scale(1)"
+              }, 50)
+            }
+          }
+        }, [isProfileOpen])
+      
+        // Add image compression before upload
+        const compressImage = (imageDataUrl, maxWidth = 800) => {
+          return new Promise((resolve) => {
+            const img = new Image();
+            img.src = imageDataUrl;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              
+              // Calculate new dimensions
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              
+              // Get compressed image data (adjust quality as needed)
+              resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+          });
+        };
+      
+        // Handle file upload for custom background
+        const handleFileUpload = (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              const imageDataUrl = e.target.result;
+              
+              // Compress the image before setting and saving
+              const compressedImage = await compressImage(imageDataUrl);
+              
+              setCustomBackground(compressedImage);
+              setSelectedBackground("custom");
+      
+              // Mentés adatbázisba
+              saveUserSettings({
+                customBackground: compressedImage,
+                profileBackground: "custom",
+              });
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      
+        // Trigger file input click
+        const handleCustomBackgroundClick = () => {
+          fileInputRef.current.click()
+        }
+      
+        // Handle file upload for profile picture
+        const handleProfilePicUpload = (event) => {
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+              const imageDataUrl = e.target.result;
+              
+              // Compress the image before setting and saving
+              const compressedImage = await compressImage(imageDataUrl, 400); // Smaller for profile pics
+              
+              setProfilePicture(compressedImage);
+      
+              // Mentés adatbázisba
+              saveUserSettings({
+                profilePicture: compressedImage,
+              });
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      
+        // Trigger profile picture file input click
+        const handleProfilePicClick = () => {
+          profilePicInputRef.current.click()
+        }
+      
+        // Módosított handleBackgroundSelect függvény
+        const handleBackgroundSelect = async (bg) => {
+          // Először frissítjük a helyi állapotot
+          setSelectedBackground(bg);
+          
+          // Majd mentjük az adatbázisba
+          try {
+            const token = Cookies.get("token");
+            const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                profileBackground: bg
+              })
+            });
+            
+            if (response.ok) {
+              console.log("Háttér beállítás sikeresen mentve");
+            } else {
+              console.error("Hiba a háttér beállítás mentésekor");
+            }
+          } catch (error) {
+            console.error("Hiba:", error);
+          }
+        }
+      
+        // Navigáció kezelése
+        const handleNavigation = (id, path) => {
+          setActiveTab(id);
+          navigate(path);
+          setIsMobileMenuOpen(false);
+        }
+      
+        return (
+          <header className="backdrop-blur-md bg-gradient-to-r from-slate-900/90 to-slate-800/90 border-b border-slate-700/50 sticky top-0 z-50 shadow-lg">
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex justify-between items-center">
+                <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+                  Sporthaver
                 </div>
-
-                {/* User Profile */}
-                <div className="relative">
-                  <button
-                    id="avatarButton"
-                    onClick={toggleProfileDropdown}
-                    className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl cursor-pointer bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 ring-2 ring-white/10 hover:ring-white/30 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 group"
-                    style={{
-                      backgroundSize: isProfileOpen ? "100% 100%" : "200% 200%",
-                      animation: isProfileOpen ? "none" : "gradient-shift 3s ease infinite",
-                    }}
-                  >
-                    <style jsx>{`
-                      @keyframes gradient-shift {
-                        0% { background-position: 0% 50%; }
-                        50% { background-position: 100% 50%; }
-                        100% { background-position: 0% 50%; }
-                      }
-                      @keyframes pulse {
-                        0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
-                        70% { box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); }
-                        100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
-                      }
-                    `}</style>
-                    {/* Avatar megjelenítése */}
-                    <span className="font-bold text-white text-sm group-hover:scale-110 transition-transform duration-300">
-                      {profilePicture ? (
-                        <img
-                          src={profilePicture || "/placeholder.svg"}
-                          alt={userName}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      ) : (
-                        getUserInitials()
-                      )}
-                    </span>
-                    {isProfileOpen && (
-                      <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800 animate-pulse"></span>
-                    )}
-                  </button>
-
-                  {isProfileOpen && (
-                    <div
-                      id="userDropdown"
-                      className="z-10 absolute right-0 mt-3 rounded-2xl shadow-2xl w-80 overflow-hidden border border-slate-700/50 transition-all duration-300"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)",
-                        backdropFilter: "blur(10px)",
-                        boxShadow:
-                          "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 1px 0 0 rgba(255, 255, 255, 0.1) inset",
-                      }}
-                    >
-                      {/* Profile Header */}
+                
+                {/* Jobb oldali elemek */}
+                <div className="flex items-center space-x-4">
+                  {isLoggedIn ? (
+                    <div className="flex items-center space-x-4">
+                      {/* Notification Bell */}
+                      <div className="relative hidden md:block">
+                        <button className="relative p-2 rounded-full bg-slate-700/50 hover:bg-slate-600/50 transition-all duration-300 text-slate-300 hover:text-white">
+                          <Bell className="h-5 w-5" />
+                          {notificationCount > 0 && (
+                            <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-full transform -translate-y-1/3 translate-x-1/3">
+                              {notificationCount}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+      
+                      {/* User Profile */}
                       <div className="relative">
-                        {/* Background Pattern */}
-                        <div
-                          className={`h-40 ${
-                            selectedBackground === "custom"
-                              ? backgrounds.custom.style
-                              : backgrounds[selectedBackground].style
-                          } relative overflow-hidden`}
+                        <button
+                          id="avatarButton"
+                          onClick={toggleProfileDropdown}
+                          className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl cursor-pointer bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 ring-2 ring-white/10 hover:ring-white/30 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 group"
                           style={{
-                            backgroundImage:
-                              selectedBackground === "custom"
-                                ? `url(${customBackground})`
-                                : backgrounds[selectedBackground].pattern,
-                            backgroundSize: selectedBackground === "custom" ? "cover" : "30px 30px",
+                            backgroundSize: isProfileOpen ? "100% 100%" : "200% 200%",
+                            animation: isProfileOpen ? "none" : "gradient-shift 3s ease infinite",
                           }}
                         >
-                          {/* Overlay with animated gradient */}
-                          <div
-                            className={`absolute inset-0 ${
-                              selectedBackground === "custom"
-                                ? backgrounds.custom.overlay
-                                : backgrounds[selectedBackground].overlay
-                            }`}
-                          ></div>
-
-                          {/* Animated particles */}
-                          <div className="absolute inset-0 overflow-hidden">
-                            {[...Array(20)].map((_, i) => (
-                              <div
-                                key={i}
-                                className="absolute rounded-full bg-white/30"
-                                style={{
-                                  width: `${Math.random() * 4 + 1}px`,
-                                  height: `${Math.random() * 4 + 1}px`,
-                                  top: `${Math.random() * 100}%`,
-                                  left: `${Math.random() * 100}%`,
-                                  animation: `float ${Math.random() * 10 + 10}s linear infinite`,
-                                  opacity: Math.random() * 0.5 + 0.3,
-                                }}
-                              />
-                            ))}
-                          </div>
-
                           <style jsx>{`
-                            @keyframes float {
-                              0% { transform: translateY(0) translateX(0); }
-                              50% { transform: translateY(-20px) translateX(10px); }
-                              100% { transform: translateY(0) translateX(0); }
+                            @keyframes gradient-shift {
+                              0% { background-position: 0% 50%; }
+                              50% { background-position: 100% 50%; }
+                              100% { background-position: 0% 50%; }
+                            }
+                            @keyframes pulse {
+                              0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
+                              70% { box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); }
+                              100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
                             }
                           `}</style>
-
-                          {/* Centered Username and Profile Picture */}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <div
-                              className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 mb-3 relative group cursor-pointer"
-                              style={{ animation: "gradient-shift 3s ease infinite" }}
-                              onClick={handleProfilePicClick}
-                            >
-                              <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
-                                {profilePicture ? (
-                                  <img
-                                    src={profilePicture || "/placeholder.svg"}
-                                    alt={userName}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="font-bold text-white text-3xl">{getUserInitials()}</span>
-                                )}
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                                  <Upload className="h-6 w-6 text-white" />
+                          {/* Avatar megjelenítése */}
+                          <span className="font-bold text-white text-sm group-hover:scale-110 transition-transform duration-300">
+                            {profilePicture ? (
+                              <img
+                                src={profilePicture || "/placeholder.svg"}
+                                alt={userName}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              getUserInitials()
+                            )}
+                          </span>
+                          {isProfileOpen && (
+                            <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800 animate-pulse"></span>
+                          )}
+                        </button>
+      
+                        {isProfileOpen && (
+                          <div
+                            id="userDropdown"
+                            className="z-10 absolute right-0 mt-3 rounded-2xl shadow-2xl w-80 overflow-hidden border border-slate-700/50 transition-all duration-300"
+                            style={{
+                              background: "linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)",
+                              backdropFilter: "blur(10px)",
+                              boxShadow:
+                                "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 1px 0 0 rgba(255, 255, 255, 0.1) inset",
+                            }}
+                          >
+                            {/* Profile Header */}
+                            <div className="relative">
+                              {/* Background Pattern */}
+                              <div
+                                className={`h-40 ${
+                                  selectedBackground === "custom"
+                                    ? backgrounds.custom.style
+                                    : backgrounds[selectedBackground].style
+                                } relative overflow-hidden`}
+                                style={{
+                                  backgroundImage:
+                                    selectedBackground === "custom"
+                                      ? `url(${customBackground})`
+                                      : backgrounds[selectedBackground].pattern,
+                                  backgroundSize: selectedBackground === "custom" ? "cover" : "30px 30px",
+                                }}
+                              >
+                                {/* Overlay with animated gradient */}
+                                <div
+                                  className={`absolute inset-0 ${
+                                    selectedBackground === "custom"
+                                      ? backgrounds.custom.overlay
+                                      : backgrounds[selectedBackground].overlay
+                                  }`}
+                                ></div>
+      
+                                {/* Animated particles */}
+                                <div className="absolute inset-0 overflow-hidden">
+                                  {[...Array(20)].map((_, i) => (
+                                    <div
+                                      key={i}
+                                      className="absolute rounded-full bg-white/30"
+                                      style={{
+                                        width: `${Math.random() * 4 + 1}px`,
+                                        height: `${Math.random() * 4 + 1}px`,
+                                        top: `${Math.random() * 100}%`,
+                                        left: `${Math.random() * 100}%`,
+                                        animation: `float ${Math.random() * 10 + 10}s linear infinite`,
+                                        opacity: Math.random() * 0.5 + 0.3,
+                                      }}
+                                    />
+                                  ))}
                                 </div>
-                              </div>
-                            </div>
+      
+                                <style jsx>{`
+                                  @keyframes float {
+                                    0% { transform: translateY(0) translateX(0); }
+                                    50% { transform: translateY(-20px) translateX(10px); }
+                                    100% { transform: translateY(0) translateX(0); }
+                                  }
+                                `}</style>
+      
+                                {/* Centered Username and Profile Picture */}
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <div
+                                    className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 mb-3 relative group cursor-pointer"
+                                    style={{ animation: "gradient-shift 3s ease infinite" }}
+                                    onClick={handleProfilePicClick}
+                                  >
+                                    <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
+                                      {profilePicture ? (
+                                        <img
+                                          src={profilePicture || "/placeholder.svg"}
+                                          alt={userName}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="font-bold text-white text-3xl">{getUserInitials()}</span>
+                                      )}
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                                        <Upload className="h-6 w-6 text-white" />
+                                      </div>
+                                    </div>
+                                    </div>
                             <div className="font-bold text-white text-2xl text-center px-4 py-1 bg-black/30 rounded-full backdrop-blur-sm">
                               {userName}
                             </div>
@@ -635,59 +671,163 @@ useEffect(() => {
                     </div>
                   )}
                 </div>
+                
+                {/* Hamburger Menu Button - csak mobilon */}
+                <button 
+                  id="hamburgerButton"
+                  className="text-white p-2 rounded-lg hover:bg-white/10 md:hidden"
+                  onClick={toggleMobileMenu}
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-6 w-6" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
+                </button>
               </div>
             ) : (
               <>
-                <button className="px-5 py-2 border border-white/20 text-white hover:bg-white/10 rounded-lg transition-all duration-300">
-                  <Link to="/register">Regisztráció</Link>
-                </button>
-                <button className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20">
-                  <Link to="/login">Bejelentkezés</Link>
+                {/* Bejelentkezés/Regisztráció gombok - Mobilon elrejtve */}
+                <div className="hidden md:flex items-center space-x-4">
+                  <button className="px-5 py-2 border border-white/20 text-white hover:bg-white/10 rounded-lg transition-all duration-300">
+                    <Link to="/register">Regisztráció</Link>
+                  </button>
+                  <button className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20">
+                    <Link to="/login">Bejelentkezés</Link>
+                  </button>
+                </div>
+                
+                {/* Hamburger Menu Button - csak mobilon */}
+                <button 
+                  id="hamburgerButton"
+                  className="text-white p-2 rounded-lg hover:bg-white/10 md:hidden"
+                  onClick={toggleMobileMenu}
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-6 w-6" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
                 </button>
               </>
             )}
           </div>
-          <button className="md:hidden text-white">
-            <span className="sr-only">Menü megnyitása</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="container mx-auto px-4 pb-4">
-        <div className="flex space-x-4 bg-white/5 backdrop-blur-sm border border-white/10 p-1 rounded-lg">
-          {[
-            { id: "stays", icon: Hotel, label: "Szállások" },
-            { id: "flights", icon: Plane, label: "Repülőjáratok" },
-            { id: "cars", icon: Car, label: "Autóbérlés" },
-            { id: "attractions", icon: Map, label: "Látnivalók" },
-          ].map(({ id, icon: Icon, label }) => (
+      {/* Mobilmenü - Hamburger menü tartalma */}
+      {isMobileMenuOpen && (
+        <div 
+          id="mobileMenu"
+          className="md:hidden bg-slate-800/95 backdrop-blur-md border-b border-slate-700/50 animate-fadeIn"
+        >
+          <div className="px-4 py-3 space-y-3">
+            {/* Navigációs elemek a mobilmenüben */}
+            <div className="space-y-1">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigation(item.id, item.path)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${
+                    location.pathname === item.path || activeTab === item.id
+                      ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
+                      : "text-slate-300 hover:bg-white/5 hover:text-white"
+                  } transition-all duration-300`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            
+            {/* Bejelentkezés/Regisztráció gombok a mobilmenüben, ha nincs bejelentkezve */}
+            {!isLoggedIn && (
+              <div className="flex flex-col space-y-2 pt-3 border-t border-slate-700/50">
+                <Link 
+                  to="/login"
+                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center rounded-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Bejelentkezés
+                </Link>
+                <Link 
+                  to="/register"
+                  className="w-full px-4 py-2 border border-white/20 text-white text-center rounded-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Regisztráció
+                </Link>
+              </div>
+            )}
+            
+            {/* Értesítések mobilnézetben, ha be van jelentkezve */}
+            {isLoggedIn && (
+              <div className="pt-3 border-t border-slate-700/50">
+                <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white">
+                  <div className="flex items-center gap-3">
+                    <Bell className="h-5 w-5" />
+                    <span>Értesítések</span>
+                  </div>
+                  {notificationCount > 0 && (
+                    <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-full">
+                      {notificationCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Asztali navigáció - csak nagyobb képernyőkön */}
+      <div className="hidden md:block container mx-auto px-4 pb-4">
+        <div className="flex space-x-2 bg-white/5 backdrop-blur-sm border border-white/10 p-1 rounded-lg">
+          {navigationItems.map((item) => (
             <button
-              key={id}
+              key={item.id}
               className={`flex items-center gap-2 px-4 py-2 rounded-md ${
-                activeTab === id
+                location.pathname === item.path || activeTab === item.id
                   ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
                   : "hover:bg-white/5 text-slate-300 hover:text-white"
               } transition-all duration-300`}
-              onClick={() => setActiveTab(id)}
+              onClick={() => handleNavigation(item.id, item.path)}
             >
-              <Icon className="h-4 w-4" />
-              <span>{label}</span>
+              <item.icon className="h-4 w-4" />
+              <span>{item.label}</span>
             </button>
           ))}
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes gradient-shift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
+          70% { box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
+        }
+        @keyframes float {
+          0% { transform: translateY(0) translateX(0); }
+          50% { transform: translateY(-20px) translateX(10px); }
+          100% { transform: translateY(0) translateX(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+      `}</style>
     </header>
   )
 }
 
 export default Header
+
+      
