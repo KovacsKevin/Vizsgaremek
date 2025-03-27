@@ -9,6 +9,7 @@ const Résztvevő = require("../models/resztvevoModel");
 const path = require("path");
 const fs = require("fs");
 const sequelize = require("../config/db");
+const { Op } = require("sequelize");
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -351,6 +352,82 @@ const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
     }
 };
 
+// Add this new function to filter events by user age
+const getEsemenyekFilteredByUserAge = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+        
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+        
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        // Get telepules and sportNev from params
+        const { telepules, sportNev } = req.params;
+        
+        // Check if both city (telepules) and sport name (sportNev) are provided
+        if (!telepules || !sportNev) {
+            return res.status(400).json({ message: "Both city (telepules) and sport name (sportNev) are required!" });
+        }
+        
+        // Fetch events based on city and sport name, and filter by user age
+        const events = await Esemény.findAll({
+            where: {
+                minimumEletkor: { [Op.lte]: age },
+                maximumEletkor: { [Op.gte]: age }
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    where: { Telepules: telepules },
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    where: { Nev: sportNev },
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+        
+        // If no events are found, return a 404 response
+        if (events.length === 0) {
+            return res.status(404).json({ 
+                message: "No events found for the specified city, sport, and your age range.",
+                userAge: age
+            });
+        }
+        
+        // Return the found events as a response with full event details
+        res.json({ 
+            events,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
 
 // Update the joinEsemeny function to properly check capacity
 const joinEsemeny = async (req, res) => {
@@ -443,10 +520,6 @@ const joinEsemeny = async (req, res) => {
     }
 };
 
-
-
-
-
 const getEsemenyMinimal = async (req, res) => {
     try {
         const { id } = req.params;
@@ -508,7 +581,6 @@ const checkParticipation = async (req, res) => {
         res.status(500).json({ message: "Error checking participation status", error: error.message });
     }
 };
-
 
 // Add this function as well
 const getEventParticipants = async (req, res) => {
@@ -577,7 +649,6 @@ const getEventParticipants = async (req, res) => {
     }
 };
 
-
 // Helper function to calculate age from birthDate
 const calculateAge = (birthDate) => {
     const today = new Date();
@@ -592,11 +663,6 @@ const calculateAge = (birthDate) => {
     return age;
 };
 
-
-
-
-
-
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -609,6 +675,7 @@ module.exports = {
     joinEsemeny,
     getEsemenyMinimal,
     checkParticipation,
-    getEventParticipants
+    getEventParticipants,
+    getEsemenyekFilteredByUserAge
 };
 
