@@ -38,6 +38,26 @@ const SportMateFinder = () => {
     return null;
   };
 
+  // Helper to get current user from token
+  const getCurrentUser = () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return null;
+
+      // Parse the JWT token to get user information
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error("Error parsing user token:", error);
+      return null;
+    }
+  };
+
   const [favorites, setFavorites] = useState([])
   const [selectedSport, setSelectedSport] = useState(null)
   const [selectedLocation, setSelectedLocation] = useState(null)
@@ -48,8 +68,11 @@ const SportMateFinder = () => {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [userAge, setUserAge] = useState(null)
+  // Új állapot a felhasználó által csatlakozott események követésére
+  const [joinedEvents, setJoinedEvents] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
 
-  // Inicializálás URL paraméterekből
+  // Inicializálás URL paraméterekből és felhasználó beállítása
   useEffect(() => {
     const { telepules, sport } = getQueryParams()
 
@@ -61,7 +84,45 @@ const SportMateFinder = () => {
     if (sport) {
       setSelectedSport(decodeURIComponent(sport))
     }
+
+    // Set current user
+    const user = getCurrentUser();
+    setCurrentUser(user);
   }, [])
+
+  // Ellenőrizzük a felhasználó csatlakozási állapotát minden eseményhez
+  const checkParticipationForEvents = async (events) => {
+    const token = getAuthToken();
+    if (!token || !events.length) return;
+
+    const user = getCurrentUser();
+    if (!user) return;
+
+    // Minden eseményhez külön-külön ellenőrizzük a csatlakozási állapotot
+    const joinedEventIds = [];
+
+    await Promise.all(events.map(async (event) => {
+      try {
+        const response = await fetch(`http://localhost:8081/api/v1/events/${event.id}/check-participation`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isParticipant) {
+            joinedEventIds.push(event.id);
+          }
+        }
+      } catch (error) {
+        console.error(`Hiba az esemény (${event.id}) csatlakozási állapotának ellenőrzésekor:`, error);
+      }
+    }));
+
+    setJoinedEvents(joinedEventIds);
+  };
 
   // Fetch events from API
   useEffect(() => {
@@ -98,7 +159,7 @@ const SportMateFinder = () => {
 
         const data = await response.json();
         const fetchedEvents = data.events || [];
-        
+
         // Now fetch participant data for each event
         const eventsWithParticipants = await Promise.all(
           fetchedEvents.map(async (event) => {
@@ -118,8 +179,13 @@ const SportMateFinder = () => {
             }
           })
         );
-        
+
         setEvents(eventsWithParticipants);
+
+        // Ha van token, ellenőrizzük a felhasználó csatlakozási állapotát
+        if (token && eventsWithParticipants.length > 0) {
+          await checkParticipationForEvents(eventsWithParticipants);
+        }
 
         // If we got user age information, we can display it
         if (data.userAge) {
@@ -144,7 +210,7 @@ const SportMateFinder = () => {
   // Add this function to handle participant updates from the modal
   const handleParticipantUpdate = (eventId, isJoined, participant) => {
     // Update the events array with the new participant count
-    setEvents(prevEvents => 
+    setEvents(prevEvents =>
       prevEvents.map(event => {
         if (event.id === eventId) {
           // If we received a full participants list, use it directly
@@ -155,19 +221,19 @@ const SportMateFinder = () => {
               resztvevok_lista: participant.fullParticipantsList
             };
           }
-          
+
           // Otherwise handle individual participant updates
           const currentParticipants = event.resztvevok_lista || [];
-          
+
           // If the user joined, add them to the list if not already there
-          if (isJoined && participant.userId !== 'count-update' && 
-              !currentParticipants.some(p => p.id === participant.userId)) {
+          if (isJoined && participant.userId !== 'count-update' &&
+            !currentParticipants.some(p => p.id === participant.userId)) {
             return {
               ...event,
               resztvevok_lista: [...currentParticipants, participant]
             };
           }
-          
+
           // If the user left, remove them from the list
           if (!isJoined) {
             return {
@@ -179,6 +245,15 @@ const SportMateFinder = () => {
         return event;
       })
     );
+
+    // Ha a felhasználó csatlakozott, frissítsük a csatlakozott események listáját
+    if (isJoined) {
+      if (!joinedEvents.includes(eventId)) {
+        setJoinedEvents(prev => [...prev, eventId]);
+      }
+    } else if (!isJoined) {
+      setJoinedEvents(prev => prev.filter(id => id !== eventId));
+    }
   };
 
   const toggleFavorite = (id) => {
@@ -304,9 +379,8 @@ const SportMateFinder = () => {
                           className="absolute top-4 right-4 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors"
                         >
                           <Heart
-                            className={`h-5 w-5 transition-colors ${
-                              favorites.includes(event.id) ? "fill-red-500 text-red-500" : ""
-                            }`}
+                            className={`h-5 w-5 transition-colors ${favorites.includes(event.id) ? "fill-red-500 text-red-500" : ""
+                              }`}
                           />
                         </button>
                       </div>
@@ -372,9 +446,8 @@ const SportMateFinder = () => {
 
                         <div className="mt-4">
                           <div
-                            className={`${
-                              expandedDescriptions.includes(event.id) ? "" : "line-clamp-2"
-                            } text-white/80`}
+                            className={`${expandedDescriptions.includes(event.id) ? "" : "line-clamp-2"
+                              } text-white/80`}
                           >
                             {event.leiras || "Nincs megadott leírás."}
                           </div>
@@ -385,21 +458,31 @@ const SportMateFinder = () => {
                           >
                             {expandedDescriptions.includes(event.id) ? "Kevesebb" : "Tovább"}
                             <ChevronRight
-                              className={`h-4 w-4 transition-transform ${
-                                expandedDescriptions.includes(event.id) ? "rotate-90" : ""
-                              }`}
+                              className={`h-4 w-4 transition-transform ${expandedDescriptions.includes(event.id) ? "rotate-90" : ""
+                                }`}
                             />
                           </button>
                         </div>
 
                         <div className="mt-6 flex justify-between items-center">
                           <div className="text-white/60 text-sm">Ár: {event.ar ? `${event.ar} Ft` : "Ingyenes"}</div>
-                          <button
-                            onClick={() => openEventModal(event)}
-                            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                          >
-                            Megtekintés
-                          </button>
+
+                          {/* Módosított gomb: Csatlakozva vagy Megtekintés */}
+                          {joinedEvents.includes(event.id) ? (
+                            <button
+                              onClick={() => openEventModal(event)}
+                              className="px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                            >
+                              Csatlakozva
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => openEventModal(event)}
+                              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                            >
+                              Megtekintés
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -413,9 +496,9 @@ const SportMateFinder = () => {
 
       {/* Event Modal */}
       {showModal && selectedEvent && (
-        <EventModal 
-          event={selectedEvent} 
-          onClose={closeEventModal} 
+        <EventModal
+          event={selectedEvent}
+          onClose={closeEventModal}
           onParticipantUpdate={handleParticipantUpdate}
         />
       )}
@@ -424,4 +507,4 @@ const SportMateFinder = () => {
 }
 
 export default SportMateFinder
-                            
+
