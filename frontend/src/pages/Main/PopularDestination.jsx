@@ -61,9 +61,8 @@ const PopularDestinations = ({ Image, Link }) => {
       sport: "Jóga",
     },
   ]
-
   return (
-    <section className="py-16 relative overflow-hidden">
+    <section id="popular-destinations" className="py-16 relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-slate-950 z-0"></div>
       <div className="absolute inset-0 opacity-30 z-0">

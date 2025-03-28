@@ -69,14 +69,15 @@ const Header = ({ activeTab, setActiveTab }) => {
     },
   }
 
-  // Navigációs elemek
+  // Navigációs elemek módosítása
   const navigationItems = [
     { id: "home", icon: Hotel, label: "Főoldal", path: "/homepage" },
-    { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/create-event" },
+    { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/homepage#create-event" }, // Módosítva hash-el
     { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/latest-events" },
     { id: "contact", icon: Map, label: "Elérhetőségek", path: "/contact" },
     { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
   ];
+
 
   // Inicializálás a komponens betöltésekor - javított verzió
   useEffect(() => {
@@ -386,14 +387,117 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Navigáció kezelése
+  // Navigáció kezelése - kiegészítve jobb görgetési viselkedéssel
   const handleNavigation = (id, path) => {
     setActiveTab(id);
-    navigate(path);
-    // Oldal tetejére görgetés
-    window.scrollTo(0, 0);
+
+    // Ellenőrizzük, hogy van-e hash a path-ban
+    if (path.includes('#')) {
+      const [url, hash] = path.split('#');
+
+      // Ha már a megfelelő oldalon vagyunk, csak görgessünk
+      if (location.pathname === url || (url === '/homepage' && location.pathname === '/')) {
+        const element = document.getElementById(hash);
+        if (element) {
+          // Használjunk offset-et, hogy a teljes szekció látható legyen
+          const headerHeight = 120; // Fejléc magassága
+
+          // Ha az "Esemény létrehozása" szekcióhoz görgetünk, akkor speciális kezelés
+          if (hash === 'create-event') {
+            // Megkeressük az event-section elemet
+            const section = document.getElementById('event-section');
+            if (section) {
+              // Kiszámoljuk a pozíciót úgy, hogy a szekció teteje legyen látható,
+              // de a "Legfrisebb sportesemények" ne látszódjon
+              const sectionPosition = section.getBoundingClientRect().top;
+              const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+            }
+          } else {
+            // Egyéb elemekhez normál görgetés
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }
+        } else if (hash === 'create-event') {
+          // Ha a create-event nem található, próbáljuk meg a szekciót
+          const section = document.getElementById('event-section');
+          if (section) {
+            const headerHeight = 120; // Fejléc magassága
+            const sectionPosition = section.getBoundingClientRect().top;
+            const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }
+        }
+      } else {
+        // Különben navigáljunk az oldalra, majd a betöltés után görgessünk
+        navigate(url);
+        setTimeout(() => {
+          const element = document.getElementById(hash);
+          if (element) {
+            // Ha az "Esemény létrehozása" szekcióhoz görgetünk, akkor speciális kezelés
+            if (hash === 'create-event') {
+              // Megkeressük az event-section elemet
+              const section = document.getElementById('event-section');
+              if (section) {
+                const headerHeight = 120; // Fejléc magassága
+                const sectionPosition = section.getBoundingClientRect().top;
+                const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              }
+            } else {
+              // Egyéb elemekhez normál görgetés
+              const headerHeight = 120; // Fejléc magassága
+              const elementPosition = element.getBoundingClientRect().top;
+              const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+            }
+          } else if (hash === 'create-event') {
+            // Ha a create-event nem található, próbáljuk meg a szekciót
+            const section = document.getElementById('event-section');
+            if (section) {
+              const headerHeight = 120; // Fejléc magassága
+              const sectionPosition = section.getBoundingClientRect().top;
+              const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+            }
+          }
+        }, 300); // Késleltetés, hogy biztosan betöltődjön az oldal
+      }
+    } else {
+      // Ha nincs hash, egyszerűen navigáljunk
+      navigate(path);
+      window.scrollTo(0, 0);
+    }
+
     setIsMobileMenuOpen(false);
   }
+
+
 
 
   return (
@@ -476,8 +580,8 @@ const Header = ({ activeTab, setActiveTab }) => {
                         {/* Background Pattern */}
                         <div
                           className={`h-40 ${selectedBackground === "custom"
-                              ? backgrounds.custom.style
-                              : backgrounds[selectedBackground].style
+                            ? backgrounds.custom.style
+                            : backgrounds[selectedBackground].style
                             } relative overflow-hidden`}
                           style={{
                             backgroundImage:
@@ -490,8 +594,8 @@ const Header = ({ activeTab, setActiveTab }) => {
                           {/* Overlay with animated gradient */}
                           <div
                             className={`absolute inset-0 ${selectedBackground === "custom"
-                                ? backgrounds.custom.overlay
-                                : backgrounds[selectedBackground].overlay
+                              ? backgrounds.custom.overlay
+                              : backgrounds[selectedBackground].overlay
                               }`}
                           ></div>
 
@@ -580,8 +684,8 @@ const Header = ({ activeTab, setActiveTab }) => {
                             <button
                               onClick={handleCustomBackgroundClick}
                               className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedBackground === "custom"
-                                  ? "ring-2 ring-white bg-slate-600"
-                                  : "bg-slate-700 hover:bg-slate-600"
+                                ? "ring-2 ring-white bg-slate-600"
+                                : "bg-slate-700 hover:bg-slate-600"
                                 } text-slate-300 transition-colors`}
                               title="Egyéni háttér"
                             >
@@ -728,8 +832,8 @@ const Header = ({ activeTab, setActiveTab }) => {
                   key={item.id}
                   onClick={() => handleNavigation(item.id, item.path)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg ${location.pathname === item.path || activeTab === item.id
-                      ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
-                      : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
                     } transition-all duration-300`}
                 >
                   <item.icon className="h-5 w-5" />
@@ -785,8 +889,8 @@ const Header = ({ activeTab, setActiveTab }) => {
             <button
               key={item.id}
               className={`flex items-center gap-2 px-4 py-2 rounded-md ${location.pathname === item.path || activeTab === item.id
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
-                  : "hover:bg-white/5 text-slate-300 hover:text-white"
+                ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
+                : "hover:bg-white/5 text-slate-300 hover:text-white"
                 } transition-all duration-300`}
               onClick={() => handleNavigation(item.id, item.path)}
             >

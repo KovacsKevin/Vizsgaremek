@@ -138,9 +138,8 @@ export function OffersSection() {
     // Add the new location to the locations state
     setLocations((prevLocations) => [...prevLocations, newLocation])
   }
-
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="event-section" className="py-24 pb-32 relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a] to-slate-800 z-0"></div>
       <div className="absolute inset-0 opacity-30 z-0">
@@ -176,7 +175,7 @@ export function OffersSection() {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
+          <h2 id="create-event" className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
             Esemény létrehozása
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">Hogy te dönts kivel, mikor, hol és mit játszol!</p>
@@ -243,4 +242,3 @@ export function OffersSection() {
 }
 
 export default OffersSection
-
