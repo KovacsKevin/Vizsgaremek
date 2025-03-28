@@ -718,6 +718,7 @@ const calculateAge = (birthDate) => {
 
     return age;
 };
+
 // Események lekérése, ahol a felhasználó szervező
 const getOrganizedEvents = async (req, res) => {
     try {
@@ -777,6 +778,7 @@ module.exports = {
     checkParticipation,
     getEventParticipants,
     getEsemenyekFilteredByUserAge,
-    leaveEsemeny
+    leaveEsemeny,
+    getOrganizedEvents
 };
 

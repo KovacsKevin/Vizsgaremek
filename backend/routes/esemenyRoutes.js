@@ -46,7 +46,8 @@ router.get('/getEsemenyekByAge/:telepules/:sportNev', authenticateToken, esemeny
 // Új végpont a kilépéshez
 router.post("/leave", authenticateToken, esemenyController.leaveEsemeny);
 
-
+// Új útvonal hozzáadása a router fájlhoz
+router.get('/organized-events', authenticateToken, esemenyController.getOrganizedEvents);
 
 
 
