@@ -25,7 +25,7 @@ const Footer = ({ Link, Image }) => {
   ]
 
   return (
-    <footer className="relative overflow-hidden">
+    <footer id="contact-section" className="relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-slate-950 z-0"></div>
       <div className="absolute inset-0 opacity-30 z-0">

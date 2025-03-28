@@ -73,8 +73,8 @@ const Header = ({ activeTab, setActiveTab }) => {
   const navigationItems = [
     { id: "home", icon: Hotel, label: "Főoldal", path: "/homepage" },
     { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/homepage#create-event" },
-    { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/homepage#latest-events" }, // Módosítva hash-el
-    { id: "contact", icon: Map, label: "Elérhetőségek", path: "/contact" },
+    { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/homepage#latest-events" },
+    { id: "contact", icon: Map, label: "Elérhetőségek", path: "/homepage#contact-section" }, // Updated to target the footer
     { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
   ];
 
