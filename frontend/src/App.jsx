@@ -7,6 +7,7 @@ import SportList from './pages/sportok';
 //import SearchResults from './pages/searchresult';
 import HomePage from './pages/Main/Homepage';
 import SportMateFinder from './pages/sport-mate-finder';
+import MyEvents from "./pages/Main/MyEvents";
 function App() {
   return (
     <Router> {/* Itt ágyazd be Router-be */}
@@ -19,6 +20,7 @@ function App() {
           <Route path ="/sportok" element={<SportList />} />
           <Route path ="/homepage" element={<HomePage />} />
           <Route path ="/sportmate" element={<SportMateFinder />} />
+          <Route path ="/my-events" element={<MyEvents />} />
           
         </Routes>
       </div>
