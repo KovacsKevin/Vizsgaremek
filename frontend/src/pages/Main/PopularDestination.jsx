@@ -99,31 +99,16 @@ const PopularDestinations = ({ Image, Link }) => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex justify-between items-center mb-12">
           <div>
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400 mb-2">
+            <h2 id="latest-events" className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400 mb-2">
               Legfrisebb sportesemények
             </h2>
             <p className="text-gray-400 max-w-2xl">
               Fedezd fel a környékeden zajló legfrissebb sporteseményeket és csatlakozz a közösséghez
             </p>
           </div>
-
-          <Link
-            href="/all-events"
-            className="hidden md:flex items-center text-purple-400 hover:text-purple-300 transition-colors group"
-          >
-            <span>Összes esemény</span>
-            <svg
-              className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-            </svg>
-          </Link>
+  
+          {/* ... */}
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {destinations.map((destination, index) => (
             <DestinationCard

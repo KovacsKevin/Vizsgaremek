@@ -72,8 +72,8 @@ const Header = ({ activeTab, setActiveTab }) => {
   // Navigációs elemek módosítása
   const navigationItems = [
     { id: "home", icon: Hotel, label: "Főoldal", path: "/homepage" },
-    { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/homepage#create-event" }, // Módosítva hash-el
-    { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/latest-events" },
+    { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/homepage#create-event" },
+    { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/homepage#latest-events" }, // Módosítva hash-el
     { id: "contact", icon: Map, label: "Elérhetőségek", path: "/contact" },
     { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
   ];
@@ -387,7 +387,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Navigáció kezelése - kiegészítve jobb görgetési viselkedéssel
+  // Navigáció kezelése - kiegészítve a Legfrissebb sportesemények görgetésével
   const handleNavigation = (id, path) => {
     setActiveTab(id);
 
@@ -399,7 +399,7 @@ const Header = ({ activeTab, setActiveTab }) => {
       if (location.pathname === url || (url === '/homepage' && location.pathname === '/')) {
         const element = document.getElementById(hash);
         if (element) {
-          // Használjunk offset-et, hogy a teljes szekció látható legyen
+          // Használjunk offset-et, hogy a megfelelő rész legyen látható
           const headerHeight = 120; // Fejléc magassága
 
           // Ha az "Esemény létrehozása" szekcióhoz görgetünk, akkor speciális kezelés
@@ -407,8 +407,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             // Megkeressük az event-section elemet
             const section = document.getElementById('event-section');
             if (section) {
-              // Kiszámoljuk a pozíciót úgy, hogy a szekció teteje legyen látható,
-              // de a "Legfrisebb sportesemények" ne látszódjon
+              // Kiszámoljuk a pozíciót úgy, hogy a szekció teteje legyen látható
               const sectionPosition = section.getBoundingClientRect().top;
               const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
 
@@ -417,7 +416,36 @@ const Header = ({ activeTab, setActiveTab }) => {
                 behavior: 'smooth'
               });
             }
-          } else {
+          }
+          // Ha a "Legfrissebb sportesemények" szekcióhoz görgetünk, akkor speciális kezelés
+          else if (hash === 'latest-events') {
+            // Kiszámoljuk a pozíciót úgy, hogy a cím és a leírás teljes egészében látszódjon
+
+            // Megkeressük a címet tartalmazó div-et (a cím szülőeleme)
+            const titleContainer = element.closest('div');
+
+            // Ha megtaláltuk a címet tartalmazó div-et, akkor annak a pozícióját használjuk
+            if (titleContainer) {
+              const containerPosition = titleContainer.getBoundingClientRect().top;
+              // Kicsit nagyobb offset-et használunk, hogy biztosan látszódjon a teljes szöveg
+              const offsetPosition = containerPosition + window.pageYOffset - (headerHeight + 20);
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+            } else {
+              // Ha nem találtuk meg a címet tartalmazó div-et, akkor az elem pozícióját használjuk
+              const elementPosition = element.getBoundingClientRect().top;
+              const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+            }
+          }
+          else {
             // Egyéb elemekhez normál görgetés
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
@@ -430,6 +458,19 @@ const Header = ({ activeTab, setActiveTab }) => {
         } else if (hash === 'create-event') {
           // Ha a create-event nem található, próbáljuk meg a szekciót
           const section = document.getElementById('event-section');
+          if (section) {
+            const headerHeight = 120; // Fejléc magassága
+            const sectionPosition = section.getBoundingClientRect().top;
+            const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
+          }
+        } else if (hash === 'latest-events') {
+          // Ha a latest-events nem található, próbáljuk meg a szekciót
+          const section = document.getElementById('popular-destinations');
           if (section) {
             const headerHeight = 120; // Fejléc magassága
             const sectionPosition = section.getBoundingClientRect().top;
@@ -461,7 +502,36 @@ const Header = ({ activeTab, setActiveTab }) => {
                   behavior: 'smooth'
                 });
               }
-            } else {
+            }
+            // Ha a "Legfrissebb sportesemények" szekcióhoz görgetünk, akkor speciális kezelés
+            else if (hash === 'latest-events') {
+              // Kiszámoljuk a pozíciót úgy, hogy a cím és a leírás teljes egészében látszódjon
+
+              // Megkeressük a címet tartalmazó div-et (a cím szülőeleme)
+              const titleContainer = element.closest('div');
+
+              // Ha megtaláltuk a címet tartalmazó div-et, akkor annak a pozícióját használjuk
+              if (titleContainer) {
+                const containerPosition = titleContainer.getBoundingClientRect().top;
+                // Kicsit nagyobb offset-et használunk, hogy biztosan látszódjon a teljes szöveg
+                const offsetPosition = containerPosition + window.pageYOffset - (headerHeight + 20);
+
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              } else {
+                // Ha nem találtuk meg a címet tartalmazó div-et, akkor az elem pozícióját használjuk
+                const elementPosition = element.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              }
+            }
+            else {
               // Egyéb elemekhez normál görgetés
               const headerHeight = 120; // Fejléc magassága
               const elementPosition = element.getBoundingClientRect().top;
@@ -485,6 +555,19 @@ const Header = ({ activeTab, setActiveTab }) => {
                 behavior: 'smooth'
               });
             }
+          } else if (hash === 'latest-events') {
+            // Ha a latest-events nem található, próbáljuk meg a szekciót
+            const section = document.getElementById('popular-destinations');
+            if (section) {
+              const headerHeight = 120; // Fejléc magassága
+              const sectionPosition = section.getBoundingClientRect().top;
+              const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+              window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+              });
+            }
           }
         }, 300); // Késleltetés, hogy biztosan betöltődjön az oldal
       }
@@ -496,6 +579,7 @@ const Header = ({ activeTab, setActiveTab }) => {
 
     setIsMobileMenuOpen(false);
   }
+
 
 
 
