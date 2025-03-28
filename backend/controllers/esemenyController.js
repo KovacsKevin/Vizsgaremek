@@ -764,6 +764,52 @@ const getOrganizedEvents = async (req, res) => {
     }
 };
 
+// Események lekérése, ahol a felhasználó játékos
+const getParticipatedEvents = async (req, res) => {
+    try {
+        // Authenticate user
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Lekérjük azokat az eseményeket, ahol a felhasználó játékos
+        const events = await Esemény.findAll({
+            include: [
+                {
+                    model: Résztvevő,
+                    where: {
+                        userId: userId,
+                        szerep: 'játékos',
+                        státusz: 'elfogadva'
+                    },
+                    attributes: [] // Nem szükséges a résztvevő adatait visszaadni
+                },
+                {
+                    model: Helyszin,
+                    attributes: ['Nev', 'Telepules', 'Cim']
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Nev', 'KepUrl']
+                }
+            ]
+        });
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "Nem találhatók események, ahol játékosként veszel részt." });
+        }
+
+        res.json({ events });
+    } catch (error) {
+        console.error("Hiba a játékosként résztvett események lekérésekor:", error);
+        res.status(500).json({ message: "Szerver hiba", error: error.message });
+    }
+};
+
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -779,6 +825,7 @@ module.exports = {
     getEventParticipants,
     getEsemenyekFilteredByUserAge,
     leaveEsemeny,
-    getOrganizedEvents
+    getOrganizedEvents,
+    getParticipatedEvents
 };
 

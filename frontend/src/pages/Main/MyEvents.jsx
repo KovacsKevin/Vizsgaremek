@@ -3,18 +3,20 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from './Header'
-import { Calendar, MapPin, Users, Clock, Plus, Loader } from "lucide-react"
+import { Calendar, MapPin, Users, Clock, Plus, Loader, Filter } from "lucide-react"
 import Cookies from "js-cookie"
 
 const MyEvents = () => {
   const [activeTab, setActiveTab] = useState("myevents")
-  const [events, setEvents] = useState([])
+  const [organizedEvents, setOrganizedEvents] = useState([])
+  const [participatedEvents, setParticipatedEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [activeFilter, setActiveFilter] = useState("all") // "all", "organized", "participated"
   const navigate = useNavigate()
 
   useEffect(() => {
-    const fetchOrganizedEvents = async () => {
+    const fetchEvents = async () => {
       try {
         const token = Cookies.get("token")
         if (!token) {
@@ -23,32 +25,46 @@ const MyEvents = () => {
         }
 
         setLoading(true)
-        const response = await fetch("http://localhost:8081/api/v1/organized-events", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+        
+        // Párhuzamosan lekérjük mindkét típusú eseményt
+        const [organizedResponse, participatedResponse] = await Promise.allSettled([
+          fetch("http://localhost:8081/api/v1/organized-events", {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch("http://localhost:8081/api/v1/participated-events", {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            // Nincs esemény, de ez nem hiba
-            setEvents([])
-            return
+        // Szervezett események feldolgozása
+        if (organizedResponse.status === 'fulfilled') {
+          if (organizedResponse.value.ok) {
+            const data = await organizedResponse.value.json();
+            setOrganizedEvents(data.events);
+          } else if (organizedResponse.value.status !== 404) {
+            console.error("Hiba a szervezett események lekérésekor");
           }
-          throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        const data = await response.json()
-        setEvents(data.events)
+        // Résztvevőként szereplő események feldolgozása
+        if (participatedResponse.status === 'fulfilled') {
+          if (participatedResponse.value.ok) {
+            const data = await participatedResponse.value.json();
+            setParticipatedEvents(data.events);
+          } else if (participatedResponse.value.status !== 404) {
+            console.error("Hiba a résztvevőként szereplő események lekérésekor");
+          }
+        }
+
       } catch (err) {
-        console.error("Hiba a szervezett események lekérésekor:", err)
+        console.error("Hiba az események lekérésekor:", err)
         setError("Nem sikerült betölteni az eseményeket. Kérjük, próbáld újra később.")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchOrganizedEvents()
+    fetchEvents()
   }, [navigate])
 
   const formatDate = (dateString) => {
@@ -60,6 +76,19 @@ const MyEvents = () => {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  // Szűrt események a kiválasztott filter alapján
+  const filteredEvents = () => {
+    if (activeFilter === "organized") return organizedEvents;
+    if (activeFilter === "participated") return participatedEvents;
+    // "all" esetén mindkét típusú eseményt megjelenítjük
+    return [...organizedEvents, ...participatedEvents];
+  }
+
+  // Esemény típusának meghatározása (szervező vagy játékos)
+  const getEventRole = (eventId) => {
+    return organizedEvents.some(event => event.id === eventId) ? "szervező" : "játékos";
   }
 
   return (
@@ -81,6 +110,40 @@ const MyEvents = () => {
             </button>
           </div>
           
+          {/* Szűrők */}
+          <div className="flex mb-6 space-x-2 bg-slate-700/30 p-1 rounded-lg w-fit">
+            <button 
+              onClick={() => setActiveFilter("all")}
+              className={`px-4 py-2 rounded-md transition-all ${
+                activeFilter === "all" 
+                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white" 
+                  : "text-slate-300 hover:bg-white/5"
+              }`}
+            >
+              Összes
+            </button>
+            <button 
+              onClick={() => setActiveFilter("organized")}
+              className={`px-4 py-2 rounded-md transition-all ${
+                activeFilter === "organized" 
+                  ? "bg-gradient-to-r from-green-500/20 to-emerald-600/20 text-white" 
+                  : "text-slate-300 hover:bg-white/5"
+              }`}
+            >
+              Szervezőként
+            </button>
+            <button 
+              onClick={() => setActiveFilter("participated")}
+              className={`px-4 py-2 rounded-md transition-all ${
+                activeFilter === "participated" 
+                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 text-white" 
+                  : "text-slate-300 hover:bg-white/5"
+              }`}
+            >
+              Résztvevőként
+            </button>
+          </div>
+          
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <Loader className="w-10 h-10 text-purple-500 animate-spin" />
@@ -89,25 +152,35 @@ const MyEvents = () => {
             <div className="text-center py-10 text-red-400">
               <p>{error}</p>
             </div>
-          ) : events.length === 0 ? (
+          ) : filteredEvents().length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-20 h-20 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
                 <Calendar className="w-10 h-10 text-slate-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Még nincsenek szervezett eseményeid</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                {activeFilter === "organized" 
+                  ? "Még nincsenek szervezett eseményeid" 
+                  : activeFilter === "participated" 
+                    ? "Még nem veszel részt eseményeken" 
+                    : "Még nincsenek eseményeid"}
+              </h3>
               <p className="text-slate-400 max-w-md mb-6">
-                Hozz létre új eseményt, hogy itt megjelenjen.
+                {activeFilter === "organized" 
+                  ? "Hozz létre új eseményt, hogy itt megjelenjen." 
+                  : activeFilter === "participated" 
+                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek." 
+                    : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
               </p>
               <button 
                 onClick={() => navigate("/create-event")}
                 className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
               >
-                Új esemény létrehozása
+                {activeFilter === "participated" ? "Események böngészése" : "Új esemény létrehozása"}
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event) => (
+              {filteredEvents().map((event) => (
                 <div 
                   key={event.id} 
                   className="bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
@@ -136,7 +209,13 @@ const MyEvents = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded-full">Szervező</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        getEventRole(event.id) === "szervező" 
+                          ? "bg-green-500/20 text-green-400" 
+                          : "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"}
+                      </span>
                       <button 
                         onClick={() => navigate(`/event/${event.id}`)}
                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition-colors"

@@ -49,7 +49,8 @@ router.post("/leave", authenticateToken, esemenyController.leaveEsemeny);
 // Új útvonal hozzáadása a router fájlhoz
 router.get('/organized-events', authenticateToken, esemenyController.getOrganizedEvents);
 
-
+// Új útvonal hozzáadása a router fájlhoz
+router.get('/participated-events', authenticateToken, esemenyController.getParticipatedEvents);
 
 
 
