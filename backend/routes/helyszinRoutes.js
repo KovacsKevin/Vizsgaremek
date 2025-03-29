@@ -21,6 +21,7 @@ const authenticateToken = (req, res, next) => {
 
 
 
+
 router.post("/createHelyszin",authenticateToken, helyszinController.createHelyszin); // Create a new location
 router.get("/allHelyszin", helyszinController.getAllHelyszin); // Get all locations
 router.get("/getHelyszinById",authenticateToken, helyszinController.getHelyszinById); // Get location by ID
