@@ -18,6 +18,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   const [imagePreview, setImagePreview] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [imageError, setImageError] = useState(false)
   const [success, setSuccess] = useState(false)
   const [locations, setLocations] = useState([])
   const [loadingLocations, setLoadingLocations] = useState(false)
@@ -119,6 +120,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       // Create URL for preview
       const previewUrl = URL.createObjectURL(file)
       setImagePreview(previewUrl)
+      setImageError(false)
     }
   }
 
@@ -126,7 +128,15 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     e.preventDefault()
     setSubmitting(true)
     setErrorMessage("")
+    setImageError(false)
     setSuccess(false)
+
+    // Check if image is provided
+    if (!imageFile) {
+      setImageError(true)
+      setSubmitting(false)
+      return
+    }
 
     try {
       const token =
@@ -523,13 +533,23 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
             {/* Image Upload */}
             <div className="md:col-span-2">
               <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
-                Kép feltöltése
+                Kép feltöltése <span className="text-red-400">*</span>
               </label>
               <div className="relative">
-                <input type="file" id="imageFile" className="hidden" accept="image/*" onChange={handleFileChange} />
+                <input 
+                  type="file" 
+                  id="imageFile" 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleFileChange}
+                />
                 <label
                   htmlFor="imageFile"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-600/50 hover:border-purple-500/50 rounded-xl cursor-pointer bg-slate-800/50 hover:bg-slate-700/50 transition-all duration-300"
+                  className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${
+                    imageError ? "border-red-500/70" : "border-slate-600/50 hover:border-purple-500/50"
+                  } rounded-xl cursor-pointer ${
+                    imageError ? "bg-red-500/10" : "bg-slate-800/50 hover:bg-slate-700/50"
+                  } transition-all duration-300`}
                 >
                   {imagePreview ? (
                     <div className="w-full h-full flex items-center justify-center">
@@ -542,7 +562,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                   ) : (
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <svg
-                        className="w-8 h-8 mb-3 text-gray-400"
+                        className={`w-8 h-8 mb-3 ${imageError ? "text-red-400" : "text-gray-400"}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -555,13 +575,18 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                           d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                         ></path>
                       </svg>
-                      <p className="mb-2 text-sm text-gray-400">
+                      <p className={`mb-2 text-sm ${imageError ? "text-red-400" : "text-gray-400"}`}>
                         <span className="font-semibold">Kattints a feltöltéshez</span> vagy húzd ide a fájlt
                       </p>
-                      <p className="text-xs text-gray-500">SVG, PNG, JPG vagy GIF (MAX. 2MB)</p>
+                      <p className={`text-xs ${imageError ? "text-red-500/70" : "text-gray-500"}`}>
+                        SVG, PNG, JPG vagy GIF (MAX. 2MB)
+                      </p>
                     </div>
                   )}
                 </label>
+                {imageError && (
+                  <p className="text-red-400 text-xs mt-2">Kérem töltsön fel képet</p>
+                )}
               </div>
             </div>
           </div>
