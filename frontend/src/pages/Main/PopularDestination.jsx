@@ -1,66 +1,40 @@
 "use client"
 
 import { Calendar, Users, MapPin, Star } from "lucide-react"
+import { useEffect, useState } from "react"
 
 const PopularDestinations = ({ Image, Link }) => {
-  const destinations = [
-    {
-      name: "Kosárlabda Bajnokság",
-      properties: "Budapest, 2023.08.15",
-      rating: 4.8,
-      participants: 24,
-      sport: "Kosárlabda",
-    },
-    {
-      name: "Futball Kupa",
-      properties: "Debrecen, 2023.08.18",
-      rating: 4.6,
-      participants: 32,
-      sport: "Futball",
-    },
-    {
-      name: "Tenisz Verseny",
-      properties: "Szeged, 2023.08.20",
-      rating: 4.9,
-      participants: 16,
-      sport: "Tenisz",
-    },
-    {
-      name: "Úszóverseny",
-      properties: "Győr, 2023.08.22",
-      rating: 4.7,
-      participants: 28,
-      sport: "Úszás",
-    },
-    {
-      name: "Röplabda Torna",
-      properties: "Pécs, 2023.08.25",
-      rating: 4.5,
-      participants: 18,
-      sport: "Röplabda",
-    },
-    {
-      name: "Kerékpár Túra",
-      properties: "Balaton, 2023.08.27",
-      rating: 4.9,
-      participants: 45,
-      sport: "Kerékpározás",
-    },
-    {
-      name: "Futóverseny",
-      properties: "Miskolc, 2023.08.29",
-      rating: 4.6,
-      participants: 120,
-      sport: "Futás",
-    },
-    {
-      name: "Jóga a Szabadban",
-      properties: "Eger, 2023.08.30",
-      rating: 4.8,
-      participants: 30,
-      sport: "Jóga",
-    },
-  ]
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        // API hívás - ezt változtatni kell majd produkcióban megfelelő URL-re
+        const response = await fetch('http://localhost:8081/api/v1/events-with-details');
+        if (!response.ok) {
+          throw new Error('Failed to fetch events');
+        }
+        const data = await response.json();
+        
+        // Sort by esemenyId in descending order
+        const sortedEvents = [...data.events].sort((a, b) => b.esemenyId - a.esemenyId);
+        
+        // Take only the first 8 events after sorting
+        const latestEvents = sortedEvents.slice(0, 8);
+        setEvents(latestEvents);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
   return (
     <section id="popular-destinations" className="py-16 relative overflow-hidden">
       {/* Background elements */}
@@ -106,24 +80,37 @@ const PopularDestinations = ({ Image, Link }) => {
               Fedezd fel a környékeden zajló legfrissebb sporteseményeket és csatlakozz a közösséghez
             </p>
           </div>
-  
-          {/* ... */}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {destinations.map((destination, index) => (
-            <DestinationCard
-              key={index}
-              Image={Image}
-              Link={Link}
-              name={destination.name}
-              properties={destination.properties}
-              rating={destination.rating}
-              participants={destination.participants}
-              sport={destination.sport}
-              index={index}
-            />
-          ))}
-        </div>
+
+        {loading ? (
+          <div className="text-center py-10">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+            <p className="text-gray-400 mt-2">Események betöltése...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-400">Hiba történt: {error}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {events.map((event, index) => (
+              <DestinationCard
+                key={event.esemenyId}
+                Image={Image}
+                Link={Link}
+                name={event.helyszinNev}
+                properties={`${event.telepules}, ${new Date(event.kezdoIdo).toLocaleDateString('hu-HU')}`}
+                rating={((event.resztvevoCount / event.maximumLetszam) * 5).toFixed(1)}
+                participants={event.resztvevoCount}
+                maxParticipants={event.maximumLetszam}
+                sport={event.sportNev}
+                index={index}
+                eventId={event.esemenyId}
+                imageUrl={event.imageUrl}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="mt-10 text-center md:hidden">
           <Link
@@ -147,13 +134,22 @@ const PopularDestinations = ({ Image, Link }) => {
   )
 }
 
-const DestinationCard = ({ Image, Link, name, properties, rating, participants, sport, index }) => {
+const DestinationCard = ({ Image, Link, name, properties, rating, participants, maxParticipants, sport, index, eventId, imageUrl }) => {
   // Calculate a delay for staggered animation
-  const delay = index * 0.1
+  const delay = index * 0.1;
+  
+  // Generate a placeholder image based on the sport name if no imageUrl
+  const placeholderUrl = `/placeholder.svg?height=200&width=300&text=${encodeURIComponent(sport)}`;
+  
+  // Construct the full image URL with the backend server prefix
+  const getFullImageUrl = (url) => {
+    if (!url) return placeholderUrl;
+    return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
+  };
 
   return (
     <Link
-      href="#"
+      href={`/events/${eventId}`}
       className="group block rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500"
       style={{
         animation: `card-appear 0.6s ease-out ${delay}s both`,
@@ -175,12 +171,18 @@ const DestinationCard = ({ Image, Link, name, properties, rating, participants, 
       `}</style>
 
       <div className="relative h-48 overflow-hidden">
+        {/* Use the Image component with the full URL */}
         <Image
-          src={`/placeholder.svg?height=200&width=300&text=${sport}`}
+          src={getFullImageUrl(imageUrl)}
           alt={name}
           width={300}
           height={200}
           className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700"
+          onError={(e) => {
+            // Fallback to placeholder if image fails to load
+            console.error(`Kép betöltési hiba: ${imageUrl}`, e);
+            e.target.src = placeholderUrl;
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/70 to-transparent"></div>
 
@@ -209,7 +211,9 @@ const DestinationCard = ({ Image, Link, name, properties, rating, participants, 
         <div className="flex items-center justify-between">
           <div className="flex items-center text-gray-400 text-sm">
             <Users className="w-4 h-4 mr-1 text-purple-400" />
-            <span>{participants} résztvevő</span>
+            <span>
+              {participants}/{maxParticipants} résztvevő
+            </span>
           </div>
 
           <div className="flex items-center text-gray-400 text-sm">
@@ -223,4 +227,3 @@ const DestinationCard = ({ Image, Link, name, properties, rating, participants, 
 }
 
 export default PopularDestinations
-

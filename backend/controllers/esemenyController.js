@@ -810,6 +810,74 @@ const getParticipatedEvents = async (req, res) => {
     }
 };
 
+// Get all events with participant count, ordered by start time descending
+const getAllEsemenyWithDetails = async (req, res) => {
+    try {
+        // Find all events with venue information
+        const events = await Esemény.findAll({
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: ['Nev', 'Telepules'] // Include venue name and city
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Nev', 'KepUrl'] // Include sport name and image
+                }
+            ],
+            attributes: ['id', 'kezdoIdo', 'zaroIdo', 'maximumLetszam', 'imageUrl'], // Added imageUrl
+            order: [['kezdoIdo', 'DESC']] // Order by start time descending
+        });
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found." });
+        }
+
+        // Get participant counts for all events
+        const eventIds = events.map(event => event.id);
+
+        // Count participants for each event
+        const participantCounts = await Résztvevő.findAll({
+            attributes: [
+                'eseményId',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+            ],
+            where: {
+                eseményId: { [Op.in]: eventIds },
+                státusz: 'elfogadva' // Only count accepted participants
+            },
+            group: ['eseményId']
+        });
+
+        // Create a map of event ID to participant count
+        const countMap = {};
+        participantCounts.forEach(item => {
+            countMap[item.eseményId] = parseInt(item.getDataValue('count'));
+        });
+
+        // Format the response
+        const formattedEvents = events.map(event => ({
+            esemenyId: event.id,
+            kezdoIdo: event.kezdoIdo,
+            zaroIdo: event.zaroIdo,
+            helyszinNev: event.Helyszin.Nev,
+            telepules: event.Helyszin.Telepules,
+            sportNev: event.Sportok.Nev,
+            sportKepUrl: event.Sportok.KepUrl, // Include sport image URL
+            imageUrl: event.imageUrl, // Include event's own image URL
+            resztvevoCount: countMap[event.id] || 0,
+            maximumLetszam: event.maximumLetszam
+        }));
+
+        res.json({ events: formattedEvents });
+
+    } catch (error) {
+        console.error("Error fetching events with details:", error);
+        res.status(500).json({ message: "Error fetching events", error: error.message });
+    }
+};
+
+
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -826,6 +894,7 @@ module.exports = {
     getEsemenyekFilteredByUserAge,
     leaveEsemeny,
     getOrganizedEvents,
-    getParticipatedEvents
+    getParticipatedEvents,
+    getAllEsemenyWithDetails
 };
 

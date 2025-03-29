@@ -52,6 +52,10 @@ router.get('/organized-events', authenticateToken, esemenyController.getOrganize
 // Új útvonal hozzáadása a router fájlhoz
 router.get('/participated-events', authenticateToken, esemenyController.getParticipatedEvents);
 
+// Get all events with details, ordered by start time descending
+router.get("/events-with-details", esemenyController.getAllEsemenyWithDetails);
+
+
 
 
 module.exports = router;
