@@ -174,9 +174,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const closeProfileModal = () => {
     setShowProfileModal(false)
     setSelectedParticipant(null)
-  }
-
-  // Handle join event functionality
+  }  // Handle join event functionality
   const handleJoinEvent = async () => {
     if (!currentEvent.id) {
       setJoinError("Esemény azonosító hiányzik");
@@ -425,9 +423,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     // Frissítjük a komponens állapotát az új esemény adatokkal
     setCurrentEvent(updatedEvent);
     closeEditModal();
-  };
-
-  return (
+  }; return (
     <>
       {/* Main Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
@@ -580,9 +576,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Participants (Right Side) */}
+            </div>            {/* Participants (Right Side) */}
             <div className="w-full md:w-2/5 p-6">
               <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
 
@@ -755,25 +749,20 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
             </div>
           </div>
         </div>
-             
-            )}
+      )}
 
-{/* Edit Modal */ }
-{
-  isEditModalOpen && (
-    <EventEditModal
-      isOpen={isEditModalOpen}
-      onClose={closeEditModal}
-      event={currentEvent}
-      onSuccess={handleEventUpdate}
-    />
-  )
-}
-          </>
-        );
-      }
-
-// Új komponens az esemény szerkesztéséhez
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <EventEditModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          event={currentEvent}
+          onSuccess={handleEventUpdate}
+        />
+      )}
+    </>
+  );
+};// Új komponens az esemény szerkesztéséhez
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   // Biztonságos esemény objektum létrehozása, hogy elkerüljük az undefined hibákat
   const safeEvent = event || {};
@@ -921,9 +910,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   // Helyszín szerkesztés mód kikapcsolása
   const cancelLocationEditing = () => {
     setEditingLocation(false);
-  };
-
-  // Helyszín mentése (meglévő helyszín frissítése)
+  };  // Helyszín mentése (meglévő helyszín frissítése)
   const saveLocation = async () => {
     try {
       const token = getCookie('token');
@@ -1084,9 +1071,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     }
   };
 
-  if (!isOpen) return null;
-
-  return (
+  if (!isOpen) return null; return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70] transition-all duration-300">
       <div
         className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50"
@@ -1252,9 +1237,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                       Sportok betöltése...
                     </p>
                   )}
-                </div>
-
-                <div>
+                </div>                <div>
                   <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
                     Kezdő időpont
                   </label>
@@ -1602,6 +1585,11 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
+
+
+
+
+
 
 
 

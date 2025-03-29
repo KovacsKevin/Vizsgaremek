@@ -15,23 +15,23 @@ const createHelyszin = async (req, res) => {
         const { Nev, Cim, Telepules, Iranyitoszam, Fedett, Oltozo, Parkolas, Leiras, Berles } = req.body;
 
         // Update the validation in createHelyszin function
-if (!Nev || !Cim || !Telepules || !Iranyitoszam || !Parkolas) {
-    return res.status(400).json({ message: "Missing required fields for creating location!" });
-}
+        if (!Nev || !Cim || !Telepules || !Iranyitoszam || !Parkolas) {
+            return res.status(400).json({ message: "Missing required fields for creating location!" });
+        }
 
-// When creating a new location, set default empty string for Leiras if not provided
-const newHelyszin = await Helyszin.create({
-    Nev,
-    Cim,
-    Telepules,
-    Iranyitoszam,
-    Fedett: Fedett !== undefined ? Fedett : false,
-    Oltozo: Oltozo !== undefined ? Oltozo : false,
-    Parkolas,
-    Leiras: Leiras || "",
-    Berles: Berles !== undefined ? Berles : false,
-    userId,
-});
+        // When creating a new location, set default empty string for Leiras if not provided
+        const newHelyszin = await Helyszin.create({
+            Nev,
+            Cim,
+            Telepules,
+            Iranyitoszam,
+            Fedett: Fedett !== undefined ? Fedett : false,
+            Oltozo: Oltozo !== undefined ? Oltozo : false,
+            Parkolas,
+            Leiras: Leiras || "",
+            Berles: Berles !== undefined ? Berles : false,
+            userId,
+        });
 
 
         res.status(201).json({ message: "Location created successfully!", helyszin: newHelyszin });
@@ -63,6 +63,10 @@ const getHelyszinById = async (req, res) => {
     try {
         const { id } = req.params;
 
+        if (!id) {
+            return res.status(400).json({ message: "Location ID is required!" });
+        }
+
         // Find the location by its ID
         const helyszin = await Helyszin.findByPk(id);
 
@@ -73,9 +77,10 @@ const getHelyszinById = async (req, res) => {
         res.json({ helyszin });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Error fetching location", error });
+        res.status(500).json({ message: "Error fetching location", error: error.message });
     }
 };
+
 
 // Update Location (Helyszin) - Only the owner can update the location
 const updateHelyszin = async (req, res) => {
@@ -111,7 +116,7 @@ const updateHelyszin = async (req, res) => {
             Fedett,
             Oltozo,
             Parkolas,
-            Leiras,
+            Leiras: Leiras || "", // Provide default empty string if not provided
             Berles,
         });
 
@@ -158,7 +163,7 @@ const deleteHelyszin = async (req, res) => {
 const getMyOwnHelyszin = async (req, res) => {
     try {
         const userId = req.user?.userId; // Accessing userId instead of id
-        
+
         if (!userId) {
             return res.status(400).json({ message: "User ID is missing in the request." });
         }

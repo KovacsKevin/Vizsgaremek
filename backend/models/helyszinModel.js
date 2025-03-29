@@ -11,38 +11,59 @@ const Helyszin = sequelize.define("Helyszin", {
     Nev: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: {
+            notEmpty: true
+        }
     },
     Cim: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: {
+            notEmpty: true
+        }
     },
     Telepules: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: {
+            notEmpty: true
+        }
     },
     Iranyitoszam: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        validate: {
+            isInt: true,
+            min: 1000,  // Assuming 4-digit postal codes
+            max: 9999
+        }
     },
     Fedett: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
+        defaultValue: false
     },
     Oltozo: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
+        defaultValue: false
     },
     Parkolas: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: {
+            isIn: [['ingyenes', 'fizetős', 'nincs']]
+        }
     },
     Leiras: {
         type: DataTypes.TEXT,
         allowNull: true,
+        defaultValue: ""
     },
     Berles: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
+        defaultValue: false
     },
     // Add userId as a foreign key linking Helyszin to User
     userId: {
