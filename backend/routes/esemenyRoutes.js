@@ -55,6 +55,10 @@ router.get('/participated-events', authenticateToken, esemenyController.getParti
 // Get all events with details, ordered by start time descending
 router.get("/events-with-details", esemenyController.getAllEsemenyWithDetails);
 
+// Résztvevő eltávolítása (csak szervező által)
+router.post("/remove-participant", authenticateToken, esemenyController.removeParticipant);
+
+
 
 
 

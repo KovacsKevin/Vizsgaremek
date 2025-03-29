@@ -877,6 +877,76 @@ const getAllEsemenyWithDetails = async (req, res) => {
     }
 };
 
+// Résztvevő eltávolítása (csak szervező által)
+const removeParticipant = async (req, res) => {
+    try {
+        // Authenticate user
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Get event ID and participant ID from request body
+        const { eseményId, userId: participantId } = req.body;
+
+        if (!eseményId || !participantId) {
+            return res.status(400).json({ message: "Event ID and participant ID are required!" });
+        }
+
+        // Check if event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the current user is a participant with 'szervező' role
+        const organizerParticipant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: userId,
+                szerep: 'szervező'
+            }
+        });
+
+        if (!organizerParticipant) {
+            return res.status(403).json({ message: "Only organizers can remove participants!" });
+        }
+
+        // Check if the participant to be removed exists
+        const participantToRemove = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: participantId
+            }
+        });
+
+        if (!participantToRemove) {
+            return res.status(404).json({ message: "Participant not found in this event!" });
+        }
+
+        // Don't allow removing organizers
+        if (participantToRemove.szerep === 'szervező') {
+            return res.status(403).json({ message: "Organizers cannot be removed from the event!" });
+        }
+
+        // Delete the participant
+        await participantToRemove.destroy();
+
+        res.status(200).json({
+            message: "Participant successfully removed from the event!",
+            removedParticipantId: participantId
+        });
+
+    } catch (error) {
+        console.error("Error removing participant:", error);
+        res.status(500).json({ message: "Error removing participant", error: error.message });
+    }
+};
+
+
 
 module.exports = {
     createEsemeny,
@@ -895,6 +965,7 @@ module.exports = {
     leaveEsemeny,
     getOrganizedEvents,
     getParticipatedEvents,
-    getAllEsemenyWithDetails
+    getAllEsemenyWithDetails,
+    removeParticipant
 };
 

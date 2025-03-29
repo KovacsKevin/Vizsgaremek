@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom"
 import Header from './Header'
 import { Calendar, MapPin, Users, Clock, Plus, Loader, Filter } from "lucide-react"
 import Cookies from "js-cookie"
+import EventModal from './event-modal'
+import SportEventDetailsModal from '../sport-event-details-modal' // Importáljuk a SportEventDetailsModal komponenst
 
 const MyEvents = () => {
   const [activeTab, setActiveTab] = useState("myevents")
@@ -14,6 +16,21 @@ const MyEvents = () => {
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState("all") // "all", "organized", "participated"
   const navigate = useNavigate()
+  
+  // Modal states
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
+  const [isSportModalOpen, setIsSportModalOpen] = useState(false)
+  
+  // Új állapot a SportEventDetailsModal-hoz
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false)
+
+  // Modal content
+  const eventModalContent = {
+    title: "Új esemény létrehozása",
+    description: "Tölts ki minden mezőt az esemény létrehozásához"
+  }
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -90,6 +107,40 @@ const MyEvents = () => {
   const getEventRole = (eventId) => {
     return organizedEvents.some(event => event.id === eventId) ? "szervező" : "játékos";
   }
+  
+  // Modal kezelő függvények
+  const openEventModal = () => {
+    setIsEventModalOpen(true);
+  }
+  
+  const closeEventModal = () => {
+    setIsEventModalOpen(false);
+  }
+  
+  const openHelyszinModal = () => {
+    setIsHelyszinModalOpen(true);
+  }
+  
+  const closeSportModal = () => {
+    setIsSportModalOpen(false);
+  }
+  
+  // Új függvények a SportEventDetailsModal kezeléséhez
+  const openSportEventDetailsModal = (event) => {
+    setSelectedEvent(event);
+    setIsSportEventDetailsModalOpen(true);
+  }
+  
+  const closeSportEventDetailsModal = () => {
+    setIsSportEventDetailsModalOpen(false);
+    setSelectedEvent(null);
+  }
+  
+  // Résztvevők frissítésének kezelése
+  const handleParticipantUpdate = (eventId, isJoining, participant) => {
+    // Itt kezelhetnénk a résztvevők frissítését, ha szükséges
+    // Például újra lekérhetnénk az eseményeket a szerverről
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
@@ -102,7 +153,7 @@ const MyEvents = () => {
               Eseményeim
             </h1>
             <button 
-              onClick={() => navigate("/create-event")}
+              onClick={openEventModal}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
             >
               <Plus size={18} />
@@ -172,7 +223,7 @@ const MyEvents = () => {
                     : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
               </p>
               <button 
-                onClick={() => navigate("/create-event")}
+                onClick={openEventModal}
                 className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
               >
                 {activeFilter === "participated" ? "Események böngészése" : "Új esemény létrehozása"}
@@ -217,7 +268,7 @@ const MyEvents = () => {
                         {getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"}
                       </span>
                       <button 
-                        onClick={() => navigate(`/event/${event.id}`)}
+                        onClick={() => openSportEventDetailsModal(event)}
                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition-colors"
                       >
                         Részletek
@@ -230,6 +281,26 @@ const MyEvents = () => {
           )}
         </div>
       </main>
+      
+      {/* Modals */}
+      <EventModal 
+        isOpen={isEventModalOpen} 
+        onClose={closeEventModal} 
+        modalContent={eventModalContent}
+        openHelyszinModal={openHelyszinModal}
+        openSportModal={() => setIsSportModalOpen(true)}
+      />
+      
+      {/* SportEventDetailsModal */}
+      {isSportEventDetailsModalOpen && selectedEvent && (
+        <SportEventDetailsModal
+          event={selectedEvent}
+          onClose={closeSportEventDetailsModal}
+          onParticipantUpdate={handleParticipantUpdate}
+        />
+      )}
+      
+      {/* Itt kellene implementálni a HelyszinModal és SportModal komponenseket is */}
     </div>
   )
 }

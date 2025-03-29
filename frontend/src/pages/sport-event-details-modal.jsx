@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User } from "lucide-react"
+import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash } from "lucide-react"
 
 // Placeholder Image component
 const Image = ({ src, alt, className }) => (
@@ -48,6 +48,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   // Új állapot a kilépés folyamatának követésére
   const [isLeaving, setIsLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState('')
+  // Új állapot a résztvevő eltávolításának követésére
+  const [isRemovingParticipant, setIsRemovingParticipant] = useState(false)
+  const [removeParticipantError, setRemoveParticipantError] = useState('')
 
   // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
@@ -61,17 +64,17 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         const data = await response.json();
         console.log("Participants data:", data);
         const newParticipants = data.participants || [];
-        
+
         // Only update if the count has actually changed
         if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
           setParticipants(newParticipants);
-          
+
           // Only update the parent component if the callback exists
           // and only when the participant count actually changes
           if (onParticipantUpdate) {
-            onParticipantUpdate(eventId, true, { 
+            onParticipantUpdate(eventId, true, {
               userId: 'count-update',
-              fullParticipantsList: newParticipants 
+              fullParticipantsList: newParticipants
             });
           }
         }
@@ -259,7 +262,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         // Only add if not already in the list
         if (!participants.some(p => p.id === newParticipant.id)) {
           setParticipants(prev => [newParticipant, ...prev]);
-          
+
           // Call parent update function if provided
           if (onParticipantUpdate) {
             onParticipantUpdate(event.id, true, newParticipant);
@@ -337,7 +340,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
       if (currentUser) {
         const updatedParticipants = participants.filter(p => p.id !== currentUser.userId);
         setParticipants(updatedParticipants);
-        
+
         // Call parent update function if provided
         if (onParticipantUpdate) {
           onParticipantUpdate(event.id, false, { userId: currentUser.userId });
@@ -352,12 +355,73 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     }
   };
 
+  // Új függvény a résztvevő eltávolításához (szervező által)
+  const handleRemoveParticipant = async (participantId) => {
+    if (!event.id || !participantId) {
+      setRemoveParticipantError("Hiányzó adatok");
+      return;
+    }
+
+    setIsRemovingParticipant(true);
+    setRemoveParticipantError('');
+
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
+
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a művelethez");
+      }
+
+      console.log(`Removing participant ${participantId} from event ${event.id}`);
+      const response = await fetch("http://localhost:8081/api/v1/remove-participant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eseményId: event.id,
+          userId: participantId
+        }),
+      });
+
+      // Try to parse the response JSON
+      let responseData = {};
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.error("Failed to parse response JSON:", e);
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData.message || "Sikertelen eltávolítás");
+      }
+
+      console.log("Participant removal successful:", responseData);
+
+      // Frissítjük a résztvevők listáját
+      const updatedParticipants = participants.filter(p => p.id !== participantId);
+      setParticipants(updatedParticipants);
+
+      // Call parent update function if provided
+      if (onParticipantUpdate) {
+        onParticipantUpdate(event.id, false, { userId: participantId });
+      }
+
+    } catch (error) {
+      console.error("Hiba a résztvevő eltávolítása során:", error);
+      setRemoveParticipantError(error.message || "Sikertelen eltávolítás. Kérjük, próbáld újra később.");
+    } finally {
+      setIsRemovingParticipant(false);
+    }
+  };
+
   // Add a function to handle participant click, including the current user
   const handleParticipantClick = (participant) => {
     // If the participant is the current user, show their profile too
     openProfileModal(participant);
   };
-
   return (
     <>
       {/* Main Modal */}
@@ -403,7 +467,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                 <div className="flex items-center gap-2 text-white/80">
                   <Clock className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <span>
-                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
+                    {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
                   </span>
                 </div>
 
@@ -420,21 +484,36 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
                 <div className="flex flex-wrap gap-2 mb-6">
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm">{event.szint || "Ismeretlen szint"}</span>
-                  {isFacilityAvailable(event, "fedett") && (
-                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
-                      <Home className="h-4 w-4" /> Fedett
-                    </span>
-                  )}
-                  {isFacilityAvailable(event, "oltozo") && (
-                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
-                      <DoorOpen className="h-4 w-4" /> Öltöző
-                    </span>
-                  )}
-                  {isFacilityAvailable(event, "parkolas") && (
-                    <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
-                      <Car className="h-4 w-4" /> Parkolás
-                    </span>
-                  )}
+
+                  {/* Fedett facility */}
+                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
+                    <Home className="h-4 w-4" /> Fedett
+                    {event.Helyszin?.Fedett === true ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                  </span>
+
+                  {/* Öltöző facility */}
+                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
+                    <DoorOpen className="h-4 w-4" /> Öltöző
+                    {event.Helyszin?.Oltozo === true ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                  </span>
+
+                  {/* Parkolás facility */}
+                  <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
+                    <Car className="h-4 w-4" /> Parkolás
+                    {event.Helyszin?.Parkolas === "y" || event.Helyszin?.Parkolas === true ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    )}
+                  </span>
                 </div>
 
                 <div className="mb-6">
@@ -459,9 +538,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && (
                           <button
                             onClick={handleLeaveEvent}
-                            className={`w-full sm:w-auto px-6 py-2 ${
-                              isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
-                            } text-white rounded-md transition-colors flex items-center justify-center`}
+                            className={`w-full sm:w-auto px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                              } text-white rounded-md transition-colors flex items-center justify-center`}
                             disabled={isLeaving}
                           >
                             {isLeaving ? "Kilépés..." : "Kilépés"}
@@ -477,9 +555,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                       </button>
                     ) : (
                       <button
-                        className={`w-full sm:w-auto px-6 py-2 ${
-                          isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                        } text-white rounded-md transition-colors flex items-center justify-center`}
+                        className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                          } text-white rounded-md transition-colors flex items-center justify-center`}
                         onClick={handleJoinEvent}
                         disabled={isJoining}
                       >
@@ -524,26 +601,30 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                       .map((participant) => (
                         <div
                           key={participant.id}
-                          onClick={() => handleParticipantClick(participant)}
-                          className="flex items-center gap-4 p-3 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 transition-colors cursor-pointer"
+                          className="flex items-center gap-4 p-3 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 transition-colors"
                         >
-                          <Image
-                            src={participant.image || "/placeholder.svg"}
-                            alt={participant.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div>
-                            <h4 className="font-medium">
-                              {participant.name}
-                              {currentUser && participant.id === currentUser.userId && (
-                                <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                              )}
-                            </h4>
-                            <p className="text-sm text-white/60">
-                              <span className="text-blue-300">Szervező</span>
-                              {participant.age ? ` • ${participant.age} éves` : ""}
-                              {participant.level ? ` • ${participant.level}` : ""}
-                            </p>
+                          <div
+                            className="flex-grow flex items-center gap-4 cursor-pointer"
+                            onClick={() => handleParticipantClick(participant)}
+                          >
+                            <Image
+                              src={participant.image || "/placeholder.svg"}
+                              alt={participant.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">
+                                {participant.name}
+                                {currentUser && participant.id === currentUser.userId && (
+                                  <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                                )}
+                              </h4>
+                              <p className="text-sm text-white/60">
+                                <span className="text-blue-300">Szervező</span>
+                                {participant.age ? ` • ${participant.age} éves` : ""}
+                                {participant.level ? ` • ${participant.level}` : ""}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       ))
@@ -551,7 +632,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                 </div>
               </div>
 
-              {/* Játékosok szekció */}
+              {/* Játékosok szekció - módosítva a kuka ikonnal */}
               <div>
                 <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Játékosok</h4>
                 <div className="space-y-4">
@@ -563,28 +644,51 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                       .map((participant) => (
                         <div
                           key={participant.id}
-                          onClick={() => handleParticipantClick(participant)}
-                          className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                          className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                         >
-                          <Image
-                            src={participant.image || "/placeholder.svg"}
-                            alt={participant.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div>
-                            <h4 className="font-medium">
-                              {participant.name}
-                              {currentUser && participant.id === currentUser.userId && (
-                                <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                              )}
-                            </h4>
-                            <p className="text-sm text-white/60">
-                              {participant.age ? `${participant.age} éves • ` : ""}
-                              {participant.level || ""}
-                            </p>
+                          <div
+                            className="flex-grow flex items-center gap-4 cursor-pointer"
+                            onClick={() => handleParticipantClick(participant)}
+                          >
+                            <Image
+                              src={participant.image || "/placeholder.svg"}
+                              alt={participant.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">
+                                {participant.name}
+                                {currentUser && participant.id === currentUser.userId && (
+                                  <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                                )}
+                              </h4>
+                              <p className="text-sm text-white/60">
+                                {participant.age ? `${participant.age} éves • ` : ""}
+                                {participant.level || ""}
+                              </p>
+                            </div>
                           </div>
+
+                          {/* Kuka ikon - csak a szervező látja és csak más játékosoknál */}
+                          {currentUser &&
+                            participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
+                            participant.id !== currentUser.userId && (
+                              <button
+                                onClick={() => handleRemoveParticipant(participant.id)}
+                                className={`p-2 rounded-full ${isRemovingParticipant ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
+                                  } text-red-400 transition-colors`}
+                                disabled={isRemovingParticipant}
+                                title="Résztvevő eltávolítása"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </button>
+                            )}
                         </div>
                       ))
+                  )}
+
+                  {removeParticipantError && (
+                    <p className="text-red-400 text-sm mt-2">{removeParticipantError}</p>
                   )}
                 </div>
               </div>
