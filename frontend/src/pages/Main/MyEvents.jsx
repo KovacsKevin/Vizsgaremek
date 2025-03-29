@@ -7,6 +7,7 @@ import { Calendar, MapPin, Users, Clock, Plus, Loader, Filter } from "lucide-rea
 import Cookies from "js-cookie"
 import EventModal from './event-modal'
 import SportEventDetailsModal from '../sport-event-details-modal' // Importáljuk a SportEventDetailsModal komponenst
+import { HelyszinModal } from './helyszin-modal' // Importáljuk a HelyszinModal komponenst
 
 const MyEvents = () => {
   const [activeTab, setActiveTab] = useState("myevents")
@@ -16,12 +17,12 @@ const MyEvents = () => {
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState("all") // "all", "organized", "participated"
   const navigate = useNavigate()
-  
+
   // Modal states
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
   const [isSportModalOpen, setIsSportModalOpen] = useState(false)
-  
+
   // Új állapot a SportEventDetailsModal-hoz
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false)
@@ -30,6 +31,12 @@ const MyEvents = () => {
   const eventModalContent = {
     title: "Új esemény létrehozása",
     description: "Tölts ki minden mezőt az esemény létrehozásához"
+  }
+
+  // Helyszín modal content
+  const helyszinModalContent = {
+    title: "Új helyszín létrehozása",
+    description: "Tölts ki minden mezőt a helyszín létrehozásához"
   }
 
   useEffect(() => {
@@ -42,7 +49,7 @@ const MyEvents = () => {
         }
 
         setLoading(true)
-        
+
         // Párhuzamosan lekérjük mindkét típusú eseményt
         const [organizedResponse, participatedResponse] = await Promise.allSettled([
           fetch("http://localhost:8081/api/v1/organized-events", {
@@ -107,52 +114,65 @@ const MyEvents = () => {
   const getEventRole = (eventId) => {
     return organizedEvents.some(event => event.id === eventId) ? "szervező" : "játékos";
   }
-  
+
   // Modal kezelő függvények
   const openEventModal = () => {
     setIsEventModalOpen(true);
   }
-  
+
   const closeEventModal = () => {
     setIsEventModalOpen(false);
   }
-  
+
   const openHelyszinModal = () => {
     setIsHelyszinModalOpen(true);
   }
-  
+
+  const closeHelyszinModal = () => {
+    setIsHelyszinModalOpen(false);
+    // Újra megnyitjuk az esemény modalt
+    setIsEventModalOpen(true);
+  }
+
   const closeSportModal = () => {
     setIsSportModalOpen(false);
+    // Újra megnyitjuk az esemény modalt
+    setIsEventModalOpen(true);
   }
-  
+
   // Új függvények a SportEventDetailsModal kezeléséhez
   const openSportEventDetailsModal = (event) => {
     setSelectedEvent(event);
     setIsSportEventDetailsModalOpen(true);
   }
-  
+
   const closeSportEventDetailsModal = () => {
     setIsSportEventDetailsModalOpen(false);
     setSelectedEvent(null);
   }
-  
+
   // Résztvevők frissítésének kezelése
   const handleParticipantUpdate = (eventId, isJoining, participant) => {
     // Itt kezelhetnénk a résztvevők frissítését, ha szükséges
     // Például újra lekérhetnénk az eseményeket a szerverről
   }
 
+  // Sikeres helyszín létrehozás kezelése
+  const handleHelyszinSuccess = (newLocation) => {
+    closeHelyszinModal();
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} />
-      
+
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="bg-slate-800/50 backdrop-blur-md rounded-xl p-6 shadow-xl border border-slate-700/50">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
               Eseményeim
             </h1>
-            <button 
+            <button
               onClick={openEventModal}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
             >
@@ -160,41 +180,38 @@ const MyEvents = () => {
               <span>Új esemény</span>
             </button>
           </div>
-          
+
           {/* Szűrők */}
           <div className="flex mb-6 space-x-2 bg-slate-700/30 p-1 rounded-lg w-fit">
-            <button 
+            <button
               onClick={() => setActiveFilter("all")}
-              className={`px-4 py-2 rounded-md transition-all ${
-                activeFilter === "all" 
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white" 
+              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "all"
+                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
                   : "text-slate-300 hover:bg-white/5"
-              }`}
+                }`}
             >
               Összes
             </button>
-            <button 
+            <button
               onClick={() => setActiveFilter("organized")}
-              className={`px-4 py-2 rounded-md transition-all ${
-                activeFilter === "organized" 
-                  ? "bg-gradient-to-r from-green-500/20 to-emerald-600/20 text-white" 
+              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "organized"
+                  ? "bg-gradient-to-r from-green-500/20 to-emerald-600/20 text-white"
                   : "text-slate-300 hover:bg-white/5"
-              }`}
+                }`}
             >
               Szervezőként
             </button>
-            <button 
+            <button
               onClick={() => setActiveFilter("participated")}
-              className={`px-4 py-2 rounded-md transition-all ${
-                activeFilter === "participated" 
-                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 text-white" 
+              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "participated"
+                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 text-white"
                   : "text-slate-300 hover:bg-white/5"
-              }`}
+                }`}
             >
               Résztvevőként
             </button>
           </div>
-          
+
           {loading ? (
             <div className="flex justify-center items-center py-20">
               <Loader className="w-10 h-10 text-purple-500 animate-spin" />
@@ -209,20 +226,20 @@ const MyEvents = () => {
                 <Calendar className="w-10 h-10 text-slate-400" />
               </div>
               <h3 className="text-xl font-semibold mb-2">
-                {activeFilter === "organized" 
-                  ? "Még nincsenek szervezett eseményeid" 
-                  : activeFilter === "participated" 
-                    ? "Még nem veszel részt eseményeken" 
+                {activeFilter === "organized"
+                  ? "Még nincsenek szervezett eseményeid"
+                  : activeFilter === "participated"
+                    ? "Még nem veszel részt eseményeken"
                     : "Még nincsenek eseményeid"}
               </h3>
               <p className="text-slate-400 max-w-md mb-6">
-                {activeFilter === "organized" 
-                  ? "Hozz létre új eseményt, hogy itt megjelenjen." 
-                  : activeFilter === "participated" 
-                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek." 
+                {activeFilter === "organized"
+                  ? "Hozz létre új eseményt, hogy itt megjelenjen."
+                  : activeFilter === "participated"
+                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
                     : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
               </p>
-              <button 
+              <button
                 onClick={openEventModal}
                 className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
               >
@@ -232,14 +249,14 @@ const MyEvents = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEvents().map((event) => (
-                <div 
-                  key={event.id} 
+                <div
+                  key={event.id}
                   className="bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
                 >
                   <div className="h-40 bg-slate-600 overflow-hidden">
-                    <img 
-                      src={event.imageUrl || event.Sport?.KepUrl || "/placeholder.svg"} 
-                      alt={event.Sport?.Nev || "Esemény kép"} 
+                    <img
+                      src={event.imageUrl || event.Sport?.KepUrl || "/placeholder.svg"}
+                      alt={event.Sport?.Nev || "Esemény kép"}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -260,14 +277,13 @@ const MyEvents = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        getEventRole(event.id) === "szervező" 
-                          ? "bg-green-500/20 text-green-400" 
+                      <span className={`text-xs px-2 py-1 rounded-full ${getEventRole(event.id) === "szervező"
+                          ? "bg-green-500/20 text-green-400"
                           : "bg-blue-500/20 text-blue-400"
-                      }`}>
+                        }`}>
                         {getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"}
                       </span>
-                      <button 
+                      <button
                         onClick={() => openSportEventDetailsModal(event)}
                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition-colors"
                       >
@@ -281,16 +297,29 @@ const MyEvents = () => {
           )}
         </div>
       </main>
-      
+
       {/* Modals */}
-      <EventModal 
-        isOpen={isEventModalOpen} 
-        onClose={closeEventModal} 
+      <EventModal
+        isOpen={isEventModalOpen}
+        onClose={closeEventModal}
         modalContent={eventModalContent}
-        openHelyszinModal={openHelyszinModal}
-        openSportModal={() => setIsSportModalOpen(true)}
+        openHelyszinModal={() => {
+          setIsEventModalOpen(false);
+          setIsHelyszinModalOpen(true);
+        }}
+        openSportModal={() => {
+          setIsEventModalOpen(false);
+          setIsSportModalOpen(true);
+        }}
       />
-      
+
+      {/* HelyszinModal */}
+      <HelyszinModal
+        isOpen={isHelyszinModalOpen}
+        onClose={closeHelyszinModal}
+        modalContent={helyszinModalContent}
+        onSuccess={handleHelyszinSuccess} />
+
       {/* SportEventDetailsModal */}
       {isSportEventDetailsModalOpen && selectedEvent && (
         <SportEventDetailsModal
@@ -299,10 +328,24 @@ const MyEvents = () => {
           onParticipantUpdate={handleParticipantUpdate}
         />
       )}
-      
-      {/* Itt kellene implementálni a HelyszinModal és SportModal komponenseket is */}
+
+      {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
+      {/* Például:
+        <SportModal
+          isOpen={isSportModalOpen}
+          onClose={closeSportModal}
+          modalContent={{
+            title: "Új sport létrehozása",
+            description: "Tölts ki minden mezőt a sport létrehozásához"
+          }}
+          onSuccess={() => {
+            closeSportModal();
+          }}
+        />
+        */}
     </div>
   )
 }
 
 export default MyEvents
+
