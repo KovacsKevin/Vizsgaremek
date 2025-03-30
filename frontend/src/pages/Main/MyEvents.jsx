@@ -1,54 +1,53 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import Header from './Header'
-import { Calendar, MapPin, Users, Clock, Plus, Loader, Filter } from "lucide-react"
-import Cookies from "js-cookie"
-import EventModal from './event-modal'
-import SportEventDetailsModal from '../sport-event-details-modal' // Importáljuk a SportEventDetailsModal komponenst
-import { HelyszinModal } from './helyszin-modal' // Importáljuk a HelyszinModal komponenst
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
+import { Calendar, Clock, MapPin, Users, Plus, Loader2 } from "lucide-react";
+import EventModal from "../sport-event-details-modal";
 
 const MyEvents = () => {
-  const [activeTab, setActiveTab] = useState("myevents")
-  const [organizedEvents, setOrganizedEvents] = useState([])
-  const [participatedEvents, setParticipatedEvents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [activeFilter, setActiveFilter] = useState("all") // "all", "organized", "participated"
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const [organizedEvents, setOrganizedEvents] = useState([]);
+  const [participatedEvents, setParticipatedEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("organized");
+  const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  // Add a new state to track when to refresh data
+  const [refreshData, setRefreshData] = useState(0);
 
-  // Modal states
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
-  const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
-  const [isSportModalOpen, setIsSportModalOpen] = useState(false)
+  // Format date to Hungarian format
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("hu-HU", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+    });
+  };
 
-  // Új állapot a SportEventDetailsModal-hoz
-  const [selectedEvent, setSelectedEvent] = useState(null)
-  const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false)
+  // Format time from date
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("hu-HU", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  // Modal content
-  const eventModalContent = {
-    title: "Új esemény létrehozása",
-    description: "Tölts ki minden mezőt az esemény létrehozásához"
-  }
-
-  // Helyszín modal content
-  const helyszinModalContent = {
-    title: "Új helyszín létrehozása",
-    description: "Tölts ki minden mezőt a helyszín létrehozásához"
-  }
-
+  // Fetch events when component mounts or refreshData changes
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const token = Cookies.get("token")
+        const token = Cookies.get("token");
         if (!token) {
-          navigate("/login")
-          return
+          navigate("/login");
+          return;
         }
 
-        setLoading(true)
+        setLoading(true);
+        setError(null);
 
         // Párhuzamosan lekérjük mindkét típusú eseményt
         const [organizedResponse, participatedResponse] = await Promise.allSettled([
@@ -60,292 +59,255 @@ const MyEvents = () => {
           })
         ]);
 
+        console.log("Organized response status:", organizedResponse.status);
+        console.log("Participated response status:", participatedResponse.status);
+
         // Szervezett események feldolgozása
         if (organizedResponse.status === 'fulfilled') {
           if (organizedResponse.value.ok) {
             const data = await organizedResponse.value.json();
-            setOrganizedEvents(data.events);
-          } else if (organizedResponse.value.status !== 404) {
-            console.error("Hiba a szervezett események lekérésekor");
+            console.log("Organized events data:", data);
+            setOrganizedEvents(data.events || []);
+          } else if (organizedResponse.value.status === 404) {
+            // 404 is expected if user has no organized events
+            console.log("No organized events found");
+            setOrganizedEvents([]);
+          } else {
+            console.error("Hiba a szervezett események lekérésekor:", organizedResponse.value.status);
+            const errorText = await organizedResponse.value.text();
+            console.error("Error response:", errorText);
           }
+        } else {
+          console.error("Organized events request failed:", organizedResponse.reason);
         }
 
         // Résztvevőként szereplő események feldolgozása
         if (participatedResponse.status === 'fulfilled') {
           if (participatedResponse.value.ok) {
             const data = await participatedResponse.value.json();
-            setParticipatedEvents(data.events);
-          } else if (participatedResponse.value.status !== 404) {
-            console.error("Hiba a résztvevőként szereplő események lekérésekor");
+            console.log("Participated events data:", data);
+            setParticipatedEvents(data.events || []);
+          } else if (participatedResponse.value.status === 404) {
+            // 404 is expected if user has no participated events
+            console.log("No participated events found");
+            setParticipatedEvents([]);
+          } else {
+            console.error("Hiba a résztvevőként szereplő események lekérésekor:", participatedResponse.value.status);
+            const errorText = await participatedResponse.value.text();
+            console.error("Error response:", errorText);
           }
+        } else {
+          console.error("Participated events request failed:", participatedResponse.reason);
         }
 
       } catch (err) {
-        console.error("Hiba az események lekérésekor:", err)
-        setError("Nem sikerült betölteni az eseményeket. Kérjük, próbáld újra később.")
+        console.error("Hiba az események lekérésekor:", err);
+        setError("Nem sikerült betölteni az eseményeket. Kérjük, próbáld újra később.");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchEvents()
-  }, [navigate])
+    fetchEvents();
+  }, [navigate, refreshData]); // Add refreshData to the dependency array
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('hu-HU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  // Szűrt események a kiválasztott filter alapján
-  const filteredEvents = () => {
-    if (activeFilter === "organized") return organizedEvents;
-    if (activeFilter === "participated") return participatedEvents;
-    // "all" esetén mindkét típusú eseményt megjelenítjük
-    return [...organizedEvents, ...participatedEvents];
-  }
-
-  // Esemény típusának meghatározása (szervező vagy játékos)
-  const getEventRole = (eventId) => {
-    return organizedEvents.some(event => event.id === eventId) ? "szervező" : "játékos";
-  }
-
-  // Modal kezelő függvények
-  const openEventModal = () => {
-    setIsEventModalOpen(true);
-  }
-
-  const closeEventModal = () => {
-    setIsEventModalOpen(false);
-  }
-
-  const openHelyszinModal = () => {
-    setIsHelyszinModalOpen(true);
-  }
-
-  const closeHelyszinModal = () => {
-    setIsHelyszinModalOpen(false);
-    // Újra megnyitjuk az esemény modalt
-    setIsEventModalOpen(true);
-  }
-
-  const closeSportModal = () => {
-    setIsSportModalOpen(false);
-    // Újra megnyitjuk az esemény modalt
-    setIsEventModalOpen(true);
-  }
-
-  // Új függvények a SportEventDetailsModal kezeléséhez
   const openSportEventDetailsModal = (event) => {
     setSelectedEvent(event);
     setIsSportEventDetailsModalOpen(true);
-  }
+  };
 
   const closeSportEventDetailsModal = () => {
     setIsSportEventDetailsModalOpen(false);
     setSelectedEvent(null);
-  }
+    // Trigger a refresh of the events data
+    setRefreshData(prev => prev + 1);
+  };
 
-  // Résztvevők frissítésének kezelése
+  // Handle participant updates (joining/leaving events)
   const handleParticipantUpdate = (eventId, isJoining, participant) => {
-    // Itt kezelhetnénk a résztvevők frissítését, ha szükséges
-    // Például újra lekérhetnénk az eseményeket a szerverről
-  }
+    console.log(`Participant ${participant.userId} ${isJoining ? 'joined' : 'left'} event ${eventId}`);
+    
+    // If this is an event update notification
+    if (participant.userId === 'event-updated' && participant.eventData) {
+      console.log("Event was updated, refreshing data");
+      // Trigger a refresh of the events data
+      setRefreshData(prev => prev + 1);
+      return;
+    }
+    
+    // For regular participant updates, we can update the local state
+    // But for simplicity, we'll just refresh all data
+    setRefreshData(prev => prev + 1);
+  };
 
-  // Sikeres helyszín létrehozás kezelése
-  const handleHelyszinSuccess = (newLocation) => {
-    closeHelyszinModal();
-  }
+  // Render event card
+  const renderEventCard = (event) => {
+    return (
+      <div
+        key={event.id}
+        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:translate-y-[-5px] cursor-pointer border border-slate-700/50"
+        onClick={() => openSportEventDetailsModal(event)}
+      >
+        <div className="relative h-48 overflow-hidden">
+          <img
+            src={event.imageUrl || event.Sportok?.KepUrl || "/placeholder.svg"}
+            alt={event.Sportok?.Nev || "Sport esemény"}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute top-0 left-0 bg-blue-600 text-white px-3 py-1 rounded-br-lg font-medium">
+            {event.Sportok?.Nev || "Sport"}
+          </div>
+        </div>
+
+        <div className="p-5">
+          <h3 className="text-xl font-bold mb-2 text-white">{event.Helyszin?.Nev || "Helyszín"}</h3>
+
+          <div className="space-y-2 text-gray-300">
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 mr-2 text-blue-400" />
+              <span className="text-sm">
+                {event.Helyszin?.Telepules || "Város"}, {event.Helyszin?.Cim || "Cím"}
+              </span>
+            </div>
+
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2 text-blue-400" />
+              <span className="text-sm">{formatDate(event.kezdoIdo)}</span>
+            </div>
+
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-2 text-blue-400" />
+              <span className="text-sm">
+                {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
+              </span>
+            </div>
+
+            <div className="flex items-center">
+              <Users className="h-4 w-4 mr-2 text-blue-400" />
+              <span className="text-sm">
+                {event.resztvevoCount || 0}/{event.maximumLetszam || 10} résztvevő
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
+              {event.szint || "Ismeretlen szint"}
+            </span>
+            <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs">
+              {event.minimumEletkor}-{event.maximumEletkor} év
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-white">Eseményeim</h1>
+        <button
+          onClick={() => navigate("/create-event")}
+          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg"
+        >
+          <Plus className="h-5 w-5" />
+          Új esemény
+        </button>
+      </div>
 
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="bg-slate-800/50 backdrop-blur-md rounded-xl p-6 shadow-xl border border-slate-700/50">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-              Eseményeim
-            </h1>
-            <button
-              onClick={openEventModal}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
-            >
-              <Plus size={18} />
-              <span>Új esemény</span>
-            </button>
-          </div>
+      {/* Tabs */}
+      <div className="flex border-b border-slate-700 mb-6">
+        <button
+          className={`py-2 px-4 font-medium text-sm ${
+            activeTab === "organized"
+              ? "text-blue-400 border-b-2 border-blue-400"
+              : "text-gray-400 hover:text-gray-300"
+          }`}
+          onClick={() => setActiveTab("organized")}
+        >
+          Szervezett események
+        </button>
+        <button
+          className={`py-2 px-4 font-medium text-sm ${
+            activeTab === "participated"
+              ? "text-blue-400 border-b-2 border-blue-400"
+              : "text-gray-400 hover:text-gray-300"
+          }`}
+          onClick={() => setActiveTab("participated")}
+        >
+          Résztvevőként
+        </button>
+      </div>
 
-          {/* Szűrők */}
-          <div className="flex mb-6 space-x-2 bg-slate-700/30 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setActiveFilter("all")}
-              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "all"
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
-                  : "text-slate-300 hover:bg-white/5"
-                }`}
-            >
-              Összes
-            </button>
-            <button
-              onClick={() => setActiveFilter("organized")}
-              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "organized"
-                  ? "bg-gradient-to-r from-green-500/20 to-emerald-600/20 text-white"
-                  : "text-slate-300 hover:bg-white/5"
-                }`}
-            >
-              Szervezőként
-            </button>
-            <button
-              onClick={() => setActiveFilter("participated")}
-              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "participated"
-                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 text-white"
-                  : "text-slate-300 hover:bg-white/5"
-                }`}
-            >
-              Résztvevőként
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader className="w-10 h-10 text-purple-500 animate-spin" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-10 text-red-400">
-              <p>{error}</p>
-            </div>
-          ) : filteredEvents().length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-20 h-20 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
-                <Calendar className="w-10 h-10 text-slate-400" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">
-                {activeFilter === "organized"
-                  ? "Még nincsenek szervezett eseményeid"
-                  : activeFilter === "participated"
-                    ? "Még nem veszel részt eseményeken"
-                    : "Még nincsenek eseményeid"}
-              </h3>
-              <p className="text-slate-400 max-w-md mb-6">
-                {activeFilter === "organized"
-                  ? "Hozz létre új eseményt, hogy itt megjelenjen."
-                  : activeFilter === "participated"
-                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
-                    : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
-              </p>
-              <button
-                onClick={openEventModal}
-                className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
-              >
-                {activeFilter === "participated" ? "Események böngészése" : "Új esemény létrehozása"}
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents().map((event) => (
-                <div
-                  key={event.id}
-                  className="bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
-                >
-                  <div className="h-40 bg-slate-600 overflow-hidden">
-                    <img
-                      src={event.imageUrl || event.Sport?.KepUrl || "/placeholder.svg"}
-                      alt={event.Sport?.Nev || "Esemény kép"}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-xl font-semibold mb-2 truncate">{event.Sport?.Nev || "Esemény"}</h3>
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center text-sm text-slate-300">
-                        <MapPin size={16} className="mr-2 text-slate-400" />
-                        <span>{event.Helyszin?.Nev || "Ismeretlen helyszín"}, {event.Helyszin?.Telepules || ""}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-slate-300">
-                        <Clock size={16} className="mr-2 text-slate-400" />
-                        <span>{formatDate(event.kezdoIdo)}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-slate-300">
-                        <Users size={16} className="mr-2 text-slate-400" />
-                        <span>Max. {event.maximumLetszam} fő</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className={`text-xs px-2 py-1 rounded-full ${getEventRole(event.id) === "szervező"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-blue-500/20 text-blue-400"
-                        }`}>
-                        {getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"}
-                      </span>
-                      <button
-                        onClick={() => openSportEventDetailsModal(event)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-sm transition-colors"
-                      >
-                        Részletek
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-10 w-10 text-blue-500 animate-spin" />
+          <span className="ml-3 text-xl text-gray-300">Események betöltése...</span>
         </div>
-      </main>
+      )}
 
-      {/* Modals */}
-      <EventModal
-        isOpen={isEventModalOpen}
-        onClose={closeEventModal}
-        modalContent={eventModalContent}
-        openHelyszinModal={() => {
-          setIsEventModalOpen(false);
-          setIsHelyszinModalOpen(true);
-        }}
-        openSportModal={() => {
-          setIsEventModalOpen(false);
-          setIsSportModalOpen(true);
-        }}
-      />
+      {/* Error state */}
+      {error && !loading && (
+        <div className="bg-red-500/20 border border-red-500/50 text-red-300 p-4 rounded-lg mb-6">
+          <p>{error}</p>
+          <button
+            className="mt-2 text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm"
+            onClick={() => setRefreshData(prev => prev + 1)}
+          >
+            Újrapróbálkozás
+          </button>
+        </div>
+      )}
 
-      {/* HelyszinModal */}
-      <HelyszinModal
-        isOpen={isHelyszinModalOpen}
-        onClose={closeHelyszinModal}
-        modalContent={helyszinModalContent}
-        onSuccess={handleHelyszinSuccess} />
+      {/* No events state */}
+      {!loading && !error && activeTab === "organized" && organizedEvents.length === 0 && (
+        <div className="text-center py-20">
+          <h3 className="text-xl font-semibold text-gray-300 mb-4">Még nem szerveztél eseményt</h3>
+          <p className="text-gray-400 mb-6">Hozz létre egy új eseményt a "Új esemény" gombra kattintva!</p>
+          <button
+            onClick={() => navigate("/create-event")}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg transition-colors shadow-lg"
+          >
+            Esemény létrehozása
+          </button>
+        </div>
+      )}
 
-      {/* SportEventDetailsModal */}
+      {!loading && !error && activeTab === "participated" && participatedEvents.length === 0 && (
+        <div className="text-center py-20">
+          <h3 className="text-xl font-semibold text-gray-300 mb-4">Még nem csatlakoztál eseményhez</h3>
+          <p className="text-gray-400 mb-6">Fedezd fel a közelben lévő eseményeket és csatlakozz hozzájuk!</p>
+          <button
+            onClick={() => navigate("/events")}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg transition-colors shadow-lg"
+          >
+            Események felfedezése
+          </button>
+        </div>
+      )}
+
+      {/* Event grid */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activeTab === "organized" &&
+            organizedEvents.map((event) => renderEventCard(event))}
+          {activeTab === "participated" &&
+            participatedEvents.map((event) => renderEventCard(event))}
+        </div>
+      )}
+
+      {/* Event details modal */}
       {isSportEventDetailsModalOpen && selectedEvent && (
-        <SportEventDetailsModal
+        <EventModal
           event={selectedEvent}
           onClose={closeSportEventDetailsModal}
           onParticipantUpdate={handleParticipantUpdate}
         />
       )}
-
-      {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
-      {/* Például:
-        <SportModal
-          isOpen={isSportModalOpen}
-          onClose={closeSportModal}
-          modalContent={{
-            title: "Új sport létrehozása",
-            description: "Tölts ki minden mezőt a sport létrehozásához"
-          }}
-          onSuccess={() => {
-            closeSportModal();
-          }}
-        />
-        */}
     </div>
-  )
-}
+  );
+};
 
-export default MyEvents
-
+export default MyEvents;

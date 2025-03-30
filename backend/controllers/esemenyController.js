@@ -156,7 +156,6 @@ const deleteEsemeny = async (req, res) => {
     }
 };
 
-// Edit Event (Only by the Owner)
 const updateEsemeny = async (req, res) => {
     upload(req, res, async function (err) {
         if (err instanceof multer.MulterError) {
@@ -175,7 +174,7 @@ const updateEsemeny = async (req, res) => {
             const userId = decoded.userId;
 
             const { id } = req.params;
-            const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor, maximumLetszam } = req.body;
+            const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor, maximumLetszam, leiras } = req.body;
 
             const esemeny = await Esemény.findByPk(id);
 
@@ -183,12 +182,21 @@ const updateEsemeny = async (req, res) => {
                 return res.status(404).json({ message: "Event not found!" });
             }
 
-            if (esemeny.userId !== userId) {
-                return res.status(403).json({ message: "You can only edit your own events!" });
+            // Check if user is the organizer
+            const isOrganizer = await Résztvevő.findOne({
+                where: {
+                    eseményId: id,
+                    userId: userId,
+                    szerep: 'szervező'
+                }
+            });
+
+            if (!isOrganizer) {
+                return res.status(403).json({ message: "You can only edit events where you are the organizer!" });
             }
 
             // Handle image update
-            let imageUrl = esemeny.imageUrl; // Keep the existing image by default
+            let imageUrl = esemeny.imageUrl;
 
             if (req.file) {
                 // If a new image was uploaded, delete the old one if it exists
@@ -224,12 +232,24 @@ const updateEsemeny = async (req, res) => {
                 minimumEletkor,
                 maximumEletkor,
                 maximumLetszam,
+                leiras: leiras || "",
                 imageUrl
             });
 
-            res.status(200).json({ message: "Event updated successfully!", esemeny });
+            // Fetch the updated event with related data
+            const updatedEsemeny = await Esemény.findByPk(id, {
+                include: [
+                    { model: Helyszin, attributes: ['Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Berles', 'Leiras'] },
+                    { model: Sportok, attributes: ['Id', 'Nev', 'KepUrl'] }
+                ]
+            });
+
+            res.status(200).json({
+                message: "Event updated successfully!",
+                esemeny: updatedEsemeny
+            });
         } catch (error) {
-            console.error(error);
+            console.error("Error updating event:", error);
             res.status(500).json({ message: "Error updating event", error: error.message });
         }
     });

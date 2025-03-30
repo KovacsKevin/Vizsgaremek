@@ -107,25 +107,35 @@ const updateHelyszin = async (req, res) => {
             return res.status(403).json({ message: "You can only update your own locations!" });
         }
 
-        // Update location details
-        await helyszin.update({
+        // Explicit conversion of boolean values
+        const updatedData = {
             Nev,
             Cim,
             Telepules,
             Iranyitoszam,
-            Fedett,
-            Oltozo,
+            Fedett: Fedett === true || Fedett === "true",
+            Oltozo: Oltozo === true || Oltozo === "true",
             Parkolas,
             Leiras: Leiras || "", // Provide default empty string if not provided
-            Berles,
-        });
+            Berles: Berles === true || Berles === "true",
+        };
 
-        res.status(200).json({ message: "Location updated successfully!", helyszin });
+        console.log("Updating location with data:", updatedData);
+
+        // Update location details
+        await helyszin.update(updatedData);
+
+        res.status(200).json({
+            message: "Location updated successfully!",
+            helyszin,
+            updatedLocation: helyszin // Add this to return the updated location
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error updating location", error });
     }
 };
+
 
 // Delete Location (Helyszin) - Only the owner can delete the location
 const deleteHelyszin = async (req, res) => {

@@ -174,7 +174,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const closeProfileModal = () => {
     setShowProfileModal(false)
     setSelectedParticipant(null)
-  }  // Handle join event functionality
+  }
+
+  // Handle join event functionality
   const handleJoinEvent = async () => {
     if (!currentEvent.id) {
       setJoinError("Esemény azonosító hiányzik");
@@ -383,7 +385,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
       if (!response.ok) {
         throw new Error(responseData.message || "Sikertelen eltávolítás");
-      } console.log("Participant removal successful:", responseData);
+      }
+
+      console.log("Participant removal successful:", responseData);
 
       // Frissítjük a résztvevők listáját
       const updatedParticipants = participants.filter(p => p.id !== participantId);
@@ -420,10 +424,24 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
   // Esemény frissítése sikeres szerkesztés után
   const handleEventUpdate = (updatedEvent) => {
+    console.log("Event updated, new data:", updatedEvent);
+
     // Frissítjük a komponens állapotát az új esemény adatokkal
     setCurrentEvent(updatedEvent);
+
+    // Bezárjuk a szerkesztő modalt
     closeEditModal();
-  }; return (
+
+    // Értesítjük a szülő komponenst a frissítésről, ha van callback
+    if (onParticipantUpdate) {
+      onParticipantUpdate(updatedEvent.id, true, {
+        userId: 'event-updated',
+        eventData: updatedEvent
+      });
+    }
+  };
+
+  return (
     <>
       {/* Main Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
@@ -576,7 +594,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   </div>
                 </div>
               </div>
-            </div>            {/* Participants (Right Side) */}
+            </div>
+
+            {/* Participants (Right Side) */}
             <div className="w-full md:w-2/5 p-6">
               <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
 
@@ -661,7 +681,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                                 {participant.name}
                                 {currentUser && participant.id === currentUser.userId && (
                                   <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                                )}                              </h4>
+                                )}
+                              </h4>
                               <p className="text-sm text-white/60">
                                 {participant.age ? `${participant.age} éves • ` : ""}
                                 {participant.level || ""}
@@ -762,7 +783,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
       )}
     </>
   );
-};// Új komponens az esemény szerkesztéséhez
+};
+
+// Új komponens az esemény szerkesztéséhez
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   // Biztonságos esemény objektum létrehozása, hogy elkerüljük az undefined hibákat
   const safeEvent = event || {};
@@ -782,11 +805,13 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     helyszinCim: safeEvent.Helyszin?.Cim || "",
     helyszinTelepules: safeEvent.Helyszin?.Telepules || "",
     helyszinIranyitoszam: safeEvent.Helyszin?.Iranyitoszam || "",
-    helyszinFedett: safeEvent.Helyszin?.Fedett || false,
-    helyszinOltozo: safeEvent.Helyszin?.Oltozo || false,
+    helyszinFedett: Boolean(safeEvent.Helyszin?.Fedett) || false,
+    helyszinOltozo: Boolean(safeEvent.Helyszin?.Oltozo) || false,
     helyszinParkolas: safeEvent.Helyszin?.Parkolas || "nincs",
-    helyszinBerles: safeEvent.Helyszin?.Berles || false
+    helyszinBerles: Boolean(safeEvent.Helyszin?.Berles) || false,
+    helyszinLeiras: safeEvent.Helyszin?.Leiras || ""
   });
+
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(safeEvent.imageUrl || "");
@@ -886,9 +911,15 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
+
+    // Checkbox esetén a checked értéket használjuk, egyébként a value-t
+    const newValue = type === 'checkbox' ? checked : value;
+
+    console.log(`Field ${id} changed to:`, type === 'checkbox' ? checked : value);
+
     setFormData((prevState) => ({
       ...prevState,
-      [id]: type === 'checkbox' ? checked : value,
+      [id]: newValue,
     }));
   };
 
@@ -910,7 +941,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   // Helyszín szerkesztés mód kikapcsolása
   const cancelLocationEditing = () => {
     setEditingLocation(false);
-  };  // Helyszín mentése (meglévő helyszín frissítése)
+  };
+
+  // Helyszín mentése (meglévő helyszín frissítése)
   const saveLocation = async () => {
     try {
       const token = getCookie('token');
@@ -920,19 +953,35 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         return null;
       }
 
-      // Helyszín adatok összeállítása
+      // Ellenőrizzük az irányítószám formátumát és konvertáljuk számmá
+      const iranyitoszam = parseInt(formData.helyszinIranyitoszam);
+      if (isNaN(iranyitoszam) || iranyitoszam < 1000 || iranyitoszam > 9999) {
+        setErrorMessage("Az irányítószám 1000 és 9999 közötti szám kell legyen.");
+        return null;
+      }
+
+      // Helyszín adatok összeállítása - explicit konverzióval a boolean értékekre
       const locationData = {
         Nev: formData.helyszinNev,
         Cim: formData.helyszinCim,
         Telepules: formData.helyszinTelepules,
-        Iranyitoszam: formData.helyszinIranyitoszam,
-        Fedett: formData.helyszinFedett,
-        Oltozo: formData.helyszinOltozo,
-        Parkolas: formData.helyszinParkolas,
-        Berles: formData.helyszinBerles
+        Iranyitoszam: iranyitoszam,
+        Fedett: formData.helyszinFedett === true, // Explicit boolean conversion
+        Oltozo: formData.helyszinOltozo === true, // Explicit boolean conversion
+        Parkolas: formData.helyszinParkolas || "nincs",
+        Berles: formData.helyszinBerles === true, // Explicit boolean conversion
+        Leiras: formData.helyszinLeiras || ""
       };
 
-      // Mindig a meglévő helyszínt frissítjük, nem hozunk létre újat
+      console.log("Sending location update with data:", locationData);
+
+      // Ellenőrizzük, hogy a Parkolas érték megfelelő-e
+      if (!["ingyenes", "fizetős", "nincs"].includes(locationData.Parkolas)) {
+        locationData.Parkolas = "nincs";
+      }
+
+      console.log("Updating location with data:", locationData);
+
       const response = await fetch(`http://localhost:8081/api/v1/updateHelyszin/${formData.helyszinId}`, {
         method: "PUT",
         headers: {
@@ -943,12 +992,31 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to save location");
+        const responseData = await response.json();
+        throw new Error(responseData.message || "Failed to save location");
       }
+
+      const responseData = await response.json();
+      console.log("Location updated successfully:", responseData);
 
       // Frissítsük a helyszínek listáját
       await fetchLocations();
+
+      // Frissítsük a formData-t a válaszban kapott adatokkal, ha van
+      if (responseData.updatedLocation) {
+        setFormData(prev => ({
+          ...prev,
+          helyszinNev: responseData.updatedLocation.Nev,
+          helyszinCim: responseData.updatedLocation.Cim,
+          helyszinTelepules: responseData.updatedLocation.Telepules,
+          helyszinIranyitoszam: responseData.updatedLocation.Iranyitoszam,
+          helyszinFedett: responseData.updatedLocation.Fedett,
+          helyszinOltozo: responseData.updatedLocation.Oltozo,
+          helyszinParkolas: responseData.updatedLocation.Parkolas,
+          helyszinBerles: responseData.updatedLocation.Berles,
+          helyszinLeiras: responseData.updatedLocation.Leiras || ""
+        }));
+      }
 
       // Kikapcsoljuk a szerkesztés módot
       setEditingLocation(false);
@@ -1008,6 +1076,8 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       // Add the event ID for update
       formDataToSend.append("id", safeEvent.id);
 
+      console.log("Sending event update with data:", Object.fromEntries(formDataToSend));
+
       const response = await fetch(`http://localhost:8081/api/v1/updateEsemeny/${safeEvent.id}`, {
         method: "PUT",
         headers: {
@@ -1017,12 +1087,13 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         body: formDataToSend,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || "Failed to update event");
       }
 
-      const data = await response.json();
+      console.log("Event updated successfully:", data);
       setSuccess(true);
 
       // Call onSuccess callback with updated event data
@@ -1030,23 +1101,30 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         // Merge the updated data with the original event data
         const updatedEvent = {
           ...safeEvent,
-          ...formData,
+          id: safeEvent.id,
           helyszinId: finalHelyszinId,
+          sportId: formData.sportId,
+          kezdoIdo: formData.kezdoIdo,
+          zaroIdo: formData.zaroIdo,
+          szint: formData.szint,
+          minimumEletkor: formData.minimumEletkor,
+          maximumEletkor: formData.maximumEletkor,
+          maximumLetszam: formData.maximumLetszam,
+          leiras: formData.leiras,
           // Update nested objects if needed
           Helyszin: {
-            ...safeEvent.Helyszin,
             Id: finalHelyszinId,
             Nev: formData.helyszinNev,
             Cim: formData.helyszinCim,
             Telepules: formData.helyszinTelepules,
-            Iranyitoszam: formData.helyszinIranyitoszam,
-            Fedett: formData.helyszinFedett,
-            Oltozo: formData.helyszinOltozo,
+            Iranyitoszam: parseInt(formData.helyszinIranyitoszam),
+            Fedett: Boolean(formData.helyszinFedett),
+            Oltozo: Boolean(formData.helyszinOltozo),
             Parkolas: formData.helyszinParkolas,
-            Berles: formData.helyszinBerles
+            Berles: Boolean(formData.helyszinBerles),
+            Leiras: formData.helyszinLeiras || ""
           },
-          Sportok: safeEvent.Sportok, // Same for sportok
-          imageUrl: data.imageUrl || safeEvent.imageUrl // Use new image URL if provided
+          imageUrl: data.esemeny?.imageUrl || safeEvent.imageUrl // Use new image URL if provided
         };
 
         // If the sport changed, we should update that object too
@@ -1057,6 +1135,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           }
         }
 
+        console.log("Updating event with:", updatedEvent);
         onSuccess(updatedEvent);
       }
 
@@ -1071,7 +1150,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     }
   };
 
-  if (!isOpen) return null; return (
+
+  if (!isOpen) return null;
+
+  return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70] transition-all duration-300">
       <div
         className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50"
@@ -1082,28 +1164,28 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }}
       >
         <style jsx>{`
-                @keyframes modal-appear {
-                  0% {
-                    transform: scale(0.95);
-                    opacity: 0;
-                  }
-                  100% {
-                    transform: scale(1);
-                    opacity: 1;
-                  }
-                }
-                @keyframes pulse-glow {
-                  0% {
-                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                  }
-                  50% {
-                    box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-                  }
-                  100% {
-                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                  }
-                }
-              `}</style>
+          @keyframes modal-appear {
+            0% {
+              transform: scale(0.95);
+              opacity: 0;
+            }
+            100% {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+          @keyframes pulse-glow {
+            0% {
+              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+            }
+            50% {
+              box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+            }
+            100% {
+              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+            }
+          }
+        `}</style>
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -1237,7 +1319,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                       Sportok betöltése...
                     </p>
                   )}
-                </div>                <div>
+                </div>
+
+                <div>
                   <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
                     Kezdő időpont
                   </label>
@@ -1329,10 +1413,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   />
                 </div>
 
-                {/* Leírás */}
+                {/* Helyszín leírás mező */}
                 <div className="md:col-span-2">
                   <label htmlFor="leiras" className="block mb-2 text-sm font-medium text-gray-300">
-                    Leírás
+                    Esemény leírása
                   </label>
                   <textarea
                     id="leiras"
@@ -1512,6 +1596,21 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     </label>
                   </div>
                 </div>
+
+                {/* Helyszín leírás mező */}
+                <div className="md:col-span-2">
+                  <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
+                    Helyszín leírása
+                  </label>
+                  <textarea
+                    id="helyszinLeiras"
+                    rows="4"
+                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                    placeholder="Részletes leírás a helyszínről..."
+                    value={formData.helyszinLeiras}
+                    onChange={handleChange}
+                  ></textarea>
+                </div>
               </div>
             )}
 
@@ -1585,12 +1684,4 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
-
-
-
-
-
-
-
-
 
