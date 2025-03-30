@@ -119,24 +119,92 @@ const MyEvents = () => {
   const closeSportEventDetailsModal = () => {
     setIsSportEventDetailsModalOpen(false);
     setSelectedEvent(null);
-    // Trigger a refresh of the events data
-    setRefreshData(prev => prev + 1);
+    // Nem töltjük újra az adatokat automatikusan, csak ha szükséges
+    // A handleParticipantUpdate már kezeli a frissítéseket
   };
 
   // Handle participant updates (joining/leaving events)
   const handleParticipantUpdate = (eventId, isJoining, participant) => {
-    console.log(`Participant ${participant.userId} ${isJoining ? 'joined' : 'left'} event ${eventId}`);
-    
-    // If this is an event update notification
+    console.log(`Participant update for event ${eventId}:`, participant);
+
+    // Ha ez egy esemény frissítés értesítés
     if (participant.userId === 'event-updated' && participant.eventData) {
-      console.log("Event was updated, refreshing data");
-      // Trigger a refresh of the events data
-      setRefreshData(prev => prev + 1);
+      console.log("Event was updated, updating local state with:", participant.eventData);
+
+      // Frissítsük a helyi állapotot az új esemény adatokkal
+      setOrganizedEvents(prev =>
+        prev.map(event =>
+          event.id === eventId ? { ...event, ...participant.eventData } : event
+        )
+      );
+
+      setParticipatedEvents(prev =>
+        prev.map(event =>
+          event.id === eventId ? { ...event, ...participant.eventData } : event
+        )
+      );
+
       return;
     }
-    
-    // For regular participant updates, we can update the local state
-    // But for simplicity, we'll just refresh all data
+
+    // Ha ez egy résztvevők számának frissítése
+    if (participant.userId === 'count-update' && participant.fullParticipantsList) {
+      console.log("Participants count updated:", participant.fullParticipantsList.length);
+
+      const updatedCount = participant.fullParticipantsList.length;
+
+      // Frissítsük mindkét listát, mert nem tudjuk melyikben van az esemény
+      setOrganizedEvents(prev =>
+        prev.map(event =>
+          event.id === eventId ? { ...event, resztvevoCount: updatedCount } : event
+        )
+      );
+
+      setParticipatedEvents(prev =>
+        prev.map(event =>
+          event.id === eventId ? { ...event, resztvevoCount: updatedCount } : event
+        )
+      );
+
+      return;
+    }
+
+    // Ha egy felhasználó csatlakozott vagy kilépett
+    if (participant.userId && participant.userId !== 'event-updated' && participant.userId !== 'count-update') {
+      console.log(`User ${participant.userId} ${isJoining ? 'joined' : 'left'} event ${eventId}`);
+
+      // Frissítsük a résztvevők számát mindkét listában
+      const updateParticipantCount = (events) => {
+        return events.map(event => {
+          if (event.id === eventId) {
+            // Ha van resztvevoCount, frissítsük, egyébként számoljuk ki a resztvevok_lista alapján
+            const currentCount = event.resztvevoCount !== undefined
+              ? event.resztvevoCount
+              : (event.resztvevok_lista?.length || 0);
+
+            return {
+              ...event,
+              resztvevoCount: isJoining ? currentCount + 1 : currentCount - 1
+            };
+          }
+          return event;
+        });
+      };
+
+      setOrganizedEvents(prev => updateParticipantCount(prev));
+      setParticipatedEvents(prev => updateParticipantCount(prev));
+
+      // Ha a felhasználó kilépett egy eseményből, és ez a "participated" tab, 
+      // akkor frissítsük a teljes listát
+      if (!isJoining && activeTab === "participated") {
+        setRefreshData(prev => prev + 1);
+      }
+
+      return;
+    }
+
+    // Ha nem tudjuk pontosan kezelni a változást, akkor frissítsünk mindent
+    console.log("Unknown participant update, refreshing all data");
     setRefreshData(prev => prev + 1);
   };
 
@@ -185,7 +253,7 @@ const MyEvents = () => {
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-2 text-blue-400" />
               <span className="text-sm">
-                {event.resztvevoCount || 0}/{event.maximumLetszam || 10} résztvevő
+                {event.resztvevoCount !== undefined ? event.resztvevoCount : (event.resztvevok_lista?.length || 0)}/{event.maximumLetszam || 10} résztvevő
               </span>
             </div>
           </div>
@@ -219,21 +287,19 @@ const MyEvents = () => {
       {/* Tabs */}
       <div className="flex border-b border-slate-700 mb-6">
         <button
-          className={`py-2 px-4 font-medium text-sm ${
-            activeTab === "organized"
+          className={`py-2 px-4 font-medium text-sm ${activeTab === "organized"
               ? "text-blue-400 border-b-2 border-blue-400"
               : "text-gray-400 hover:text-gray-300"
-          }`}
+            }`}
           onClick={() => setActiveTab("organized")}
         >
           Szervezett események
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm ${
-            activeTab === "participated"
+          className={`py-2 px-4 font-medium text-sm ${activeTab === "participated"
               ? "text-blue-400 border-b-2 border-blue-400"
               : "text-gray-400 hover:text-gray-300"
-          }`}
+            }`}
           onClick={() => setActiveTab("participated")}
         >
           Résztvevőként

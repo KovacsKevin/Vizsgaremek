@@ -426,8 +426,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const handleEventUpdate = (updatedEvent) => {
     console.log("Event updated, new data:", updatedEvent);
 
-    // Frissítjük a komponens állapotát az új esemény adatokkal
-    setCurrentEvent(updatedEvent);
+    // Frissítsük a komponens állapotát az új esemény adatokkal
+    setCurrentEvent({
+      ...updatedEvent,
+      // Biztosítsuk, hogy a resztvevok_lista megmaradjon
+      resztvevok_lista: participants
+    });
 
     // Bezárjuk a szerkesztő modalt
     closeEditModal();
@@ -436,7 +440,10 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     if (onParticipantUpdate) {
       onParticipantUpdate(updatedEvent.id, true, {
         userId: 'event-updated',
-        eventData: updatedEvent
+        eventData: {
+          ...updatedEvent,
+          resztvevok_lista: participants
+        }
       });
     }
   };
@@ -701,8 +708,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                                 disabled={isRemovingParticipant}
                                 title="Résztvevő eltávolítása"
                               >
-                                <Trash className="h-4 w-4" />
-                              </button>
+                                <Trash className="h-4 w-4" />                              </button>
                             )}
                         </div>
                       ))
@@ -1164,28 +1170,28 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }}
       >
         <style jsx>{`
-          @keyframes modal-appear {
-            0% {
-              transform: scale(0.95);
-              opacity: 0;
-            }
-            100% {
-              transform: scale(1);
-              opacity: 1;
-            }
-          }
-          @keyframes pulse-glow {
-            0% {
-              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-            }
-            50% {
-              box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-            }
-            100% {
-              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-            }
-          }
-        `}</style>
+                @keyframes modal-appear {
+                  0% {
+                    transform: scale(0.95);
+                    opacity: 0;
+                  }
+                  100% {
+                    transform: scale(1);
+                    opacity: 1;
+                  }
+                }
+                @keyframes pulse-glow {
+                  0% {
+                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                  }
+                  50% {
+                    box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+                  }
+                  100% {
+                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                  }
+                }
+              `}</style>
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -1684,4 +1690,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
+
+
+
 
