@@ -9,6 +9,8 @@ import HomePage from './pages/Main/Homepage';
 import SportMateFinder from './pages/sport-mate-finder';
 import MyEvents from "./pages/Main/MyEvents";
 import TestImages from './pages/TestImages';
+import Profile from './pages/Profile/Profile'; // Új import a Profile komponenshez
+
 function App() {
   return (
     <Router> {/* Itt ágyazd be Router-be */}
@@ -23,7 +25,7 @@ function App() {
           <Route path ="/sportmate" element={<SportMateFinder />} />
           <Route path ="/my-events" element={<MyEvents />} />
           <Route path ="/testimages" element={<TestImages />} />
-          
+          <Route path ="/profile" element={<Profile />} /> {/* Új útvonal a Profile komponenshez */}
         </Routes>
       </div>
     </Router>

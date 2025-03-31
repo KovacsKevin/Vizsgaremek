@@ -30,22 +30,22 @@ const authenticateUser = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Invalid email or password!" });
 
-        const token = jwt.sign({ 
-            userId: user.id, 
+        const token = jwt.sign({
+            userId: user.id,
             email: user.email,
             name: user.username // Hozzáadva a felhasználónév a tokenhez
         }, "secretkey", { expiresIn: "1h" });
-        
-        res.json({ 
-            message: "Login successful!", 
-            token, 
+
+        res.json({
+            message: "Login successful!",
+            token,
             user: {
                 id: user.id,
                 email: user.email,
                 username: user.username,
                 firstName: user.firstName,
                 lastName: user.lastName
-            } 
+            }
         });
     } catch (error) {
         res.status(500).json({ message: "Error during authentication", error });
@@ -57,11 +57,11 @@ const getUser = async (req, res) => {
     try {
         const { id } = req.params;
         // Explicit módon kérjük le a képmezőket is
-        const user = await User.findByPk(id, { 
-            attributes: { 
+        const user = await User.findByPk(id, {
+            attributes: {
                 exclude: ["password"],
-                include: ["profileBackground", "customBackground", "profilePicture"] 
-            } 
+                include: ["profileBackground", "customBackground", "profilePicture"]
+            }
         });
 
         if (!user) return res.status(404).json({ message: "User not found!" });
@@ -98,19 +98,34 @@ const updateUser = async (req, res) => {
     }
 };
 
-// Delete User
+// Csak a deleteUser függvényt frissítjük, a többi marad változatlan
+
+// Delete User - frissített verzió
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Ellenőrizzük, hogy a token tulajdonosa törli-e a saját fiókját
+        if (req.user.userId != id) {
+            return res.status(403).json({ message: "Nincs jogosultságod más felhasználó törlésére!" });
+        }
+
+        // Először töröljük a felhasználóhoz kapcsolódó résztvevő bejegyzéseket
+        const Résztvevő = require("../models/resztvevoModel");
+        await Résztvevő.destroy({ where: { userId: id } });
+
+        // Majd töröljük a felhasználót
         const deleted = await User.destroy({ where: { id } });
 
         if (!deleted) return res.status(404).json({ message: "User not found!" });
 
-        res.json({ message: "User deleted successfully!" });
+        res.json({ message: "User and related data deleted successfully!" });
     } catch (error) {
-        res.status(500).json({ message: "Error deleting user", error });
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Error deleting user", error: error.message });
     }
 };
+
 
 // Create Esemény (Event)
 const createEsemeny = async (req, res) => {
@@ -158,14 +173,14 @@ const createEsemeny = async (req, res) => {
 const getUserSettings = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Ellenőrizzük, hogy a token tulajdonosa kéri-e a saját adatait
         if (req.user.userId != id) {
             return res.status(403).json({ message: "Unauthorized to access these settings" });
         }
-        
+
         console.log(`Felhasználói beállítások lekérése: userId=${id}`);
-        
+
         // Explicit módon lekérjük a szükséges mezőket
         const user = await User.findByPk(id, {
             attributes: ['id', 'profileBackground', 'customBackground', 'profilePicture']
@@ -181,7 +196,7 @@ const getUserSettings = async (req, res) => {
             hasCustomBackground: !!user.customBackground,
             hasProfilePicture: !!user.profilePicture
         });
-        
+
         // Közvetlenül adjuk vissza a user objektumot
         res.json(user);
     } catch (error) {
@@ -195,44 +210,44 @@ const saveUserSettings = async (req, res) => {
     try {
         const { id } = req.params;
         const { profileBackground, customBackground, profilePicture } = req.body;
-        
+
         // Ellenőrizzük, hogy a token tulajdonosa módosítja-e a saját adatait
         if (req.user.userId != id) {
             return res.status(403).json({ message: "Unauthorized to modify these settings" });
         }
-        
+
         console.log(`Felhasználói beállítások mentése: userId=${id}`, {
             profileBackground: profileBackground ? "provided" : "not provided",
             hasCustomBackground: !!customBackground,
             hasProfilePicture: !!profilePicture
         });
-        
+
         const user = await User.findByPk(id);
-        
+
         if (!user) {
             console.log(`Felhasználó nem található: userId=${id}`);
             return res.status(404).json({ message: "User not found" });
         }
-        
+
         // Csak a megadott mezőket frissítjük
         const updates = {};
         if (profileBackground !== undefined) updates.profileBackground = profileBackground;
         if (customBackground !== undefined) updates.customBackground = customBackground;
         if (profilePicture !== undefined) updates.profilePicture = profilePicture;
-        
+
         console.log(`Felhasználói beállítások frissítése: userId=${id}`, {
             updatedFields: Object.keys(updates)
         });
-        
+
         // Frissítjük a felhasználót
         await User.update(updates, { where: { id } });
-        
+
         // Frissített felhasználó lekérése
         const updatedUser = await User.findByPk(id, {
             attributes: ['id', 'profileBackground', 'customBackground', 'profilePicture']
         });
-        
-        res.json({ 
+
+        res.json({
             message: "User settings updated successfully",
             settings: updatedUser
         });
@@ -242,12 +257,12 @@ const saveUserSettings = async (req, res) => {
     }
 };
 
-module.exports = { 
-    createUser, 
-    authenticateUser, 
-    getUser, 
-    updateUser, 
-    deleteUser, 
+module.exports = {
+    createUser,
+    authenticateUser,
+    getUser,
+    updateUser,
+    deleteUser,
     createEsemeny,
     getUserSettings,
     saveUserSettings

@@ -20,8 +20,8 @@ const authenticateToken = (req, res, next) => {
 router.post("/addUser", userController.createUser); // Create a new user
 router.post("/login", userController.authenticateUser); // Authenticate a user
 router.get("/getUser/:id", userController.getUser); // Get user by ID
-router.put("/updateUser/:id", userController.updateUser); // Update user by ID
-router.delete("/deleteUser/:id", userController.deleteUser); // Delete user by ID
+router.put("/updateUser/:id", authenticateToken, userController.updateUser); // Update user by ID - most már védett
+router.delete("/deleteUser/:id", authenticateToken, userController.deleteUser); // Delete user by ID - most már védett
 
 // Új útvonalak a felhasználói beállítások kezeléséhez
 router.get("/users/:id/settings", authenticateToken, userController.getUserSettings); // Beállítások lekérése
