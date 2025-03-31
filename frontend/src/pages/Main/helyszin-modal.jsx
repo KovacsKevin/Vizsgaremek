@@ -466,9 +466,9 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   className={`w-full bg-slate-800/80 border ${formErrors.Parkolas ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                 >
                   <option value="">Válasszon...</option>
-                  <option value="Ingyenes">Ingyenes</option>
-                  <option value="Fizetős">Fizetős</option>
-                  <option value="Nincs">Nincs</option>
+                  <option value="ingyenes">Ingyenes</option>
+                  <option value="fizetős">Fizetős</option>
+                  <option value="nincs">Nincs</option>
                 </select>
                 {formErrors.Parkolas && <p className="text-red-400 text-xs mt-1">{formErrors.Parkolas}</p>}
               </div>
