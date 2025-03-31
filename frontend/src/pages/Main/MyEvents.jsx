@@ -147,6 +147,27 @@ const MyEvents = () => {
     return organizedEvents.some(event => event.id === eventId) ? "szervező" : "játékos";
   }
 
+  // Segédfüggvény a sport nevének kinyeréséhez
+  const getSportName = (event) => {
+    // Minden lehetséges helyet ellenőrzünk, ahol a sport neve lehet
+    return event.Sportok?.Nev || event.Sport?.Nev || "Esemény";
+  }
+
+  // Segédfüggvény a sport képének kinyeréséhez - TestImages.jsx logikája alapján módosítva
+  const getSportImage = (event) => {
+    if (event.imageUrl) {
+      return `http://localhost:8081${event.imageUrl.startsWith('/') ? event.imageUrl : `/${event.imageUrl}`}`;
+    }
+    return event.Sport?.KepUrl || event.Sportok?.KepUrl || "/placeholder.svg";
+  }
+
+  // Segédfüggvény a résztvevők számának kinyeréséhez
+  const getParticipantsCount = (event) => {
+    if (event.résztvevőkSzáma !== undefined) return event.résztvevőkSzáma;
+    if (event.resztvevoCount !== undefined) return event.resztvevoCount;
+    return event.resztvevok_lista?.length || 0;
+  }
+
   // Modal kezelő függvények
   const openEventModal = () => {
     setIsEventModalOpen(true);
@@ -352,7 +373,8 @@ const MyEvents = () => {
               <p className="text-slate-400 max-w-md mb-6">
                 {activeFilter === "organized"
                   ? "Hozz létre új eseményt, hogy itt megjelenjen."
-                  : activeFilter === "participated" ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
+                  : activeFilter === "participated"
+                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
                     : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
               </p>
               <button
@@ -371,13 +393,17 @@ const MyEvents = () => {
                 >
                   <div className="h-40 bg-slate-600 overflow-hidden">
                     <img
-                      src={event.imageUrl || event.Sport?.KepUrl || event.Sportok?.KepUrl || "/placeholder.svg"}
-                      alt={event.Sportok?.Nev || event.Sport?.Nev || "Esemény kép"}
+                      src={getSportImage(event)}
+                      alt={getSportName(event)}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error(`Kép betöltési hiba: ${event.imageUrl}`);
+                        e.target.src = `/placeholder.svg?height=300&width=400&text=Betöltési%20Hiba`;
+                      }}
                     />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-xl font-semibold mb-2 truncate">{event.Sportok?.Nev || event.Sport?.Nev || "Esemény"}</h3>
+                    <h3 className="text-xl font-semibold mb-2 truncate">{getSportName(event)}</h3>
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-slate-300">
                         <MapPin size={16} className="mr-2 text-slate-400" />
@@ -394,8 +420,7 @@ const MyEvents = () => {
                       <div className="flex items-center text-sm text-slate-300">
                         <Users size={16} className="mr-2 text-slate-400" />
                         <span>
-                          {event.résztvevőkSzáma !== undefined ? event.résztvevőkSzáma :
-                            (event.resztvevok_lista?.length || 0)}/{event.maximumLetszam} fő
+                          {getParticipantsCount(event)}/{event.maximumLetszam} fő
                         </span>
                       </div>
                     </div>
@@ -455,16 +480,16 @@ const MyEvents = () => {
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal
-      isOpen={isSportModalOpen}
-      onClose={closeSportModal}
-      modalContent={{
-        title: "Új sport létrehozása",
-        description: "Tölts ki minden mezőt a sport létrehozásához"
-      }}
-      onSuccess={() => {
-        closeSportModal();
-      }}
-    /> */}
+        isOpen={isSportModalOpen}
+        onClose={closeSportModal}
+        modalContent={{
+          title: "Új sport létrehozása",
+          description: "Tölts ki minden mezőt a sport létrehozásához"
+        }}
+        onSuccess={() => {
+          closeSportModal();
+        }}
+      /> */}
     </div>
   )
 }
