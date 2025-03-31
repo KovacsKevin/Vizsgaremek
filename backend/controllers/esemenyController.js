@@ -766,7 +766,7 @@ const getOrganizedEvents = async (req, res) => {
                 },
                 {
                     model: Helyszin,
-                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles']
+                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles', 'Nev', 'Cim']
                 },
                 {
                     model: Sportok,
@@ -828,7 +828,7 @@ const getParticipatedEvents = async (req, res) => {
                 },
                 {
                     model: Helyszin,
-                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles']
+                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles', 'Nev' , 'Cim']
                 },
                 {
                     model: Sportok,
