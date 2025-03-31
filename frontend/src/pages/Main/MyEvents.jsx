@@ -297,8 +297,8 @@ const MyEvents = () => {
             <button
               onClick={() => setActiveFilter("all")}
               className={`px-4 py-2 rounded-md transition-all ${activeFilter === "all"
-                  ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
-                  : "text-slate-300 hover:bg-white/5"
+                ? "bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white"
+                : "text-slate-300 hover:bg-white/5"
                 }`}
             >
               Összes
@@ -306,8 +306,8 @@ const MyEvents = () => {
             <button
               onClick={() => setActiveFilter("organized")}
               className={`px-4 py-2 rounded-md transition-all ${activeFilter === "organized"
-                  ? "bg-gradient-to-r from-green-500/20 to-emerald-600/20 text-white"
-                  : "text-slate-300 hover:bg-white/5"
+                ? "bg-gradient-to-r from-green-500/20 to-emerald-600/20 text-white"
+                : "text-slate-300 hover:bg-white/5"
                 }`}
             >
               Szervezőként
@@ -315,8 +315,8 @@ const MyEvents = () => {
             <button
               onClick={() => setActiveFilter("participated")}
               className={`px-4 py-2 rounded-md transition-all ${activeFilter === "participated"
-                  ? "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 text-white"
-                  : "text-slate-300 hover:bg-white/5"
+                ? "bg-gradient-to-r from-blue-500/20 to-cyan-600/20 text-white"
+                : "text-slate-300 hover:bg-white/5"
                 }`}
             >
               Résztvevőként
@@ -352,8 +352,7 @@ const MyEvents = () => {
               <p className="text-slate-400 max-w-md mb-6">
                 {activeFilter === "organized"
                   ? "Hozz létre új eseményt, hogy itt megjelenjen."
-                  : activeFilter === "participated"
-                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
+                  : activeFilter === "participated" ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
                     : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
               </p>
               <button
@@ -372,17 +371,17 @@ const MyEvents = () => {
                 >
                   <div className="h-40 bg-slate-600 overflow-hidden">
                     <img
-                      src={event.imageUrl || event.Sport?.KepUrl || "/placeholder.svg"}
-                      alt={event.Sport?.Nev || "Esemény kép"}
+                      src={event.imageUrl || event.Sport?.KepUrl || event.Sportok?.KepUrl || "/placeholder.svg"}
+                      alt={event.Sportok?.Nev || event.Sport?.Nev || "Esemény kép"}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-xl font-semibold mb-2 truncate">{event.Sport?.Nev || "Esemény"}</h3>
+                    <h3 className="text-xl font-semibold mb-2 truncate">{event.Sportok?.Nev || event.Sport?.Nev || "Esemény"}</h3>
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-slate-300">
                         <MapPin size={16} className="mr-2 text-slate-400" />
-                        <span>{event.Helyszin?.Nev || "Ismeretlen helyszín"}, {event.Helyszin?.Telepules || ""}</span>
+                        <span>{event.Helyszin?.Telepules || "Ismeretlen helyszín"}</span>
                       </div>
                       <div className="flex items-center text-sm text-slate-300">
                         <Calendar size={16} className="mr-2 text-slate-400" />
@@ -390,19 +389,20 @@ const MyEvents = () => {
                       </div>
                       <div className="flex items-center text-sm text-slate-300">
                         <Clock size={16} className="mr-2 text-slate-400" />
-                        <span>{formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo || event.kezdoIdo)}</span>
+                        <span>{formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}</span>
                       </div>
                       <div className="flex items-center text-sm text-slate-300">
                         <Users size={16} className="mr-2 text-slate-400" />
                         <span>
-                          {event.resztvevoCount !== undefined ? event.resztvevoCount : (event.resztvevok_lista?.length || 0)}/{event.maximumLetszam} fő
+                          {event.résztvevőkSzáma !== undefined ? event.résztvevőkSzáma :
+                            (event.resztvevok_lista?.length || 0)}/{event.maximumLetszam} fő
                         </span>
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${getEventRole(event.id) === "szervező"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-blue-500/20 text-blue-400"
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-blue-500/20 text-blue-400"
                         }`}>
                         {getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"}
                       </span>
@@ -441,7 +441,7 @@ const MyEvents = () => {
         isOpen={isHelyszinModalOpen}
         onClose={closeHelyszinModal}
         modalContent={helyszinModalContent}
-        onSuccess={handleHelyszinSuccess} 
+        onSuccess={handleHelyszinSuccess}
       />
 
       {/* SportEventDetailsModal */}
@@ -455,18 +455,19 @@ const MyEvents = () => {
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal
-        isOpen={isSportModalOpen}
-        onClose={closeSportModal}
-        modalContent={{
-          title: "Új sport létrehozása",
-          description: "Tölts ki minden mezőt a sport létrehozásához"
-        }}
-        onSuccess={() => {
-          closeSportModal();
-        }}
-      /> */}
+      isOpen={isSportModalOpen}
+      onClose={closeSportModal}
+      modalContent={{
+        title: "Új sport létrehozása",
+        description: "Tölts ki minden mezőt a sport létrehozásához"
+      }}
+      onSuccess={() => {
+        closeSportModal();
+      }}
+    /> */}
     </div>
   )
 }
 
 export default MyEvents
+

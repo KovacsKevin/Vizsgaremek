@@ -740,6 +740,7 @@ const calculateAge = (birthDate) => {
 };
 
 // Események lekérése, ahol a felhasználó szervező
+// Események lekérése, ahol a felhasználó szervező
 const getOrganizedEvents = async (req, res) => {
     try {
         // Authenticate user
@@ -760,7 +761,8 @@ const getOrganizedEvents = async (req, res) => {
                         userId: userId,
                         szerep: 'szervező'
                     },
-                    attributes: [] // Nem szükséges a résztvevő adatait visszaadni
+                    attributes: [], // Nem szükséges a résztvevő adatait visszaadni
+                    required: true
                 },
                 {
                     model: Helyszin,
@@ -770,7 +772,21 @@ const getOrganizedEvents = async (req, res) => {
                     model: Sportok,
                     attributes: ['Nev', 'KepUrl']
                 }
-            ]
+            ],
+            attributes: {
+                include: [
+                    [
+                        sequelize.literal(`(
+                            SELECT COUNT(*)
+                            FROM Résztvevős
+                            WHERE 
+                                Résztvevős.eseményId = Esemény.id
+                                AND Résztvevős.státusz = 'elfogadva'
+                        )`),
+                        'résztvevőkSzáma' // Résztvevők számának megjelenítése
+                    ]
+                ]
+            }
         });
 
         if (events.length === 0) {
