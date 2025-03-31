@@ -801,6 +801,7 @@ const getOrganizedEvents = async (req, res) => {
 };
 
 // Események lekérése, ahol a felhasználó játékos
+// Események lekérése, ahol a felhasználó játékos
 const getParticipatedEvents = async (req, res) => {
     try {
         // Authenticate user
@@ -822,17 +823,32 @@ const getParticipatedEvents = async (req, res) => {
                         szerep: 'játékos',
                         státusz: 'elfogadva'
                     },
-                    attributes: [] // Nem szükséges a résztvevő adatait visszaadni
+                    attributes: [], // Nem szükséges a résztvevő adatait visszaadni
+                    required: true
                 },
                 {
                     model: Helyszin,
-                    attributes: ['Nev', 'Telepules', 'Cim']
+                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles']
                 },
                 {
                     model: Sportok,
                     attributes: ['Nev', 'KepUrl']
                 }
-            ]
+            ],
+            attributes: {
+                include: [
+                    [
+                        sequelize.literal(`(
+                            SELECT COUNT(*)
+                            FROM Résztvevős
+                            WHERE 
+                                Résztvevős.eseményId = Esemény.id
+                                AND Résztvevős.státusz = 'elfogadva'
+                        )`),
+                        'résztvevőkSzáma' // Résztvevők számának megjelenítése
+                    ]
+                ]
+            }
         });
 
         if (events.length === 0) {
