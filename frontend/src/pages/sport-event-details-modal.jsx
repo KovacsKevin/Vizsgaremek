@@ -4,10 +4,30 @@ import { useState, useEffect } from "react"
 import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
-// Placeholder Image component
-const Image = ({ src, alt, className }) => (
-  <img src={src || "/api/placeholder/300/200"} alt={alt || ''} className={className || ''} />
-)
+// Placeholder Image component - módosítva a TestImages.jsx logikája alapján
+const Image = ({ src, alt, className }) => {
+  const formatImageUrl = (url) => {
+    if (!url) return "/placeholder.svg";
+
+    // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
+    if (url.startsWith('http://localhost:8081')) return url;
+
+    // Egyébként hozzáadjuk a szerver URL-t
+    return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
+  };
+
+  return (
+    <img
+      src={formatImageUrl(src)}
+      alt={alt || ''}
+      className={className || ''}
+      onError={(e) => {
+        console.error(`Kép betöltési hiba: ${src}`);
+        e.target.src = "/placeholder.svg?height=300&width=400&text=Betöltési%20Hiba";
+      }}
+    />
+  );
+};
 
 // Helper function to get cookie by name
 const getCookie = (name) => {
@@ -692,8 +712,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                               </h4>
                               <p className="text-sm text-white/60">
                                 {participant.age ? `${participant.age} éves • ` : ""}
-                                {participant.level || ""}
-                              </p>
+                                {participant.level || ""}                              </p>
                             </div>
                           </div>
 
@@ -1058,9 +1077,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           throw new Error("Failed to save location");
         }
         finalHelyszinId = savedLocationId;
-      }
-
-      // Create a FormData object to send the form data and image file
+      }      // Create a FormData object to send the form data and image file
       const formDataToSend = new FormData();
 
       // Add event fields to the FormData
