@@ -138,6 +138,7 @@ const Profile = () => {
     };
 
     // Felhasználói adatok mentése
+    // Felhasználói adatok mentése
     const handleSaveProfile = async () => {
         try {
             const token = Cookies.get("token");
@@ -170,12 +171,19 @@ const Profile = () => {
             });
 
             setIsEditing(false);
-            alert("A profil adatok sikeresen frissítve!");
+
+            // Sikeres mentés üzenet
+            alert("A profil adatok sikeresen frissítve! Újra be kell jelentkeznie.");
+
+            // Kijelentkeztetés és átirányítás a login oldalra
+            Cookies.remove("token");
+            navigate("/login");
         } catch (err) {
             console.error("Hiba a profil mentésekor:", err);
             alert("Hiba történt a profil mentésekor: " + err.message);
         }
     };
+
 
     // Profil törlése
     const handleDeleteProfile = async () => {

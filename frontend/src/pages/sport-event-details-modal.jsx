@@ -4,13 +4,18 @@ import { useState, useEffect } from "react"
 import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
-// Placeholder Image component - módosítva a TestImages.jsx logikája alapján
+// Javított Image komponens hibakezeléssel
 const Image = ({ src, alt, className }) => {
+  const [error, setError] = useState(false);
+
   const formatImageUrl = (url) => {
-    if (!url) return "/placeholder.svg";
+    if (!url || error) return "https://via.placeholder.com/300x200?text=No+Image";
 
     // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
     if (url.startsWith('http://localhost:8081')) return url;
+
+    // Ha Base64 kódolt kép, akkor közvetlenül visszaadjuk
+    if (url.startsWith('data:image/')) return url;
 
     // Egyébként hozzáadjuk a szerver URL-t
     return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
@@ -22,11 +27,46 @@ const Image = ({ src, alt, className }) => {
       alt={alt || ''}
       className={className || ''}
       onError={(e) => {
-        console.error(`Kép betöltési hiba: ${src}`);
-        e.target.src = "/placeholder.svg?height=300&width=400&text=Betöltési%20Hiba";
+        console.error(`Kép betöltési hiba: ${src && src.substring(0, 100)}...`);
+        setError(true);
+        e.target.src = "https://via.placeholder.com/300x200?text=Betöltési+Hiba";
       }}
     />
   );
+};
+
+// Javított kép tömörítő függvény
+const compressImage = (imageDataUrl, maxWidth = 400, quality = 0.7) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = imageDataUrl;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Új méretek kiszámítása
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Tömörített kép adatainak lekérése, alacsonyabb minőséggel
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+
+    // Hiba kezelés hozzáadása
+    img.onerror = () => {
+      console.error("Kép betöltési hiba történt");
+      resolve(null); // Null visszaadása hiba esetén
+    };
+  });
 };
 
 // Helper function to get cookie by name
@@ -557,10 +597,15 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   </span>
                 </div>
 
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Leírás</h3>
-                  <p className="text-white/80 whitespace-pre-line">{currentEvent.leiras || "Nincs megadott leírás."}</p>
-                </div>
+                {/* Helyszín leírása - új rész */}
+                {currentEvent.Helyszin?.Leiras && (
+                  <div className="mt-4 p-4 bg-white/5 rounded-lg mb-6">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
+                    <div className="max-h-40 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
+                      <p className="text-sm text-white/80 whitespace-pre-line break-words">{currentEvent.Helyszin.Leiras}</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
@@ -712,7 +757,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                               </h4>
                               <p className="text-sm text-white/60">
                                 {participant.age ? `${participant.age} éves • ` : ""}
-                                {participant.level || ""}                              </p>
+                                {participant.level || ""}
+                              </p>
                             </div>
                           </div>
 
@@ -727,7 +773,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                                 disabled={isRemovingParticipant}
                                 title="Résztvevő eltávolítása"
                               >
-                                <Trash className="h-4 w-4" />                              </button>
+                                <Trash className="h-4 w-4" />
+                              </button>
                             )}
                         </div>
                       ))
@@ -745,53 +792,55 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
       {/* Profile Modal */}
       {showProfileModal && selectedParticipant && (
-        <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
-          <button
-            onClick={closeProfileModal}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
+          <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+            <button
+              onClick={closeProfileModal}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-          <div className="flex flex-col items-center text-center">
-            <Image
-              src={selectedParticipant.image || "/placeholder.svg"}
-              alt={selectedParticipant.name}
-              className="w-24 h-24 rounded-full object-cover mb-4"
-            />
-            <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
-            <p className="text-white/60 mb-4">
-              {selectedParticipant.role === 'szervező' && (
-                <span className="text-blue-300 mr-1">Szervező</span>
-              )}
-              {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
-              {selectedParticipant.level || ""}
-            </p>
+            <div className="flex flex-col items-center text-center">
+              <Image
+                src={selectedParticipant.image || "/placeholder.svg"}
+                alt={selectedParticipant.name}
+                className="w-24 h-24 rounded-full object-cover mb-4"
+              />
+              <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
+              <p className="text-white/60 mb-4">
+                {selectedParticipant.role === 'szervező' && (
+                  <span className="text-blue-300 mr-1">Szervező</span>
+                )}
+                {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
+                {selectedParticipant.level || ""}
+              </p>
 
-            <div className="w-full space-y-4 mt-2">
-              <div className="bg-white/5 p-4 rounded-lg">
-                <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <User className="h-4 w-4" /> Profil
-                </h4>
-                <p className="text-sm text-white/80">
-                  {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
-                </p>
-              </div>
-
-              <div className="bg-white/5 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Kedvenc sportok</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedParticipant.sports?.map((sport, index) => (
-                    <span key={index} className="px-3 py-1 bg-white/10 rounded-full text-sm">
-                      {sport}
-                    </span>
-                  )) || <span className="text-sm text-white/60">Nincs megadva kedvenc sport.</span>}
+              <div className="w-full space-y-4 mt-2">
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4" /> Profil
+                  </h4>
+                  <p className="text-sm text-white/80">
+                    {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+                  </p>
                 </div>
-              </div>
 
-              <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
-                Kapcsolatfelvétel
-              </button>
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Kedvenc sportok</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedParticipant.sports?.map((sport, index) => (
+                      <span key={index} className="px-3 py-1 bg-white/10 rounded-full text-sm">
+                        {sport}
+                      </span>
+                    )) || <span className="text-sm text-white/60">Nincs megadva kedvenc sport.</span>}
+                  </div>
+                </div>
+
+                <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+                  Kapcsolatfelvétel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1077,7 +1126,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           throw new Error("Failed to save location");
         }
         finalHelyszinId = savedLocationId;
-      }      // Create a FormData object to send the form data and image file
+      }
+
+      // Create a FormData object to send the form data and image file
       const formDataToSend = new FormData();
 
       // Add event fields to the FormData
@@ -1390,8 +1441,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   <label htmlFor="szint" className="block mb-2 text-sm font-medium text-gray-300">
                     Szint
                   </label>
-                  <select
-                    id="szint"
+                  <select id="szint"
                     className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
                     value={formData.szint}
                     onChange={handleChange}
@@ -1436,20 +1486,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   />
                 </div>
 
-                {/* Helyszín leírás mező */}
-                <div className="md:col-span-2">
-                  <label htmlFor="leiras" className="block mb-2 text-sm font-medium text-gray-300">
-                    Esemény leírása
-                  </label>
-                  <textarea
-                    id="leiras"
-                    rows="4"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Részletes leírás az eseményről..."
-                    value={formData.leiras}
-                    onChange={handleChange}
-                  ></textarea>
-                </div>
 
                 {/* Image Upload */}
                 <div className="md:col-span-2">
@@ -1707,7 +1743,3 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
-
-
-
-
