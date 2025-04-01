@@ -557,11 +557,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   </span>
                 </div>
 
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Leírás</h3>
-                  <p className="text-white/80 whitespace-pre-line">{currentEvent.leiras || "Nincs megadott leírás."}</p>
-                </div>
-
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
                     {isParticipant ? (
@@ -1436,21 +1431,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   />
                 </div>
 
-                {/* Helyszín leírás mező */}
-                <div className="md:col-span-2">
-                  <label htmlFor="leiras" className="block mb-2 text-sm font-medium text-gray-300">
-                    Esemény leírása
-                  </label>
-                  <textarea
-                    id="leiras"
-                    rows="4"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Részletes leírás az eseményről..."
-                    value={formData.leiras}
-                    onChange={handleChange}
-                  ></textarea>
-                </div>
-
                 {/* Image Upload */}
                 <div className="md:col-span-2">
                   <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
@@ -1707,7 +1687,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
-
 
 
 
