@@ -557,6 +557,19 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                   </span>
                 </div>
 
+                {/* Helyszín leírása - új rész */}
+                {currentEvent.Helyszin?.Leiras && (
+                  <div className="mt-4 p-4 bg-white/5 rounded-lg mb-6">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
+                    <div className="max-h-40 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
+                      <p className="text-sm text-white/80 whitespace-pre-line break-words">{currentEvent.Helyszin.Leiras}</p>
+                    </div>
+                  </div>
+                )}
+
+              
+
+
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
                     {isParticipant ? (
@@ -1385,8 +1398,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   <label htmlFor="szint" className="block mb-2 text-sm font-medium text-gray-300">
                     Szint
                   </label>
-                  <select
-                    id="szint"
+                  <select id="szint"
                     className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
                     value={formData.szint}
                     onChange={handleChange}
@@ -1430,6 +1442,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
+
 
                 {/* Image Upload */}
                 <div className="md:col-span-2">
@@ -1687,6 +1700,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
+
+
+
 
 
 
