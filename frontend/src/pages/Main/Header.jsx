@@ -387,6 +387,8 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
+  
+
   // Navigáció kezelése - kiegészítve a Legfrissebb sportesemények görgetésével
   const handleNavigation = (id, path) => {
     setActiveTab(id);
