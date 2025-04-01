@@ -205,7 +205,7 @@ const getUserSettings = async (req, res) => {
     }
 };
 
-// Felhasználói beállítások mentése - javított verzió
+// Profilkép mentése előtt méret ellenőrzés
 const saveUserSettings = async (req, res) => {
     try {
         const { id } = req.params;
@@ -214,6 +214,19 @@ const saveUserSettings = async (req, res) => {
         // Ellenőrizzük, hogy a token tulajdonosa módosítja-e a saját adatait
         if (req.user.userId != id) {
             return res.status(403).json({ message: "Unauthorized to modify these settings" });
+        }
+
+        // Base64 képek méretének ellenőrzése
+        if (profilePicture && profilePicture.length > 1000000) { // ~1MB limit
+            return res.status(400).json({ 
+                message: "A profilkép túl nagy méretű. Kérjük, használjon kisebb képet (max 1MB)." 
+            });
+        }
+        
+        if (customBackground && customBackground.length > 1000000) { // ~1MB limit
+            return res.status(400).json({ 
+                message: "A háttérkép túl nagy méretű. Kérjük, használjon kisebb képet (max 1MB)." 
+            });
         }
 
         console.log(`Felhasználói beállítások mentése: userId=${id}`, {

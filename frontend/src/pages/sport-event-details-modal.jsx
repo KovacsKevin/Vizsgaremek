@@ -1,16 +1,21 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
-// Placeholder Image component - módosítva a TestImages.jsx logikája alapján
+// Javított Image komponens hibakezeléssel
 const Image = ({ src, alt, className }) => {
+  const [error, setError] = useState(false);
+
   const formatImageUrl = (url) => {
-    if (!url) return "https://via.placeholder.com/300x200?text=No+Image";
+    if (!url || error) return "https://via.placeholder.com/300x200?text=No+Image";
 
     // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
     if (url.startsWith('http://localhost:8081')) return url;
+
+    // Ha Base64 kódolt kép, akkor közvetlenül visszaadjuk
+    if (url.startsWith('data:image/')) return url;
 
     // Egyébként hozzáadjuk a szerver URL-t
     return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
@@ -22,11 +27,46 @@ const Image = ({ src, alt, className }) => {
       alt={alt || ''}
       className={className || ''}
       onError={(e) => {
-        console.error(`Kép betöltési hiba: ${src}`);
+        console.error(`Kép betöltési hiba: ${src && src.substring(0, 100)}...`);
+        setError(true);
         e.target.src = "https://via.placeholder.com/300x200?text=Betöltési+Hiba";
       }}
     />
   );
+};
+
+// Javított kép tömörítő függvény
+const compressImage = (imageDataUrl, maxWidth = 400, quality = 0.7) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = imageDataUrl;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Új méretek kiszámítása
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Tömörített kép adatainak lekérése, alacsonyabb minőséggel
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+
+    // Hiba kezelés hozzáadása
+    img.onerror = () => {
+      console.error("Kép betöltési hiba történt");
+      resolve(null); // Null visszaadása hiba esetén
+    };
+  });
 };
 
 // Helper function to get cookie by name
@@ -263,7 +303,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
         const newParticipant = {
           id: responseData.participant.userId,
           name: responseData.participant.name,
-          image: responseData.participant.image || "https://via.placeholder.com/100x100?text=User",
+          image: responseData.participant.image || "/api/placeholder/100/100",
           role: responseData.participant.role,
           joinDate: responseData.participant.joinDate
         };
@@ -414,7 +454,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
       setParticipants(updatedParticipants);
 
       // Call parent update function if provided
-      // Call parent update function if provided
       if (onParticipantUpdate) {
         onParticipantUpdate(currentEvent.id, false, { userId: participantId });
       }
@@ -487,7 +526,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
             <div className="w-full md:w-3/5 p-6 border-b md:border-b-0 md:border-r border-white/20">
               <div className="relative h-64 mb-6 rounded-lg overflow-hidden">
                 <Image
-                  src={currentEvent.imageUrl || "https://via.placeholder.com/800x400?text=Sport+esemény"}
+                  src={currentEvent.imageUrl || "/placeholder.svg"}
                   alt={currentEvent.Sportok?.Nev || "Sport esemény"}
                   className="w-full h-full object-cover"
                 />
@@ -567,9 +606,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                     </div>
                   </div>
                 )}
-
-              
-
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
@@ -665,7 +701,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                             onClick={() => handleParticipantClick(participant)}
                           >
                             <Image
-                              src={participant.image || "https://via.placeholder.com/100x100?text=Szervező"}
+                              src={participant.image || "/placeholder.svg"}
                               alt={participant.name}
                               className="w-12 h-12 rounded-full object-cover"
                             />
@@ -702,354 +738,359 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                         <div
                           key={participant.id}
                           className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                        >                          <div
-                        className="flex-grow flex items-center gap-4 cursor-pointer"
-                        onClick={() => handleParticipantClick(participant)}
-                      >
-                        <Image
-                          src={participant.image || "https://via.placeholder.com/100x100?text=Játékos"}
-                          alt={participant.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <h4 className="font-medium">
-                            {participant.name}
-                            {currentUser && participant.id === currentUser.userId && (
-                              <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                            )}
-                          </h4>
-                          <p className="text-sm text-white/60">
-                            {participant.age ? `${participant.age} éves • ` : ""}
-                            {participant.level || ""}                              </p>
-                        </div>
-                      </div>
-
-                      {/* Kuka ikon - csak a szervező látja és csak más játékosoknál */}
-                      {currentUser &&
-                        participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
-                        participant.id !== currentUser.userId && (
-                          <button
-                            onClick={() => handleRemoveParticipant(participant.id)}
-                            className={`p-2 rounded-full ${isRemovingParticipant ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
-                              } text-red-400 transition-colors`}
-                            disabled={isRemovingParticipant}
-                            title="Résztvevő eltávolítása"
+                        >
+                          <div
+                            className="flex-grow flex items-center gap-4 cursor-pointer"
+                            onClick={() => handleParticipantClick(participant)}
                           >
-                            <Trash className="h-4 w-4" />                              </button>
-                        )}
-                    </div>
-                  ))
-              )}
+                            <Image
+                              src={participant.image || "/placeholder.svg"}
+                              alt={participant.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">
+                                {participant.name}
+                                {currentUser && participant.id === currentUser.userId && (
+                                  <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                                )}
+                              </h4>
+                              <p className="text-sm text-white/60">
+                                {participant.age ? `${participant.age} éves • ` : ""}
+                                {participant.level || ""}
+                              </p>
+                            </div>
+                          </div>
 
-              {removeParticipantError && (
-                <p className="text-red-400 text-sm mt-2">{removeParticipantError}</p>
-              )}
+                          {/* Kuka ikon - csak a szervező látja és csak más játékosoknál */}
+                          {currentUser &&
+                            participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
+                            participant.id !== currentUser.userId && (
+                              <button
+                                onClick={() => handleRemoveParticipant(participant.id)}
+                                className={`p-2 rounded-full ${isRemovingParticipant ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
+                                  } text-red-400 transition-colors`}
+                                disabled={isRemovingParticipant}
+                                title="Résztvevő eltávolítása"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </button>
+                            )}
+                        </div>
+                      ))
+                  )}
+
+                  {removeParticipantError && (
+                    <p className="text-red-400 text-sm mt-2">{removeParticipantError}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  {/* Profile Modal */}
-  {showProfileModal && selectedParticipant && (
-    <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
-      <button
-        onClick={closeProfileModal}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-      >
-        <X className="h-5 w-5" />
-      </button>
+      {/* Profile Modal */}
+      {showProfileModal && selectedParticipant && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
+          <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+            <button
+              onClick={closeProfileModal}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-      <div className="flex flex-col items-center text-center">
-        <Image
-          src={selectedParticipant.image || "https://via.placeholder.com/100x100?text=User"}
-          alt={selectedParticipant.name}
-          className="w-24 h-24 rounded-full object-cover mb-4"
+            <div className="flex flex-col items-center text-center">
+              <Image
+                src={selectedParticipant.image || "/placeholder.svg"}
+                alt={selectedParticipant.name}
+                className="w-24 h-24 rounded-full object-cover mb-4"
+              />
+              <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
+              <p className="text-white/60 mb-4">
+                {selectedParticipant.role === 'szervező' && (
+                  <span className="text-blue-300 mr-1">Szervező</span>
+                )}
+                {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
+                {selectedParticipant.level || ""}
+              </p>
+
+              <div className="w-full space-y-4 mt-2">
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4" /> Profil
+                  </h4>
+                  <p className="text-sm text-white/80">
+                    {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Kedvenc sportok</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedParticipant.sports?.map((sport, index) => (
+                      <span key={index} className="px-3 py-1 bg-white/10 rounded-full text-sm">
+                        {sport}
+                      </span>
+                    )) || <span className="text-sm text-white/60">Nincs megadva kedvenc sport.</span>}
+                  </div>
+                </div>
+
+                <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+                  Kapcsolatfelvétel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+        <EventEditModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          event={currentEvent}
+          onSuccess={handleEventUpdate}
         />
-        <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
-        <p className="text-white/60 mb-4">
-          {selectedParticipant.role === 'szervező' && (
-            <span className="text-blue-300 mr-1">Szervező</span>
-          )}
-          {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
-          {selectedParticipant.level || ""}
-        </p>
-
-        <div className="w-full space-y-4 mt-2">
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h4 className="font-medium mb-2 flex items-center gap-2">
-              <User className="h-4 w-4" /> Profil
-            </h4>
-            <p className="text-sm text-white/80">
-              {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
-            </p>
-          </div>
-
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Kedvenc sportok</h4>
-            <div className="flex flex-wrap gap-2">
-              {selectedParticipant.sports?.map((sport, index) => (
-                <span key={index} className="px-3 py-1 bg-white/10 rounded-full text-sm">
-                  {sport}
-                </span>
-              )) || <span className="text-sm text-white/60">Nincs megadva kedvenc sport.</span>}
-            </div>
-          </div>
-
-          <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
-            Kapcsolatfelvétel
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
-
-  {/* Edit Modal */}
-  {isEditModalOpen && (
-    <EventEditModal
-      isOpen={isEditModalOpen}
-      onClose={closeEditModal}
-      event={currentEvent}
-      onSuccess={handleEventUpdate}
-    />
-  )}
-</>
-);
+      )}
+    </>
+  );
 };
 
 // Új komponens az esemény szerkesztéséhez
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
-// Biztonságos esemény objektum létrehozása, hogy elkerüljük az undefined hibákat
-const safeEvent = event || {};
+  // Biztonságos esemény objektum létrehozása, hogy elkerüljük az undefined hibákat
+  const safeEvent = event || {};
 
-const [formData, setFormData] = useState({
-helyszinId: safeEvent.helyszinId || safeEvent.Helyszin?.Id || "",
-sportId: safeEvent.sportId || safeEvent.Sportok?.Id || "",
-kezdoIdo: safeEvent.kezdoIdo ? new Date(safeEvent.kezdoIdo).toISOString().slice(0, 16) : "",
-zaroIdo: safeEvent.zaroIdo ? new Date(safeEvent.zaroIdo).toISOString().slice(0, 16) : "",
-szint: safeEvent.szint || "",
-minimumEletkor: safeEvent.minimumEletkor || "",
-maximumEletkor: safeEvent.maximumEletkor || "",
-maximumLetszam: safeEvent.maximumLetszam || "",
-leiras: safeEvent.leiras || "",
-// Helyszín adatok
-helyszinNev: safeEvent.Helyszin?.Nev || "",
-helyszinCim: safeEvent.Helyszin?.Cim || "",
-helyszinTelepules: safeEvent.Helyszin?.Telepules || "",
-helyszinIranyitoszam: safeEvent.Helyszin?.Iranyitoszam || "",
-helyszinFedett: Boolean(safeEvent.Helyszin?.Fedett) || false,
-helyszinOltozo: Boolean(safeEvent.Helyszin?.Oltozo) || false,
-helyszinParkolas: safeEvent.Helyszin?.Parkolas || "nincs",
-helyszinBerles: Boolean(safeEvent.Helyszin?.Berles) || false,
-helyszinLeiras: safeEvent.Helyszin?.Leiras || ""
-});
-
-
-const [imageFile, setImageFile] = useState(null);
-const [imagePreview, setImagePreview] = useState(safeEvent.imageUrl || "");
-const [submitting, setSubmitting] = useState(false);
-const [errorMessage, setErrorMessage] = useState("");
-const [success, setSuccess] = useState(false);
-const [locations, setLocations] = useState([]);
-const [loadingLocations, setLoadingLocations] = useState(false);
-const [sports, setSports] = useState([]);
-const [loadingSports, setLoadingSports] = useState(false);
-const [editingLocation, setEditingLocation] = useState(false);
-
-// Parkolás opciók
-const parkolasOptions = [
-{ value: "ingyenes", label: "Ingyenes" },
-{ value: "fizetős", label: "Fizetős" },
-{ value: "nincs", label: "Nincs" }
-];
-
-// Fetch locations and sports when modal opens
-useEffect(() => {
-if (isOpen) {
-  fetchLocations();
-  fetchSports();
-}
-}, [isOpen]);
-
-const fetchLocations = async () => {
-setLoadingLocations(true);
-setErrorMessage("");
-
-try {
-  const token = getCookie('token');
-
-  if (!token) {
-    setErrorMessage("Authentication token is missing. Please login again.");
-    setLoadingLocations(false);
-    return;
-  }
-
-  const response = await fetch("http://localhost:8081/api/v1/getOwnHelyszin", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+  const [formData, setFormData] = useState({
+    helyszinId: safeEvent.helyszinId || safeEvent.Helyszin?.Id || "",
+    sportId: safeEvent.sportId || safeEvent.Sportok?.Id || "",
+    kezdoIdo: safeEvent.kezdoIdo ? new Date(safeEvent.kezdoIdo).toISOString().slice(0, 16) : "",
+    zaroIdo: safeEvent.zaroIdo ? new Date(safeEvent.zaroIdo).toISOString().slice(0, 16) : "",
+    szint: safeEvent.szint || "",
+    minimumEletkor: safeEvent.minimumEletkor || "",
+    maximumEletkor: safeEvent.maximumEletkor || "",
+    maximumLetszam: safeEvent.maximumLetszam || "",
+    leiras: safeEvent.leiras || "",
+    // Helyszín adatok
+    helyszinNev: safeEvent.Helyszin?.Nev || "",
+    helyszinCim: safeEvent.Helyszin?.Cim || "",
+    helyszinTelepules: safeEvent.Helyszin?.Telepules || "",
+    helyszinIranyitoszam: safeEvent.Helyszin?.Iranyitoszam || "",
+    helyszinFedett: Boolean(safeEvent.Helyszin?.Fedett) || false,
+    helyszinOltozo: Boolean(safeEvent.Helyszin?.Oltozo) || false,
+    helyszinParkolas: safeEvent.Helyszin?.Parkolas || "nincs",
+    helyszinBerles: Boolean(safeEvent.Helyszin?.Berles) || false,
+    helyszinLeiras: safeEvent.Helyszin?.Leiras || ""
   });
 
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.message || "Failed to fetch locations");
-  }
 
-  const data = await response.json();
-  setLocations(data.locations || []);
-} catch (error) {
-  setErrorMessage(error.message || "An error occurred while fetching locations");
-} finally {
-  setLoadingLocations(false);
-}
-};
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(safeEvent.imageUrl || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [sports, setSports] = useState([]);
+  const [loadingSports, setLoadingSports] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
 
-const fetchSports = async () => {
-setLoadingSports(true);
-setErrorMessage("");
+  // Parkolás opciók
+  const parkolasOptions = [
+    { value: "ingyenes", label: "Ingyenes" },
+    { value: "fizetős", label: "Fizetős" },
+    { value: "nincs", label: "Nincs" }
+  ];
 
-try {
-  const token = getCookie('token');
+  // Fetch locations and sports when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchLocations();
+      fetchSports();
+    }
+  }, [isOpen]);
 
-  if (!token) {
-    setErrorMessage("Authentication token is missing. Please login again.");
-    setLoadingSports(false);
-    return;
-  }
+  const fetchLocations = async () => {
+    setLoadingLocations(true);
+    setErrorMessage("");
 
-  const response = await fetch("http://localhost:8081/api/v1/allSportok", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+    try {
+      const token = getCookie('token');
 
-  if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.message || "Failed to fetch sports");
-  }
+      if (!token) {
+        setErrorMessage("Authentication token is missing. Please login again.");
+        setLoadingLocations(false);
+        return;
+      }
 
-  const data = await response.json();
-  setSports(data.sportok || []);
-} catch (error) {
-  setErrorMessage(error.message || "An error occurred while fetching sports");
-} finally {
-  setLoadingSports(false);
-}
-};
+      const response = await fetch("http://localhost:8081/api/v1/getOwnHelyszin", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-const handleChange = (e) => {
-const { id, value, type, checked } = e.target;
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to fetch locations");
+      }
 
-// Checkbox esetén a checked értéket használjuk, egyébként a value-t
-const newValue = type === 'checkbox' ? checked : value;
-
-console.log(`Field ${id} changed to:`, type === 'checkbox' ? checked : value);
-
-setFormData((prevState) => ({
-  ...prevState,
-  [id]: newValue,
-}));
-};
-
-const handleFileChange = (e) => {
-const file = e.target.files[0];
-if (file) {
-  setImageFile(file);
-  // Create URL for preview
-  const previewUrl = URL.createObjectURL(file);
-  setImagePreview(previewUrl);
-}
-};
-
-// Helyszín szerkesztés mód bekapcsolása
-const startLocationEditing = () => {
-setEditingLocation(true);
-};
-
-// Helyszín szerkesztés mód kikapcsolása
-const cancelLocationEditing = () => {
-setEditingLocation(false);
-};
-
-// Helyszín mentése (meglévő helyszín frissítése)
-const saveLocation = async () => {
-try {
-  const token = getCookie('token');
-
-  if (!token) {
-    setErrorMessage("Authentication token is missing. Please login again.");
-    return null;
-  }
-
-  // Ellenőrizzük az irányítószám formátumát és konvertáljuk számmá
-  const iranyitoszam = parseInt(formData.helyszinIranyitoszam);
-  if (isNaN(iranyitoszam) || iranyitoszam < 1000 || iranyitoszam > 9999) {
-    setErrorMessage("Az irányítószám 1000 és 9999 közötti szám kell legyen.");
-    return null;
-  }
-
-  // Helyszín adatok összeállítása - explicit konverzióval a boolean értékekre
-  const locationData = {
-    Nev: formData.helyszinNev,
-    Cim: formData.helyszinCim,
-    Telepules: formData.helyszinTelepules,
-    Iranyitoszam: iranyitoszam,
-    Fedett: formData.helyszinFedett === true, // Explicit boolean conversion
-    Oltozo: formData.helyszinOltozo === true, // Explicit boolean conversion
-    Parkolas: formData.helyszinParkolas || "nincs",
-    Berles: formData.helyszinBerles === true, // Explicit boolean conversion
-    Leiras: formData.helyszinLeiras || ""
+      const data = await response.json();
+      setLocations(data.locations || []);
+    } catch (error) {
+      setErrorMessage(error.message || "An error occurred while fetching locations");
+    } finally {
+      setLoadingLocations(false);
+    }
   };
 
-  console.log("Sending location update with data:", locationData);
+  const fetchSports = async () => {
+    setLoadingSports(true);
+    setErrorMessage("");
 
-  // Ellenőrizzük, hogy a Parkolas érték megfelelő-e
-  if (!["ingyenes", "fizetős", "nincs"].includes(locationData.Parkolas)) {
-    locationData.Parkolas = "nincs";
-  }
+    try {
+      const token = getCookie('token');
 
-  console.log("Updating location with data:", locationData);
+      if (!token) {
+        setErrorMessage("Authentication token is missing. Please login again.");
+        setLoadingSports(false);
+        return;
+      }
 
-  const response = await fetch(`http://localhost:8081/api/v1/updateHelyszin/${formData.helyszinId}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(locationData),
-  });
+      const response = await fetch("http://localhost:8081/api/v1/allSportok", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-  if (!response.ok) {
-    const responseData = await response.json();
-    throw new Error(responseData.message || "Failed to save location");
-  }
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to fetch sports");
+      }
 
-  const responseData = await response.json();
-  console.log("Location updated successfully:", responseData);
+      const data = await response.json();
+      setSports(data.sportok || []);
+    } catch (error) {
+      setErrorMessage(error.message || "An error occurred while fetching sports");
+    } finally {
+      setLoadingSports(false);
+    }
+  };
 
-  // Frissítsük a helyszínek listáját
-  await fetchLocations();
+  const handleChange = (e) => {
+    const { id, value, type, checked } = e.target;
 
-  // Frissítsük a formData-t a válaszban kapott adatokkal, ha van
-  if (responseData.updatedLocation) {
-    setFormData(prev => ({
-      ...prev,
-      helyszinNev: responseData.updatedLocation.Nev,
-      helyszinCim: responseData.updatedLocation.Cim,
-      helyszinTelepules: responseData.updatedLocation.Telepules,
-      helyszinIranyitoszam: responseData.updatedLocation.Iranyitoszam,
-      helyszinFedett: responseData.updatedLocation.Fedett,
-      helyszinOltozo: responseData.updatedLocation.Oltozo,
-      helyszinParkolas: responseData.updatedLocation.Parkolas,
-      helyszinBerles: responseData.updatedLocation.Berles,
-      helyszinLeiras: responseData.updatedLocation.Leiras || ""
+    // Checkbox esetén a checked értéket használjuk, egyébként a value-t
+    const newValue = type === 'checkbox' ? checked : value;
+
+    console.log(`Field ${id} changed to:`, type === 'checkbox' ? checked : value);
+
+    setFormData((prevState) => ({
+      ...prevState,
+      [id]: newValue,
     }));
-  }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      // Create URL for preview
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  // Helyszín szerkesztés mód bekapcsolása
+  const startLocationEditing = () => {
+    setEditingLocation(true);
+  };
+
+  // Helyszín szerkesztés mód kikapcsolása
+  const cancelLocationEditing = () => {
+    setEditingLocation(false);
+  };
+
+  // Helyszín mentése (meglévő helyszín frissítése)
+  const saveLocation = async () => {
+    try {
+      const token = getCookie('token');
+
+      if (!token) {
+        setErrorMessage("Authentication token is missing. Please login again.");
+        return null;
+      }
+
+      // Ellenőrizzük az irányítószám formátumát és konvertáljuk számmá
+      const iranyitoszam = parseInt(formData.helyszinIranyitoszam);
+      if (isNaN(iranyitoszam) || iranyitoszam < 1000 || iranyitoszam > 9999) {
+        setErrorMessage("Az irányítószám 1000 és 9999 közötti szám kell legyen.");
+        return null;
+      }
+
+      // Helyszín adatok összeállítása - explicit konverzióval a boolean értékekre
+      const locationData = {
+        Nev: formData.helyszinNev,
+        Cim: formData.helyszinCim,
+        Telepules: formData.helyszinTelepules,
+        Iranyitoszam: iranyitoszam,
+        Fedett: formData.helyszinFedett === true, // Explicit boolean conversion
+        Oltozo: formData.helyszinOltozo === true, // Explicit boolean conversion
+        Parkolas: formData.helyszinParkolas || "nincs",
+        Berles: formData.helyszinBerles === true, // Explicit boolean conversion
+        Leiras: formData.helyszinLeiras || ""
+      };
+
+      console.log("Sending location update with data:", locationData);
+
+      // Ellenőrizzük, hogy a Parkolas érték megfelelő-e
+      if (!["ingyenes", "fizetős", "nincs"].includes(locationData.Parkolas)) {
+        locationData.Parkolas = "nincs";
+      }
+
+      console.log("Updating location with data:", locationData);
+
+      const response = await fetch(`http://localhost:8081/api/v1/updateHelyszin/${formData.helyszinId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(locationData),
+      });
+
+      if (!response.ok) {
+        const responseData = await response.json();
+        throw new Error(responseData.message || "Failed to save location");
+      }
+
+      const responseData = await response.json();
+      console.log("Location updated successfully:", responseData);
+
+      // Frissítsük a helyszínek listáját
+      await fetchLocations();
+
+      // Frissítsük a formData-t a válaszban kapott adatokkal, ha van
+      if (responseData.updatedLocation) {
+        setFormData(prev => ({
+          ...prev,
+          helyszinNev: responseData.updatedLocation.Nev,
+          helyszinCim: responseData.updatedLocation.Cim,
+          helyszinTelepules: responseData.updatedLocation.Telepules,
+          helyszinIranyitoszam: responseData.updatedLocation.Iranyitoszam,
+          helyszinFedett: responseData.updatedLocation.Fedett,
+          helyszinOltozo: responseData.updatedLocation.Oltozo,
+          helyszinParkolas: responseData.updatedLocation.Parkolas,
+          helyszinBerles: responseData.updatedLocation.Berles,
+          helyszinLeiras: responseData.updatedLocation.Leiras || ""
+        }));
+      }
 
       // Kikapcsoljuk a szerkesztés módot
       setEditingLocation(false);
@@ -1085,7 +1126,9 @@ try {
           throw new Error("Failed to save location");
         }
         finalHelyszinId = savedLocationId;
-      }      // Create a FormData object to send the form data and image file
+      }
+
+      // Create a FormData object to send the form data and image file
       const formDataToSend = new FormData();
 
       // Add event fields to the FormData
@@ -1464,7 +1507,7 @@ try {
                       {imagePreview ? (
                         <div className="w-full h-full flex items-center justify-center">
                           <img
-                            src={imagePreview || "https://via.placeholder.com/300x200?text=No+Image"}
+                            src={imagePreview || "/placeholder.svg"}
                             alt="Preview"
                             className="h-full object-contain rounded-lg"
                           />
@@ -1700,8 +1743,6 @@ try {
 };
 
 export default EventModal;
-
-
 
 
 
