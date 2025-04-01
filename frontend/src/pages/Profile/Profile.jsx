@@ -10,6 +10,7 @@ const Profile = () => {
     const [error, setError] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -138,57 +139,57 @@ const Profile = () => {
     };
 
     // Felhasználói adatok mentése
-// Felhasználói adatok mentése
-const handleSaveProfile = async () => {
-    try {
-        const token = Cookies.get("token");
-        if (!token || !user) return;
+    // Felhasználói adatok mentése
+    const handleSaveProfile = async () => {
+        try {
+            const token = Cookies.get("token");
+            if (!token || !user) return;
 
-        // Adatok előkészítése
-        const updatedData = {
-            ...formData,
-            profilePicture: profilePicture
-        };
+            // Adatok előkészítése
+            const updatedData = {
+                ...formData,
+                profilePicture: profilePicture
+            };
 
-        // API hívás a felhasználói adatok frissítéséhez
-        const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(updatedData)
-        });
+            // API hívás a felhasználói adatok frissítéséhez
+            const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(updatedData)
+            });
 
-        if (!response.ok) {
-            throw new Error("Nem sikerült frissíteni a felhasználói adatokat");
+            if (!response.ok) {
+                throw new Error("Nem sikerült frissíteni a felhasználói adatokat");
+            }
+
+            // Sikeres mentés után frissítjük a user állapotot
+            setUser({
+                ...user,
+                ...updatedData
+            });
+
+            setIsEditing(false);
+
+            // Sikeres mentés üzenet megjelenítése
+            alert("A profil adatok sikeresen frissítve!");
+
+            // Felhasználó kijelentkeztetése
+            Cookies.remove("token");
+            localStorage.removeItem("user");
+
+            // Átirányítás a bejelentkezési oldalra késleltetéssel
+            setTimeout(() => {
+                navigate("/login");
+            }, 1000);
+
+        } catch (err) {
+            console.error("Hiba a profil mentésekor:", err);
+            alert("Hiba történt a profil mentésekor: " + err.message);
         }
-
-        // Sikeres mentés után frissítjük a user állapotot
-        setUser({
-            ...user,
-            ...updatedData
-        });
-
-        setIsEditing(false);
-        
-        // Sikeres mentés üzenet megjelenítése
-        alert("A profil adatok sikeresen frissítve!");
-        
-        // Felhasználó kijelentkeztetése
-        Cookies.remove("token");
-        localStorage.removeItem("user");
-        
-        // Átirányítás a bejelentkezési oldalra késleltetéssel
-        setTimeout(() => {
-            navigate("/login");
-        }, 1000);
-        
-    } catch (err) {
-        console.error("Hiba a profil mentésekor:", err);
-        alert("Hiba történt a profil mentésekor: " + err.message);
-    }
-};
+    };
 
 
     // Profil törlése
@@ -196,6 +197,9 @@ const handleSaveProfile = async () => {
         try {
             const token = Cookies.get("token");
             if (!token || !user) return;
+
+            // Set loading state
+            setIsDeleting(true);
 
             // API hívás a felhasználó törléséhez
             const response = await fetch(`http://localhost:8081/api/v1/deleteUser/${user.id}`, {
@@ -205,19 +209,32 @@ const handleSaveProfile = async () => {
                 }
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error("Nem sikerült törölni a felhasználót");
+                throw new Error(data.message || "Nem sikerült törölni a felhasználót");
             }
 
             // Sikeres törlés után kijelentkeztetjük a felhasználót
             Cookies.remove("token");
-            alert("A felhasználói fiók sikeresen törölve!");
+            localStorage.removeItem("user");
+
+            // Show success message with details
+            let successMessage = "A felhasználói fiók sikeresen törölve!";
+            if (data.deletedEvents > 0) {
+                successMessage += ` ${data.deletedEvents} létrehozott esemény is törlésre került.`;
+            }
+
+            alert(successMessage);
             navigate("/homepage");
         } catch (err) {
             console.error("Hiba a profil törlésekor:", err);
             alert("Hiba történt a profil törlésekor: " + err.message);
+        } finally {
+            setIsDeleting(false);
         }
     };
+
 
     // Felhasználói inicálék megjelenítése
     const getUserInitials = () => {
@@ -525,27 +542,49 @@ const handleSaveProfile = async () => {
                             <h2 className="text-xl font-bold text-white">Profil törlése</h2>
                         </div>
 
-                        <p className="text-slate-300 mb-6">
+                        <p className="text-slate-300 mb-4">
                             Biztosan törölni szeretnéd a profilodat? Ez a művelet nem visszavonható, és minden adatod véglegesen törlődik.
                         </p>
+
+                        <div className="bg-red-500/10 p-4 rounded-lg mb-6">
+                            <h3 className="text-red-300 font-medium mb-2">A törlés következményei:</h3>
+                            <ul className="text-slate-300 list-disc pl-5 space-y-1">
+                                <li>Minden személyes adatod törlődik</li>
+                                <li>Az általad létrehozott események törlődnek</li>
+                                <li>Minden eseményből, amelyhez csatlakoztál, kilépsz</li>
+                            </ul>
+                        </div>
 
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                                disabled={isDeleting}
                             >
                                 Mégsem
                             </button>
                             <button
                                 onClick={handleDeleteProfile}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center"
+                                disabled={isDeleting}
                             >
-                                Törlés megerősítése
+                                {isDeleting ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Törlés folyamatban...
+                                    </>
+                                ) : (
+                                    "Törlés megerősítése"
+                                )}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
 
             <style jsx>{`
         @keyframes fadeIn {

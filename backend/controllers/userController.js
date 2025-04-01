@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const Esemény = require("../models/esemenyModel");
+const { Op } = require("sequelize");
 
 // Create User
 const createUser = async (req, res) => {
@@ -100,31 +101,93 @@ const updateUser = async (req, res) => {
 
 // Csak a deleteUser függvényt frissítjük, a többi marad változatlan
 
-// Delete User - frissített verzió
+// Delete User - updated version with complete cleanup
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Ellenőrizzük, hogy a token tulajdonosa törli-e a saját fiókját
+        // Verify that the token owner is deleting their own account
         if (req.user.userId != id) {
             return res.status(403).json({ message: "Nincs jogosultságod más felhasználó törlésére!" });
         }
 
-        // Először töröljük a felhasználóhoz kapcsolódó résztvevő bejegyzéseket
+        // Import all required models
+        const Esemény = require("../models/esemenyModel");
         const Résztvevő = require("../models/resztvevoModel");
+        const Helyszin = require("../models/helyszinModel");
+
+        // First, get all events where the user is the organizer
+        const userEvents = await Esemény.findAll({ where: { userId: id } });
+
+        // Get all event IDs created by the user
+        const userEventIds = userEvents.map(event => event.id);
+
+        // First, delete all participants from events created by the user
+        if (userEventIds.length > 0) {
+            console.log(`Deleting participants from ${userEventIds.length} events created by user ${id}`);
+            await Résztvevő.destroy({
+                where: {
+                    eseményId: userEventIds
+                }
+            });
+        }
+
+        // Then delete all events created by the user
+        if (userEvents.length > 0) {
+            console.log(`Deleting ${userEvents.length} events created by user ${id}`);
+            await Esemény.destroy({ where: { userId: id } });
+        }
+
+        // Remove user from all events they're participating in
         await Résztvevő.destroy({ where: { userId: id } });
 
-        // Majd töröljük a felhasználót
+        // Get all locations created by the user
+        const userLocations = await Helyszin.findAll({ where: { userId: id } });
+
+        // Check if any of these locations are used in events by other users
+        if (userLocations.length > 0) {
+            const locationIds = userLocations.map(location => location.Id);
+
+            // Find events that use these locations but weren't created by this user
+            const eventsUsingLocations = await Esemény.findAll({
+                where: {
+                    helyszinId: locationIds,
+                    userId: { [Op.ne]: id } // Not equal to this user's ID
+                }
+            });
+
+            if (eventsUsingLocations.length > 0) {
+                // There are events by other users using this user's locations
+                // We need to handle this case - for now, we'll set the location's userId to null
+                // rather than deleting the locations
+                await Helyszin.update(
+                    { userId: null },
+                    { where: { userId: id } }
+                );
+            } else {
+                // No other users are using these locations, so we can delete them
+                await Helyszin.destroy({ where: { userId: id } });
+            }
+        }
+
+        // Finally, delete the user
         const deleted = await User.destroy({ where: { id } });
 
         if (!deleted) return res.status(404).json({ message: "User not found!" });
 
-        res.json({ message: "User and related data deleted successfully!" });
+        res.json({
+            message: "User and related data deleted successfully!",
+            deletedEvents: userEvents.length,
+            deletedLocations: userLocations.length
+        });
     } catch (error) {
         console.error("Error deleting user:", error);
         res.status(500).json({ message: "Error deleting user", error: error.message });
     }
 };
+
+
+
 
 
 // Create Esemény (Event)
@@ -218,14 +281,14 @@ const saveUserSettings = async (req, res) => {
 
         // Base64 képek méretének ellenőrzése
         if (profilePicture && profilePicture.length > 1000000) { // ~1MB limit
-            return res.status(400).json({ 
-                message: "A profilkép túl nagy méretű. Kérjük, használjon kisebb képet (max 1MB)." 
+            return res.status(400).json({
+                message: "A profilkép túl nagy méretű. Kérjük, használjon kisebb képet (max 1MB)."
             });
         }
-        
+
         if (customBackground && customBackground.length > 1000000) { // ~1MB limit
-            return res.status(400).json({ 
-                message: "A háttérkép túl nagy méretű. Kérjük, használjon kisebb képet (max 1MB)." 
+            return res.status(400).json({
+                message: "A háttérkép túl nagy méretű. Kérjük, használjon kisebb képet (max 1MB)."
             });
         }
 
