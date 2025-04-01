@@ -117,7 +117,7 @@ const createEsemeny = async (req, res) => {
     });
 };
 
-// Delete Event (Only by the Owner)
+// This function already exists in the controller, but let's ensure it's working correctly
 const deleteEsemeny = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -135,8 +135,17 @@ const deleteEsemeny = async (req, res) => {
             return res.status(404).json({ message: "Event not found!" });
         }
 
-        if (esemeny.userId !== userId) {
-            return res.status(403).json({ message: "You can only delete your own events!" });
+        // Check if user is the organizer
+        const isOrganizer = await Résztvevő.findOne({
+            where: {
+                eseményId: id,
+                userId: userId,
+                szerep: 'szervező'
+            }
+        });
+
+        if (!isOrganizer) {
+            return res.status(403).json({ message: "You can only delete events where you are the organizer!" });
         }
 
         // Delete the associated image file if it exists
@@ -147,11 +156,19 @@ const deleteEsemeny = async (req, res) => {
             }
         }
 
+        // First delete all participants
+        await Résztvevő.destroy({
+            where: {
+                eseményId: id
+            }
+        });
+
+        // Then delete the event
         await esemeny.destroy();
 
         res.status(200).json({ message: "Event deleted successfully!" });
     } catch (error) {
-        console.error(error);
+        console.error("Error deleting event:", error);
         res.status(500).json({ message: "Error deleting event", error: error.message });
     }
 };
@@ -828,7 +845,7 @@ const getParticipatedEvents = async (req, res) => {
                 },
                 {
                     model: Helyszin,
-                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles', 'Nev' , 'Cim']
+                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles', 'Nev', 'Cim']
                 },
                 {
                     model: Sportok,

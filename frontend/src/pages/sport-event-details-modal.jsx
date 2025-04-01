@@ -116,6 +116,10 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   // Aktuális esemény adatok tárolása
   const [currentEvent, setCurrentEvent] = useState(event)
+  // Törlés megerősítés modal állapota
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
@@ -508,6 +512,69 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
     }
   };
 
+  // Esemény törlés kezelése
+  const handleDeleteClick = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  // Törlés megerősítés bezárása
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setDeleteError('');
+  };
+
+  // Törlés megerősítése és végrehajtása
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    setDeleteError('');
+
+    try {
+      const token = getCookie('token');
+
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a törléshez");
+      }
+
+      console.log("Deleting event:", currentEvent.id);
+      const response = await fetch(`http://localhost:8081/api/v1/deleteEsemeny/${currentEvent.id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const responseData = await response.json();
+        throw new Error(responseData.message || "Sikertelen törlés");
+      }
+
+      console.log("Event deletion successful");
+
+      // Notify parent component about the deletion
+      if (onParticipantUpdate) {
+        onParticipantUpdate(currentEvent.id, false, {
+          userId: 'event-deleted',
+          eventId: currentEvent.id
+        });
+      }
+
+      // Close the modal
+      onClose();
+
+      // Add page refresh after a short delay to allow the modal to close smoothly
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+
+    } catch (error) {
+      console.error("Hiba az esemény törlése során:", error);
+      setDeleteError(error.message || "Sikertelen törlés. Kérjük, próbáld újra később.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+
   return (
     <>
       {/* Main Modal */}
@@ -619,13 +686,22 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                         </button>
                         {/* Szerkesztés gomb csak akkor jelenik meg, ha a felhasználó szerepe "szervező" */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
-                          <button
-                            onClick={handleEditEvent}
-                            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Szerkesztés
-                          </button>
+                          <>
+                            <button
+                              onClick={handleEditEvent}
+                              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Szerkesztés
+                            </button>
+                            <button
+                              onClick={handleDeleteClick}
+                              className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Trash className="h-4 w-4" />
+                              Törlés
+                            </button>
+                          </>
                         )}
                         {/* Kilépés gomb csak akkor jelenik meg, ha a felhasználó szerepe "játékos" */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && (
@@ -855,6 +931,56 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
           onSuccess={handleEventUpdate}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80">
+          <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-red-500/20 p-3 rounded-full mb-4">
+                <Trash className="h-8 w-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Esemény törlése</h3>
+              <p className="text-white/70 mb-6">
+                Biztosan törölni szeretnéd ezt az eseményt? Ez a művelet nem visszavonható, és minden résztvevő eltávolításra kerül.
+              </p>
+
+              {deleteError && (
+                <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-lg mb-4 w-full text-left">
+                  {deleteError}
+                </div>
+              )}
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                  disabled={isDeleting}
+                >
+                  Mégsem
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className={`flex-1 py-2 ${isDeleting ? "bg-red-800" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center`}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Törlés...
+                    </>
+                  ) : (
+                    "Törlés"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -908,8 +1034,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   // Fetch locations and sports when modal opens
   useEffect(() => {
     if (isOpen) {
-      fetchLocations();
-      fetchSports();
+      fetchLocations(); fetchSports();
     }
   }, [isOpen]);
 
@@ -1743,3 +1868,8 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 };
 
 export default EventModal;
+
+
+
+
+
