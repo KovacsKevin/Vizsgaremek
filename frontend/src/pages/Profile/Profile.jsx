@@ -138,51 +138,57 @@ const Profile = () => {
     };
 
     // Felhasználói adatok mentése
-    // Felhasználói adatok mentése
-    const handleSaveProfile = async () => {
-        try {
-            const token = Cookies.get("token");
-            if (!token || !user) return;
+// Felhasználói adatok mentése
+const handleSaveProfile = async () => {
+    try {
+        const token = Cookies.get("token");
+        if (!token || !user) return;
 
-            // Adatok előkészítése
-            const updatedData = {
-                ...formData,
-                profilePicture: profilePicture
-            };
+        // Adatok előkészítése
+        const updatedData = {
+            ...formData,
+            profilePicture: profilePicture
+        };
 
-            // API hívás a felhasználói adatok frissítéséhez
-            const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(updatedData)
-            });
+        // API hívás a felhasználói adatok frissítéséhez
+        const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(updatedData)
+        });
 
-            if (!response.ok) {
-                throw new Error("Nem sikerült frissíteni a felhasználói adatokat");
-            }
-
-            // Sikeres mentés után frissítjük a user állapotot
-            setUser({
-                ...user,
-                ...updatedData
-            });
-
-            setIsEditing(false);
-
-            // Sikeres mentés üzenet
-            alert("A profil adatok sikeresen frissítve! Újra be kell jelentkeznie.");
-
-            // Kijelentkeztetés és átirányítás a login oldalra
-            Cookies.remove("token");
-            navigate("/login");
-        } catch (err) {
-            console.error("Hiba a profil mentésekor:", err);
-            alert("Hiba történt a profil mentésekor: " + err.message);
+        if (!response.ok) {
+            throw new Error("Nem sikerült frissíteni a felhasználói adatokat");
         }
-    };
+
+        // Sikeres mentés után frissítjük a user állapotot
+        setUser({
+            ...user,
+            ...updatedData
+        });
+
+        setIsEditing(false);
+        
+        // Sikeres mentés üzenet megjelenítése
+        alert("A profil adatok sikeresen frissítve!");
+        
+        // Felhasználó kijelentkeztetése
+        Cookies.remove("token");
+        localStorage.removeItem("user");
+        
+        // Átirányítás a bejelentkezési oldalra késleltetéssel
+        setTimeout(() => {
+            navigate("/login");
+        }, 1000);
+        
+    } catch (err) {
+        console.error("Hiba a profil mentésekor:", err);
+        alert("Hiba történt a profil mentésekor: " + err.message);
+    }
+};
 
 
     // Profil törlése
