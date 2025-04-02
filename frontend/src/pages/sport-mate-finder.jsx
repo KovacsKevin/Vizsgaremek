@@ -41,7 +41,9 @@ const SportMateFinder = () => {
       telepules: params.get("telepules"),
       sport: params.get("sport"),
       allEvents: params.get("allEvents") === "true",
-      ageFilter: params.get("ageFilter") === "true"
+      ageFilter: params.get("ageFilter") === "true",
+      locationOnly: params.get("locationOnly") === "true",
+      sportOnly: params.get("sportOnly") === "true"
     }
   }
 
@@ -107,6 +109,8 @@ const SportMateFinder = () => {
   const [currentUser, setCurrentUser] = useState(null)
   const [isAllEvents, setIsAllEvents] = useState(false)
   const [isAgeFilter, setIsAgeFilter] = useState(false)
+  const [isLocationOnly, setIsLocationOnly] = useState(false)
+  const [isSportOnly, setIsSportOnly] = useState(false)
 
   // Fókusz kezelő függvények
   const handleLocationFocus = () => {
@@ -195,7 +199,7 @@ const SportMateFinder = () => {
 
   // Inicializálás URL paraméterekből és felhasználó beállítása
   useEffect(() => {
-    const { telepules, sport, allEvents, ageFilter } = getQueryParams()
+    const { telepules, sport, allEvents, ageFilter, locationOnly, sportOnly } = getQueryParams()
 
     // Update selected location and sport from query parameters if they exist
     if (telepules) {
@@ -213,6 +217,8 @@ const SportMateFinder = () => {
     // Set if we're showing all events
     setIsAllEvents(allEvents)
     setIsAgeFilter(ageFilter)
+    setIsLocationOnly(locationOnly)
+    setIsSportOnly(sportOnly)
 
     // Set current user
     const user = getCurrentUser();
@@ -264,21 +270,54 @@ const SportMateFinder = () => {
     setSportInputFocused(false);
   };
 
-  // Keresés kezelése
+  // Keresés kezelése - módosított verzió a rugalmas kereséshez
   const handleSearch = (e) => {
     e.preventDefault();
 
-    if (!searchLocation || !searchSport) {
-      setError("Kérjük, válassz ki egy települést és egy sportot!");
+    // Check if both fields are empty - show all events
+    if (!searchLocation && !searchSport) {
+      navigate(`/sportmate?allEvents=true`);
+      setSelectedLocation("");
+      setSelectedSport("");
+      setIsAllEvents(true);
+      setIsAgeFilter(false);
+      setIsLocationOnly(false);
+      setIsSportOnly(false);
       return;
     }
 
-    // Frissítjük az URL-t és az állapotot
+    // If only location is provided
+    if (searchLocation && !searchSport) {
+      navigate(`/sportmate?telepules=${encodeURIComponent(searchLocation)}&locationOnly=true`);
+      setSelectedLocation(searchLocation);
+      setSelectedSport("");
+      setIsAllEvents(false);
+      setIsAgeFilter(false);
+      setIsLocationOnly(true);
+      setIsSportOnly(false);
+      return;
+    }
+
+    // If only sport is provided
+    if (!searchLocation && searchSport) {
+      navigate(`/sportmate?sport=${encodeURIComponent(searchSport)}&sportOnly=true`);
+      setSelectedLocation("");
+      setSelectedSport(searchSport);
+      setIsAllEvents(false);
+      setIsAgeFilter(false);
+      setIsLocationOnly(false);
+      setIsSportOnly(true);
+      return;
+    }
+
+    // If both are provided - original behavior
     navigate(`/sportmate?telepules=${encodeURIComponent(searchLocation)}&sport=${encodeURIComponent(searchSport)}`);
     setSelectedLocation(searchLocation);
     setSelectedSport(searchSport);
     setIsAllEvents(false);
     setIsAgeFilter(false);
+    setIsLocationOnly(false);
+    setIsSportOnly(false);
   };
 
   // Módosított függvény a felhasználó csatlakozási állapotának és szerepének ellenőrzésére
@@ -319,7 +358,7 @@ const SportMateFinder = () => {
     setJoinedEvents(joinedEventDetails);
   };
 
-  // Fetch events from API
+  // Fetch events from API - módosított verzió a rugalmas kereséshez
   useEffect(() => {
     const fetchEvents = async () => {
       setLoading(true);
@@ -328,8 +367,8 @@ const SportMateFinder = () => {
         // Get the authentication token
         const token = getAuthToken();
 
-        // Check if we want all events by age
-        const { allEvents, ageFilter } = getQueryParams();
+        // Check query parameters
+        const { allEvents, ageFilter, locationOnly, sportOnly } = getQueryParams();
 
         let apiUrl;
         let headers = {};
@@ -340,14 +379,28 @@ const SportMateFinder = () => {
           };
         }
 
+        // Determine which API endpoint to use based on search parameters
         if (allEvents) {
-          // Use the endpoint that returns all events filtered by age
+          // Use the endpoint that returns all events
           if (!token) {
-            setError("A funkció használatához be kell jelentkezni!");
-            setLoading(false);
-            return;
+            apiUrl = `http://localhost:8081/api/v1/getAllEsemeny`;
+          } else {
+            apiUrl = `http://localhost:8081/api/v1/all-events-by-age`;
           }
-          apiUrl = `http://localhost:8081/api/v1/all-events-by-age`;
+        } else if (locationOnly && selectedLocation) {
+          // Search by location only
+          if (!token) {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepules/${encodeURIComponent(selectedLocation)}`;
+          } else {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepulesAndAge/${encodeURIComponent(selectedLocation)}`;
+          }
+        } else if (sportOnly && selectedSport) {
+          // Search by sport only
+          if (!token) {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNev/${encodeURIComponent(selectedSport)}`;
+          } else {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNevAndAge/${encodeURIComponent(selectedSport)}`;
+          }
         } else if (ageFilter) {
           // Use the endpoint that returns all events filtered by age
           if (!token) {
@@ -357,18 +410,18 @@ const SportMateFinder = () => {
           }
           apiUrl = `http://localhost:8081/api/v1/events-by-age`;
         } else {
-          // Csak akkor folytassuk, ha mindkét paraméter meg van adva
-          if (!selectedSport || !selectedLocation) {
-            setError("A kereséshez meg kell adni a sportot és a települést!");
+          // Both location and sport are specified
+          if (selectedSport && selectedLocation) {
+            if (token) {
+              apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAge/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
+            } else {
+              apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
+            }
+          } else {
+            // If we don't have enough parameters, show an error
+            setError("A kereséshez meg kell adni a sportot és/vagy a települést!");
             setLoading(false);
             return;
-          }
-
-          // Használjuk a megadott végpontot, alapértelmezett értékek nélkül
-          if (token) {
-            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAge/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
-          } else {
-            apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
           }
         }
 
@@ -412,7 +465,6 @@ const SportMateFinder = () => {
         // If we got user age information, we can display it
         if (data.userAge) {
           setUserAge(data.userAge);
-          console.log(`Events filtered for user age: ${data.userAge}`);
         }
       } catch (err) {
         console.error("Failed to fetch events:", err);
@@ -423,11 +475,6 @@ const SportMateFinder = () => {
       }
     };
 
-    // Ellenőrizzük, hogy van-e allEvents vagy ageFilter paraméter az URL-ben
-    const { allEvents, ageFilter } = getQueryParams();
-
-    // Ha allEvents=true vagy ageFilter=true, akkor csak akkor futtatjuk a fetchEvents-t, ha változik az allEvents vagy ageFilter értéke
-    // Egyébként akkor futtatjuk, ha változik a selectedSport vagy selectedLocation
     fetchEvents();
   }, [selectedSport, selectedLocation, window.location.search]);
 
@@ -548,20 +595,6 @@ const SportMateFinder = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
         <div className="container mx-auto px-4 py-8">
-          {/* Cím hozzáadása, ha az allEvents=true vagy ageFilter=true */}
-          {(isAllEvents || isAgeFilter) && (
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-white">
-                {isAllEvents ? "" : ""}
-              </h1>
-              {userAge && (
-                <p className="text-white/60">
-
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Keresősáv hozzáadása */}
           <div className="mb-8">
             <form onSubmit={handleSearch} className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6">
@@ -578,7 +611,7 @@ const SportMateFinder = () => {
                     onFocus={handleLocationFocus}
                     onBlur={handleLocationBlur}
                     className="w-full bg-white/10 border border-white/20 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Kezdj el gépelni..."
+                    placeholder="Kezdj el gépelni vagy hagyd üresen..."
                     autoComplete="off"
                   />
                 </div>
@@ -594,7 +627,7 @@ const SportMateFinder = () => {
                     onFocus={handleSportFocus}
                     onBlur={handleSportBlur}
                     className="w-full bg-white/10 border border-white/20 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Kezdj el gépelni..."
+                    placeholder="Kezdj el gépelni vagy hagyd üresen..."
                     autoComplete="off"
                   />
                 </div>
@@ -607,6 +640,9 @@ const SportMateFinder = () => {
                     Keresés
                   </button>
                 </div>
+              </div>
+              <div className="mt-2 text-xs text-white/60">
+                Kereshetsz csak település vagy csak sport alapján is. Ha mindkét mezőt üresen hagyod, az összes eseményt láthatod.
               </div>
             </form>
           </div>

@@ -1171,6 +1171,241 @@ const getAllEsemenyekFilteredByUserAge = async (req, res) => {
     }
 };
 
+// Get events by location only
+const getEsemenyekByTelepules = async (req, res) => {
+    try {
+        const { telepules } = req.params;
+
+        // Check if city (telepules) is provided
+        if (!telepules) {
+            return res.status(400).json({ message: "City (telepules) is required!" });
+        }
+
+        // Fetch events based on city using Sequelize ORM
+        const events = await Esemény.findAll({
+            include: [
+                {
+                    model: Helyszin,
+                    where: { Telepules: telepules },  // Match city in the Helyszin model
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // If no events are found, return a 404 response
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found for the specified city." });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({ events });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching events by location:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get events by sport only
+const getEsemenyekBySportNev = async (req, res) => {
+    try {
+        const { sportNev } = req.params;
+
+        // Check if sport name is provided
+        if (!sportNev) {
+            return res.status(400).json({ message: "Sport name (sportNev) is required!" });
+        }
+
+        // Fetch events based on sport name using Sequelize ORM
+        const events = await Esemény.findAll({
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    where: { Nev: sportNev },  // Match sport name in the Sportok model
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // If no events are found, return a 404 response
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found for the specified sport." });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({ events });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching events by sport:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get events by location only with age filter
+const getEsemenyekByTelepulesAndAge = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        const { telepules } = req.params;
+
+        // Check if city is provided
+        if (!telepules) {
+            return res.status(400).json({ message: "City (telepules) is required!" });
+        }
+
+        // Fetch events based on city and user age
+        const events = await Esemény.findAll({
+            where: {
+                minimumEletkor: { [Op.lte]: age },
+                maximumEletkor: { [Op.gte]: age }
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    where: { Telepules: telepules },
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // If no events are found, return a 404 response
+        if (events.length === 0) {
+            return res.status(404).json({
+                message: "No events found for the specified city and your age range.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events by location:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get events by sport only with age filter
+const getEsemenyekBySportNevAndAge = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        const { sportNev } = req.params;
+
+        // Check if sport name is provided
+        if (!sportNev) {
+            return res.status(400).json({ message: "Sport name (sportNev) is required!" });
+        }
+
+        // Fetch events based on sport name and user age
+        const events = await Esemény.findAll({
+            where: {
+                minimumEletkor: { [Op.lte]: age },
+                maximumEletkor: { [Op.gte]: age }
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    where: { Nev: sportNev },
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // If no events are found, return a 404 response
+        if (events.length === 0) {
+            return res.status(404).json({
+                message: "No events found for the specified sport and your age range.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events by sport:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
 
 module.exports = {
     createEsemeny,
@@ -1192,7 +1427,11 @@ module.exports = {
     getAllEsemenyWithDetails,
     removeParticipant,
     getEventSearchData,
-    getAllEsemenyekFilteredByUserAge
+    getAllEsemenyekFilteredByUserAge,
+    getEsemenyekByTelepules,
+    getEsemenyekBySportNev,
+    getEsemenyekByTelepulesAndAge,
+    getEsemenyekBySportNevAndAge
 };
 
 

@@ -64,6 +64,11 @@ router.get("/event-search-data/:id", esemenyController.getEventSearchData);
 // Get all events filtered by user age
 router.get('/all-events-by-age', authenticateToken, esemenyController.getAllEsemenyekFilteredByUserAge);
 
+// Add these new routes
+router.get('/getEsemenyekByTelepules/:telepules', esemenyController.getEsemenyekByTelepules);
+router.get('/getEsemenyekBySportNev/:sportNev', esemenyController.getEsemenyekBySportNev);
+router.get('/getEsemenyekByTelepulesAndAge/:telepules', authenticateToken, esemenyController.getEsemenyekByTelepulesAndAge);
+router.get('/getEsemenyekBySportNevAndAge/:sportNev', authenticateToken, esemenyController.getEsemenyekBySportNevAndAge);
 
 
 
