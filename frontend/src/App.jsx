@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import User from "./pages/User"; // Fontos: nagybetű!
 import Login from './pages/Auth/login';
 import Register from './pages/Auth/register';
 import Protected from './pages/protected';
@@ -16,16 +15,16 @@ function App() {
     <Router> {/* Itt ágyazd be Router-be */}
       <div>
         <Routes>
-          <Route path="/" element={<User />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/protected" element={<Protected />} />
           <Route path ="/sportok" element={<SportList />} />
-          <Route path ="/homepage" element={<HomePage />} />
+          <Route path ="/" element={<HomePage />} />
           <Route path ="/sportmate" element={<SportMateFinder />} />
           <Route path ="/my-events" element={<MyEvents />} />
           <Route path ="/testimages" element={<TestImages />} />
           <Route path ="/profile" element={<Profile />} /> {/* Új útvonal a Profile komponenshez */}
+          <Route path="*" element={< HomePage />} />
         </Routes>
       </div>
     </Router>
