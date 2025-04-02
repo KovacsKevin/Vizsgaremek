@@ -10,6 +10,7 @@ const path = require("path");
 const fs = require("fs");
 const sequelize = require("../config/db");
 const { Op } = require("sequelize");
+const { scheduleEventDeletion } = require('../utils/eventScheduler');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -120,6 +121,9 @@ const createEsemeny = async (req, res) => {
 
                 return { newEsemény, résztvevő };
             });
+
+            // Időzítés beállítása az új eseményhez
+            scheduleEventDeletion(result.newEsemény);
 
             res.status(201).json({
                 message: "Event created successfully!",
@@ -300,6 +304,9 @@ const updateEsemeny = async (req, res) => {
                     { model: Sportok, attributes: ['Id', 'Nev', 'KepUrl'] }
                 ]
             });
+
+            // Időzítés frissítése a módosított eseményhez
+            scheduleEventDeletion(updatedEsemeny);
 
             res.status(200).json({
                 message: "Event updated successfully!",
@@ -797,7 +804,6 @@ const calculateAge = (birthDate) => {
 };
 
 // Események lekérése, ahol a felhasználó szervező
-// Események lekérése, ahol a felhasználó szervező
 const getOrganizedEvents = async (req, res) => {
     try {
         // Authenticate user
@@ -834,12 +840,12 @@ const getOrganizedEvents = async (req, res) => {
                 include: [
                     [
                         sequelize.literal(`(
-                            SELECT COUNT(*)
-                            FROM Résztvevős
-                            WHERE 
-                                Résztvevős.eseményId = Esemény.id
-                                AND Résztvevős.státusz = 'elfogadva'
-                        )`),
+                                    SELECT COUNT(*)
+                                    FROM Résztvevős
+                                    WHERE 
+                                        Résztvevős.eseményId = Esemény.id
+                                        AND Résztvevős.státusz = 'elfogadva'
+                                )`),
                         'résztvevőkSzáma' // Résztvevők számának megjelenítése
                     ]
                 ]
@@ -857,7 +863,6 @@ const getOrganizedEvents = async (req, res) => {
     }
 };
 
-// Események lekérése, ahol a felhasználó játékos
 // Események lekérése, ahol a felhasználó játékos
 const getParticipatedEvents = async (req, res) => {
     try {
@@ -896,12 +901,12 @@ const getParticipatedEvents = async (req, res) => {
                 include: [
                     [
                         sequelize.literal(`(
-                            SELECT COUNT(*)
-                            FROM Résztvevős
-                            WHERE 
-                                Résztvevős.eseményId = Esemény.id
-                                AND Résztvevős.státusz = 'elfogadva'
-                        )`),
+                                    SELECT COUNT(*)
+                                    FROM Résztvevős
+                                    WHERE 
+                                        Résztvevős.eseményId = Esemény.id
+                                        AND Résztvevős.státusz = 'elfogadva'
+                                )`),
                         'résztvevőkSzáma' // Résztvevők számának megjelenítése
                     ]
                 ]

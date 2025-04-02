@@ -13,6 +13,7 @@ const Sportok = require("./models/sportokModel"); // If you're using Esemény mo
 const Résztvevő = require("./models/resztvevoModel");
 const { authenticateUser, requestPasswordReset, resetPassword } = require("./controllers/userController");
 const path = require("path"); // Add path module
+const { scheduleAllEvents } = require('./utils/eventScheduler');
 
 dotenv.config();
 const app = express();
@@ -41,4 +42,6 @@ sequelize.sync({ alter: true }) // `alter: true` ensures that existing tables ar
 const PORT = 8081;
 app.listen(PORT, () => {
     console.log(`✅ Server is running on port ${PORT}`);
+    // Összes aktív esemény időzítésének beállítása
+  scheduleAllEvents();
 });
