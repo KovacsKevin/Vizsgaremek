@@ -10,7 +10,9 @@ import {
   Home,
   DoorOpen,
   Loader,
+  Search,
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import EventModal from "./sport-event-details-modal"
 import Header from "./Main/Header" // Import the Header component
 
@@ -28,6 +30,7 @@ const Image = ({ src, alt, className }) => (
 )
 
 const SportMateFinder = () => {
+  const navigate = useNavigate();
   // Add state for activeTab to pass to Header
   const [activeTab, setActiveTab] = useState("home")
 
@@ -37,7 +40,8 @@ const SportMateFinder = () => {
     return {
       telepules: params.get("telepules"),
       sport: params.get("sport"),
-      allEvents: params.get("allEvents") === "true"
+      allEvents: params.get("allEvents") === "true",
+      ageFilter: params.get("ageFilter") === "true"
     }
   }
 
@@ -69,6 +73,26 @@ const SportMateFinder = () => {
     }
   };
 
+  // Keresősáv állapotai
+  const [searchLocation, setSearchLocation] = useState("");
+  const [searchSport, setSearchSport] = useState("");
+
+  // Sportok és helyszínek állapotai
+  const [sports, setSports] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loadingSports, setLoadingSports] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Szűrés állapotai
+  const [locationFilter, setLocationFilter] = useState("");
+  const [sportFilter, setSportFilter] = useState("");
+  const [filteredLocations, setFilteredLocations] = useState([]);
+  const [filteredSports, setFilteredSports] = useState([]);
+
+  // Fókusz állapotok
+  const [locationInputFocused, setLocationInputFocused] = useState(false);
+  const [sportInputFocused, setSportInputFocused] = useState(false);
+
   const [selectedSport, setSelectedSport] = useState(null)
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [events, setEvents] = useState([])
@@ -82,27 +106,180 @@ const SportMateFinder = () => {
   const [joinedEvents, setJoinedEvents] = useState([]) // {id: number, role: string}
   const [currentUser, setCurrentUser] = useState(null)
   const [isAllEvents, setIsAllEvents] = useState(false)
+  const [isAgeFilter, setIsAgeFilter] = useState(false)
+
+  // Fókusz kezelő függvények
+  const handleLocationFocus = () => {
+    setLocationInputFocused(true);
+  };
+
+  const handleLocationBlur = () => {
+    // Késleltetett fókusz elvesztés, hogy a kattintás működjön a listaelemeken
+    setTimeout(() => {
+      setLocationInputFocused(false);
+    }, 200);
+  };
+
+  const handleSportFocus = () => {
+    setSportInputFocused(true);
+  };
+
+  const handleSportBlur = () => {
+    // Késleltetett fókusz elvesztés, hogy a kattintás működjön a listaelemeken
+    setTimeout(() => {
+      setSportInputFocused(false);
+    }, 200);
+  };
+
+  // Sportok betöltése az adatbázisból
+  useEffect(() => {
+    const fetchSports = async () => {
+      setLoadingSports(true);
+      try {
+        const response = await fetch("http://localhost:8081/api/v1/allSportok", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Failed to fetch sports");
+        }
+
+        const data = await response.json();
+        setSports(data.sportok || []);
+        setFilteredSports(data.sportok || []);
+      } catch (error) {
+        console.error("Error fetching sports:", error);
+      } finally {
+        setLoadingSports(false);
+      }
+    };
+
+    fetchSports();
+  }, []);
+
+  // Helyszínek betöltése az adatbázisból
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoadingLocations(true);
+      try {
+        const response = await fetch("http://localhost:8081/api/v1/allHelyszin", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || "Failed to fetch locations");
+        }
+
+        const data = await response.json();
+        // Egyedi települések kinyerése
+        const uniqueLocations = [...new Set(data.helyszinek.map(h => h.Telepules))];
+        setLocations(uniqueLocations);
+        setFilteredLocations(uniqueLocations);
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   // Inicializálás URL paraméterekből és felhasználó beállítása
   useEffect(() => {
-    const { telepules, sport, allEvents } = getQueryParams()
+    const { telepules, sport, allEvents, ageFilter } = getQueryParams()
 
     // Update selected location and sport from query parameters if they exist
     if (telepules) {
       setSelectedLocation(decodeURIComponent(telepules))
+      setSearchLocation(decodeURIComponent(telepules))
+      setLocationFilter(decodeURIComponent(telepules))
     }
 
     if (sport) {
       setSelectedSport(decodeURIComponent(sport))
+      setSearchSport(decodeURIComponent(sport))
+      setSportFilter(decodeURIComponent(sport))
     }
 
     // Set if we're showing all events
     setIsAllEvents(allEvents)
+    setIsAgeFilter(ageFilter)
 
     // Set current user
     const user = getCurrentUser();
     setCurrentUser(user);
   }, [])
+
+  // Új függvények a szűréshez
+  const handleLocationFilterChange = (e) => {
+    const value = e.target.value;
+    setLocationFilter(value);
+    setSearchLocation(value);
+
+    // Szűrjük a településeket a beírt szöveg alapján
+    if (value) {
+      const filtered = locations.filter(location =>
+        location.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredLocations(filtered);
+    } else {
+      setFilteredLocations(locations);
+    }
+  };
+
+  const handleSportFilterChange = (e) => {
+    const value = e.target.value;
+    setSportFilter(value);
+    setSearchSport(value);
+
+    // Szűrjük a sportokat a beírt szöveg alapján
+    if (value) {
+      const filtered = sports.filter(sport =>
+        sport.Nev.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredSports(filtered);
+    } else {
+      setFilteredSports(sports);
+    }
+  };
+
+  const handleLocationSelect = (location) => {
+    setSearchLocation(location);
+    setLocationFilter(location);
+    setLocationInputFocused(false);
+  };
+
+  const handleSportSelect = (sportName) => {
+    setSearchSport(sportName);
+    setSportFilter(sportName);
+    setSportInputFocused(false);
+  };
+
+  // Keresés kezelése
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    if (!searchLocation || !searchSport) {
+      setError("Kérjük, válassz ki egy települést és egy sportot!");
+      return;
+    }
+
+    // Frissítjük az URL-t és az állapotot
+    navigate(`/sportmate?telepules=${encodeURIComponent(searchLocation)}&sport=${encodeURIComponent(searchSport)}`);
+    setSelectedLocation(searchLocation);
+    setSelectedSport(searchSport);
+    setIsAllEvents(false);
+    setIsAgeFilter(false);
+  };
 
   // Módosított függvény a felhasználó csatlakozási állapotának és szerepének ellenőrzésére
   const checkParticipationForEvents = async (events) => {
@@ -155,7 +332,7 @@ const SportMateFinder = () => {
         const token = getAuthToken();
 
         // Check if we want all events by age
-        const { allEvents } = getQueryParams();
+        const { allEvents, ageFilter } = getQueryParams();
 
         let apiUrl;
         let headers = {};
@@ -174,6 +351,14 @@ const SportMateFinder = () => {
             return;
           }
           apiUrl = `http://localhost:8081/api/v1/all-events-by-age`;
+        } else if (ageFilter) {
+          // Use the endpoint that returns all events filtered by age
+          if (!token) {
+            setError("A funkció használatához be kell jelentkezni!");
+            setLoading(false);
+            return;
+          }
+          apiUrl = `http://localhost:8081/api/v1/events-by-age`;
         } else {
           // Csak akkor folytassuk, ha mindkét paraméter meg van adva
           if (!selectedSport || !selectedLocation) {
@@ -241,11 +426,10 @@ const SportMateFinder = () => {
       }
     };
 
-    // Ellenőrizzük, hogy van-e allEvents paraméter az URL-ben
-    const params = new URLSearchParams(window.location.search);
-    const allEvents = params.get("allEvents") === "true";
+    // Ellenőrizzük, hogy van-e allEvents vagy ageFilter paraméter az URL-ben
+    const { allEvents, ageFilter } = getQueryParams();
 
-    // Ha allEvents=true, akkor csak akkor futtatjuk a fetchEvents-t, ha változik az allEvents értéke
+    // Ha allEvents=true vagy ageFilter=true, akkor csak akkor futtatjuk a fetchEvents-t, ha változik az allEvents vagy ageFilter értéke
     // Egyébként akkor futtatjuk, ha változik a selectedSport vagy selectedLocation
     fetchEvents();
   }, [selectedSport, selectedLocation, window.location.search]);
@@ -370,17 +554,118 @@ const SportMateFinder = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
         <div className="container mx-auto px-4 py-8">
-          {/* Cím hozzáadása, ha az allEvents=true */}
-          {isAllEvents && (
+          {/* Cím hozzáadása, ha az allEvents=true vagy ageFilter=true */}
+          {(isAllEvents || isAgeFilter) && (
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-white">
-                Minden esemény a korodnak megfelelően
+                {isAllEvents ? "" : ""}
               </h1>
               {userAge && (
                 <p className="text-white/60">
-                  Életkorod: {userAge} év
+                  
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Keresősáv hozzáadása */}
+          <div className="mb-8">
+            <form onSubmit={handleSearch} className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <label htmlFor="location" className="block text-sm font-medium text-white/80 mb-2">
+                    Település
+                  </label>
+                  <input
+                    id="location"
+                    type="text"
+                    value={locationFilter}
+                    onChange={handleLocationFilterChange}
+                    onFocus={handleLocationFocus}
+                    onBlur={handleLocationBlur}
+                    className="w-full bg-white/10 border border-white/20 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Kezdj el gépelni..."
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="flex-1 relative">
+                  <label htmlFor="sport" className="block text-sm font-medium text-white/80 mb-2">
+                    Sport
+                  </label>
+                  <input
+                    id="sport"
+                    type="text"
+                    value={sportFilter}
+                    onChange={handleSportFilterChange}
+                    onFocus={handleSportFocus}
+                    onBlur={handleSportBlur}
+                    className="w-full bg-white/10 border border-white/20 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Kezdj el gépelni..."
+                    autoComplete="off"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full md:w-auto px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-md transition-all duration-300 flex items-center justify-center"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Keresés
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Település legördülő lista overlay */}
+          {locationInputFocused && filteredLocations.length > 0 && (
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" onClick={() => setLocationInputFocused(false)}>
+              <div
+                className="absolute top-[calc(var(--input-top)+var(--input-height))] left-[var(--input-left)] w-[var(--input-width)] bg-slate-800 border border-white/20 rounded-md shadow-xl max-h-60 overflow-auto"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  '--input-top': document.getElementById('location')?.getBoundingClientRect().top + 'px',
+                  '--input-left': document.getElementById('location')?.getBoundingClientRect().left + 'px',
+                  '--input-width': document.getElementById('location')?.offsetWidth + 'px',
+                  '--input-height': document.getElementById('location')?.offsetHeight + 'px',
+                }}
+              >
+                {filteredLocations.map((location) => (
+                  <div
+                    key={location}
+                    className="px-4 py-2 hover:bg-white/10 cursor-pointer border-b border-white/10 last:border-0"
+                    onClick={() => handleLocationSelect(location)}
+                  >
+                    {location}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sport legördülő lista overlay */}
+          {sportInputFocused && filteredSports.length > 0 && (
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" onClick={() => setSportInputFocused(false)}>
+              <div
+                className="absolute top-[calc(var(--input-top)+var(--input-height))] left-[var(--input-left)] w-[var(--input-width)] bg-slate-800 border border-white/20 rounded-md shadow-xl max-h-60 overflow-auto"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  '--input-top': document.getElementById('sport')?.getBoundingClientRect().top + 'px',
+                  '--input-left': document.getElementById('sport')?.getBoundingClientRect().left + 'px',
+                  '--input-width': document.getElementById('sport')?.offsetWidth + 'px',
+                  '--input-height': document.getElementById('sport')?.offsetHeight + 'px',
+                }}
+              >
+                {filteredSports.map((sport) => (
+                  <div
+                    key={sport.Id}
+                    className="px-4 py-2 hover:bg-white/10 cursor-pointer border-b border-white/10 last:border-0"
+                    onClick={() => handleSportSelect(sport.Nev)}
+                  >
+                    {sport.Nev}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -552,3 +837,5 @@ const SportMateFinder = () => {
 }
 
 export default SportMateFinder
+
+
