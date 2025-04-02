@@ -387,7 +387,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  
+
 
   // Navigáció kezelése - kiegészítve a Legfrissebb sportesemények görgetésével
   const handleNavigation = (id, path) => {
@@ -791,7 +791,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                         </div>
                       </div>
 
-                      {/* Menu Items */}
+                      {/* Menu Items - MODIFIED: Removed Kedvencek and changed Foglalásaim to Eseményeim */}
                       <div className="py-2 px-3">
                         <div className="text-xs uppercase text-slate-400 font-semibold px-3 py-2 mb-1">Fiókom</div>
                         <ul className="space-y-1">
@@ -811,27 +811,13 @@ const Header = ({ activeTab, setActiveTab }) => {
                           </li>
                           <li>
                             <a
-                              href="/bookings"
+                              href="/my-events"
                               className="flex items-center justify-between px-3 py-3 rounded-lg text-slate-200 hover:bg-slate-700/50 hover:text-white transition-colors group"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/10 to-green-600/20 flex items-center justify-center text-green-400 group-hover:text-green-300 transition-colors">
                                   <Calendar className="h-5 w-5" />
-                                </div> <span className="font-medium">Foglalásaim</span>
-                              </div>
-                              <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-colors opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all" />
-                            </a>
-                          </li>
-                          <li>
-                            <a
-                              href="/favorites"
-                              className="flex items-center justify-between px-3 py-3 rounded-lg text-slate-200 hover:bg-slate-700/50 hover:text-white transition-colors group"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500/10 to-pink-600/20 flex items-center justify-center text-pink-400 group-hover:text-pink-300 transition-colors">
-                                  <Heart className="h-5 w-5" />
-                                </div>
-                                <span className="font-medium">Kedvencek</span>
+                                </div> <span className="font-medium">Eseményeim</span>
                               </div>
                               <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-slate-300 transition-colors opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all" />
                             </a>
@@ -1016,5 +1002,6 @@ const Header = ({ activeTab, setActiveTab }) => {
 }
 
 export default Header
+
 
 

@@ -16,7 +16,7 @@ const MyEvents = () => {
   const [participatedEvents, setParticipatedEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeFilter, setActiveFilter] = useState("organized") // "all", "organized", "participated"
+  const [activeFilter, setActiveFilter] = useState("all") // Changed default from "organized" to "all"
   const [refreshData, setRefreshData] = useState(0)
 
   // Modal states
@@ -480,16 +480,16 @@ const MyEvents = () => {
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal
-        isOpen={isSportModalOpen}
-        onClose={closeSportModal}
-        modalContent={{
-          title: "Új sport létrehozása",
-          description: "Tölts ki minden mezőt a sport létrehozásához"
-        }}
-        onSuccess={() => {
-          closeSportModal();
-        }}
-      /> */}
+                        isOpen={isSportModalOpen}
+                        onClose={closeSportModal}
+                        modalContent={{
+                          title: "Új sport létrehozása",
+                          description: "Tölts ki minden mezőt a sport létrehozásához"
+                        }}
+                        onSuccess={() => {
+                          closeSportModal();
+                        }}
+                      /> */}
     </div>
   )
 }
