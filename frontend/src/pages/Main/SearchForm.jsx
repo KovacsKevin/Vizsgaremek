@@ -18,6 +18,9 @@ const SearchForm = () => {
   const [filteredSports, setFilteredSports] = useState([])
   const sportInputRef = useRef(null)
 
+  // Ref for search button
+  const searchButtonRef = useRef(null)
+
   // Fetch locations from API
   useEffect(() => {
     const fetchLocations = async () => {
@@ -57,6 +60,82 @@ const SearchForm = () => {
 
     fetchSports()
   }, [])
+
+  // Listen for input changes from external sources (like PopularDestination.jsx)
+  useEffect(() => {
+    const locationInput = document.getElementById('destination');
+    const sportInput = document.getElementById('sport');
+
+    if (locationInput && sportInput) {
+      // Create a MutationObserver to watch for value changes
+      const locationObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+            setSearchTerm(locationInput.value);
+          }
+        });
+      });
+
+      const sportObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
+            setSportSearchTerm(sportInput.value);
+          }
+        });
+      });
+
+      // Listen for input events
+      const handleLocationInput = (e) => {
+        setSearchTerm(e.target.value);
+      };
+
+      const handleSportInput = (e) => {
+        setSportSearchTerm(e.target.value);
+      };
+
+      locationInput.addEventListener('input', handleLocationInput);
+      sportInput.addEventListener('input', handleSportInput);
+
+      // Configure and start the observers
+      const config = { attributes: true, attributeFilter: ['value'] };
+      locationObserver.observe(locationInput, config);
+      sportObserver.observe(sportInput, config);
+
+      // Check if both fields are filled from external source and trigger search
+      const checkAndSearch = () => {
+        if (locationInput.value && sportInput.value) {
+          // If both fields have values and they were set externally
+          if (
+            locationInput.value !== searchTerm ||
+            sportInput.value !== sportSearchTerm
+          ) {
+            // Update our state
+            setSearchTerm(locationInput.value);
+            setSportSearchTerm(sportInput.value);
+
+            // Wait a bit to ensure state is updated
+            setTimeout(() => {
+              // Trigger search if both fields are filled
+              if (searchButtonRef.current && locationInput.value && sportInput.value) {
+                searchButtonRef.current.click();
+              }
+            }, 300);
+          }
+        }
+      };
+
+      // Check once after component mounts
+      setTimeout(checkAndSearch, 500);
+
+      return () => {
+        // Clean up
+        locationInput.removeEventListener('input', handleLocationInput);
+        sportInput.removeEventListener('input', handleSportInput);
+        locationObserver.disconnect();
+        sportObserver.disconnect();
+      };
+    }
+  }, []);
 
   // Handle location input change
   const handleLocationInputChange = (e) => {
@@ -110,6 +189,13 @@ const SearchForm = () => {
     if (!searchTerm || !sportSearchTerm) {
       alert("Kérjük válassz települést és sportot a kereséshez!")
       return
+    }
+
+    // Add loading indicator or animation here if desired
+    const searchButton = document.querySelector('#search button');
+    if (searchButton) {
+      searchButton.classList.add('opacity-75');
+      searchButton.innerHTML = '<span class="inline-block animate-spin mr-2 h-4 w-4 border-t-2 border-white rounded-full"></span>Keresés...';
     }
 
     // Navigate to the SportMate page with query parameters using browser API
@@ -211,6 +297,7 @@ const SearchForm = () => {
             {/* Search button */}
             <div className="md:col-span-3 flex items-end">
               <button
+                ref={searchButtonRef}
                 onClick={handleSearchClick}
                 className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg shadow-purple-700/20 hover:shadow-purple-700/40"
               >
@@ -220,8 +307,6 @@ const SearchForm = () => {
           </div>
         </div>
       </div>
-
-      {/* Completely remove the bar under the search form */}
     </section>
   )
 }

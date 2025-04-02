@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Users, MapPin, Star } from "lucide-react"
+import { Calendar, Users, MapPin } from "lucide-react" // Removed Star import
 import { useEffect, useState } from "react"
 
 const PopularDestinations = ({ Image, Link }) => {
@@ -17,10 +17,10 @@ const PopularDestinations = ({ Image, Link }) => {
           throw new Error('Failed to fetch events');
         }
         const data = await response.json();
-        
+
         // Sort by esemenyId in descending order
         const sortedEvents = [...data.events].sort((a, b) => b.esemenyId - a.esemenyId);
-        
+
         // Take only the first 8 events after sorting
         const latestEvents = sortedEvents.slice(0, 8);
         setEvents(latestEvents);
@@ -100,13 +100,14 @@ const PopularDestinations = ({ Image, Link }) => {
                 Link={Link}
                 name={event.helyszinNev}
                 properties={`${event.telepules}, ${new Date(event.kezdoIdo).toLocaleDateString('hu-HU')}`}
-                rating={((event.resztvevoCount / event.maximumLetszam) * 5).toFixed(1)}
                 participants={event.resztvevoCount}
                 maxParticipants={event.maximumLetszam}
                 sport={event.sportNev}
                 index={index}
                 eventId={event.esemenyId}
                 imageUrl={event.imageUrl}
+                telepules={event.telepules}
+                sportNev={event.sportNev}
               />
             ))}
           </div>
@@ -134,23 +135,134 @@ const PopularDestinations = ({ Image, Link }) => {
   )
 }
 
-const DestinationCard = ({ Image, Link, name, properties, rating, participants, maxParticipants, sport, index, eventId, imageUrl }) => {
+const DestinationCard = ({ Image, Link, name, properties, participants, maxParticipants, sport, index, eventId, imageUrl, telepules, sportNev }) => {
   // Calculate a delay for staggered animation
   const delay = index * 0.1;
-  
+
   // Generate a placeholder image based on the sport name if no imageUrl
   const placeholderUrl = `/placeholder.svg?height=200&width=300&text=${encodeURIComponent(sport)}`;
-  
+
   // Construct the full image URL with the backend server prefix
   const getFullImageUrl = (url) => {
     if (!url) return placeholderUrl;
     return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
   };
 
+  // Function to handle card click - scroll to search form and fill in both fields
+  const handleCardClick = async (e) => {
+    e.preventDefault(); // Prevent default link behavior
+
+    try {
+      // Fetch the event search data from the backend
+      const response = await fetch(`http://localhost:8081/api/v1/event-search-data/${eventId}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch event data');
+      }
+
+      const eventData = await response.json();
+
+      // Scroll to the search section
+      const searchSection = document.getElementById('search');
+      if (searchSection) {
+        // Calculate the exact position to center the search field
+        const windowHeight = window.innerHeight;
+        const searchHeight = searchSection.offsetHeight;
+        const offsetPosition = searchSection.getBoundingClientRect().top + window.pageYOffset;
+
+        // Center positioning: place the search field in the center of the screen
+        const scrollPosition = offsetPosition - (windowHeight / 2) + (searchHeight / 2);
+
+        // Scroll to the calculated position
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+
+        // Wait for scroll to complete before setting fields
+        setTimeout(() => {
+          // Set location field
+          const locationInput = document.getElementById('destination');
+          if (locationInput) {
+            locationInput.value = eventData.telepules || telepules;
+
+            // Trigger React state updates using custom events
+            const event = new Event('input', { bubbles: true });
+            locationInput.dispatchEvent(event);
+          }
+
+          // Set sport field
+          const sportInput = document.getElementById('sport');
+          if (sportInput) {
+            sportInput.value = eventData.sportNev || sportNev;
+
+            // Trigger React state updates using custom events
+            const event = new Event('input', { bubbles: true });
+            sportInput.dispatchEvent(event);
+          }
+
+          // Trigger search after a short delay to ensure fields are updated
+          setTimeout(() => {
+            const searchButton = document.querySelector('#search button');
+            if (searchButton) {
+              // Visual feedback when clicking the button
+              searchButton.classList.add('ring-2', 'ring-purple-500');
+
+              // Move cursor over the button (visual indication only)
+              searchButton.style.cursor = 'pointer';
+
+              // Remove visual indication after a short time
+              setTimeout(() => {
+                searchButton.classList.remove('ring-2', 'ring-purple-500');
+              }, 1000);
+
+              // Actually click the button to trigger search
+              searchButton.click();
+            }
+          }, 300);
+        }, 800);
+      }
+    } catch (error) {
+      console.error('Error fetching event data:', error);
+
+      // Fallback to using the props directly if API call fails
+      const searchSection = document.getElementById('search');
+      if (searchSection) {
+        searchSection.scrollIntoView({ behavior: 'smooth' });
+
+        setTimeout(() => {
+          // Set location field
+          const locationInput = document.getElementById('destination');
+          if (locationInput) {
+            locationInput.value = telepules;
+            const event = new Event('input', { bubbles: true });
+            locationInput.dispatchEvent(event);
+          }
+
+          // Set sport field
+          const sportInput = document.getElementById('sport');
+          if (sportInput) {
+            sportInput.value = sportNev;
+            const event = new Event('input', { bubbles: true });
+            sportInput.dispatchEvent(event);
+          }
+
+          // Trigger search
+          setTimeout(() => {
+            const searchButton = document.querySelector('#search button');
+            if (searchButton) {
+              searchButton.click();
+            }
+          }, 300);
+        }, 800);
+      }
+    }
+  };
+
   return (
-    <Link
-      href={`/events/${eventId}`}
-      className="group block rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500"
+    <div
+      onClick={handleCardClick}
+      className="group block rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 cursor-pointer"
       style={{
         animation: `card-appear 0.6s ease-out ${delay}s both`,
         transform: "translateY(20px)",
@@ -190,12 +302,6 @@ const DestinationCard = ({ Image, Link, name, properties, rating, participants, 
         <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-medium px-2.5 py-1 rounded-full shadow-lg">
           {sport}
         </div>
-
-        {/* Rating badge */}
-        <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-md text-white text-xs font-medium px-2.5 py-1 rounded-full flex items-center">
-          <Star className="w-3 h-3 text-yellow-400 mr-1" fill="currentColor" />
-          {rating}
-        </div>
       </div>
 
       <div className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 group-hover:border-purple-500/30 transition-colors duration-300">
@@ -222,8 +328,9 @@ const DestinationCard = ({ Image, Link, name, properties, rating, participants, 
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }
 
 export default PopularDestinations
+

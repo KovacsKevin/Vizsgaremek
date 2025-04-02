@@ -58,6 +58,9 @@ router.get("/events-with-details", esemenyController.getAllEsemenyWithDetails);
 // Résztvevő eltávolítása (csak szervező által)
 router.post("/remove-participant", authenticateToken, esemenyController.removeParticipant);
 
+// New endpoint to get event details by ID for the search form
+router.get("/event-search-data/:id", esemenyController.getEventSearchData);
+
 
 
 

@@ -1055,7 +1055,49 @@ const removeParticipant = async (req, res) => {
     }
 };
 
+// Get event search data by ID
+const getEventSearchData = async (req, res) => {
+    try {
+        const { id } = req.params;
 
+        // Find the event with its related Helyszin and Sportok data
+        const event = await Esemény.findByPk(id, {
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: ['Telepules']
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Nev']
+                }
+            ]
+        });
+
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: "Event not found"
+            });
+        }
+
+        // Return the search data
+        res.status(200).json({
+            success: true,
+            telepules: event.Helyszin.Telepules,
+            sportNev: event.Sportok.Nev,
+            esemenyId: event.id
+        });
+
+    } catch (error) {
+        console.error("Error fetching event search data:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     createEsemeny,
@@ -1075,6 +1117,8 @@ module.exports = {
     getOrganizedEvents,
     getParticipatedEvents,
     getAllEsemenyWithDetails,
-    removeParticipant
+    removeParticipant,
+    getEventSearchData
 };
+
 
