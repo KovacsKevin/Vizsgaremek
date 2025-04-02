@@ -304,13 +304,10 @@ const SportMateFinder = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.isParticipant) {
-            // Ellenőrizzük, hogy a felhasználó szervező-e
-            const isOrganizer = event.szervezoId === user.id ||
-              (event.szervezo && event.szervezo.id === user.id);
-
+            // Itt a szervertől kapott szerepet használjuk
             joinedEventDetails.push({
               id: event.id,
-              role: isOrganizer ? "szervező" : "résztvevő"
+              role: data.role // A szervertől kapott szerep
             });
           }
         }
@@ -475,15 +472,12 @@ const SportMateFinder = () => {
 
     // Ha a felhasználó csatlakozott, frissítsük a csatlakozott események listáját
     if (isJoined) {
-      const user = getCurrentUser();
-      const isOrganizer = participant.isOrganizer ||
-        (user && events.find(e => e.id === eventId)?.szervezoId === user.id);
-
       // Ellenőrizzük, hogy már szerepel-e az esemény a listában
       if (!joinedEvents.some(event => event.id === eventId)) {
+        // Itt a participant objektumból vesszük a szerepet, nem próbáljuk kitalálni
         setJoinedEvents(prev => [...prev, {
           id: eventId,
-          role: isOrganizer ? "szervező" : "résztvevő"
+          role: participant.role || "résztvevő" // Használjuk a szervertől kapott szerepet
         }]);
       }
     } else if (!isJoined) {
@@ -562,7 +556,7 @@ const SportMateFinder = () => {
               </h1>
               {userAge && (
                 <p className="text-white/60">
-                  
+
                 </p>
               )}
             </div>
@@ -738,8 +732,7 @@ const SportMateFinder = () => {
                               <div className="flex items-center gap-2 mt-1 text-white/60">
                                 <Clock className="h-4 w-4 flex-shrink-0" />
                                 <span>
-                                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
-                                </span>
+                                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}                                </span>
                               </div>
 
                               {/* Sport szint áthelyezve ide a kezdő és záróidő alá */}
@@ -790,18 +783,18 @@ const SportMateFinder = () => {
                           </div>
 
                           <div className="mt-6 flex justify-end items-center">
-                            {/* Módosított gomb: Szervezőként, Résztvevőként vagy Megtekintés */}
+                            {/* Módosított gomb: "Szervező vagyok" vagy "Csatlakozva résztvevőként" */}
                             {getUserEventRole(event.id) ? (
                               <button
                                 onClick={() => openEventModal(event)}
                                 className={`px-4 py-1.5 ${getUserEventRole(event.id) === "szervező"
-                                    ? "bg-purple-600 hover:bg-purple-700"
-                                    : "bg-green-600 hover:bg-green-700"
+                                  ? "bg-purple-600 hover:bg-purple-700"
+                                  : "bg-green-600 hover:bg-green-700"
                                   } text-white rounded-md transition-colors`}
                               >
                                 {getUserEventRole(event.id) === "szervező"
-                                  ? "Szervezőként csatlakozva"
-                                  : "Résztvevőként csatlakozva"}
+                                  ? "Szervező vagyok"
+                                  : "Csatlakozva résztvevőként"}
                               </button>
                             ) : (
                               <button
