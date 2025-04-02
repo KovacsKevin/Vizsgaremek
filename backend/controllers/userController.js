@@ -4,20 +4,153 @@ const User = require("../models/userModel");
 const Esemény = require("../models/esemenyModel");
 const { Op } = require("sequelize");
 
+
+// Csak a createUser függvényt módosítom, a többi marad változatlan
+
 // Create User
 const createUser = async (req, res) => {
     try {
         const { email, password, username, phone, firstName, lastName, birthDate } = req.body;
+
+        // Ellenőrizzük a kötelező mezőket
         if (!email || !password || !username) {
             return res.status(400).json({ message: "Missing required fields!" });
         }
+
+        // Email validáció
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                message: "Érvénytelen email formátum!"
+            });
+        }
+
+        // Jelszó validáció
+        if (password.length < 10 || password.length > 25) {
+            return res.status(400).json({
+                message: "A jelszó 10-25 karakter hosszú lehet!"
+            });
+        }
+
+        // Jelszó komplexitás ellenőrzése
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+        if (!hasLowerCase || !hasUpperCase || !hasNumber || !hasSpecialChar) {
+            return res.status(400).json({
+                message: "A jelszónak tartalmaznia kell kisbetűt, nagybetűt, számot és speciális karaktert!"
+            });
+        }
+
+        // Felhasználónév validáció
+        if (username.length < 4 || username.length > 16) {
+            return res.status(400).json({
+                message: "A felhasználónév 4-16 karakter hosszú lehet!"
+            });
+        }
+
+        // Csak betűk és számok ellenőrzése regex-szel
+        if (!/^[a-zA-Z0-9]+$/.test(username)) {
+            return res.status(400).json({
+                message: "A felhasználónév csak betűket és számokat tartalmazhat!"
+            });
+        }
+
+        // Telefonszám validáció (ha meg van adva)
+        if (phone) {
+            const phoneRegex = /^(\+36|06)[ -]?(1|20|30|31|50|70)[ -]?(\d{3}[ -]?\d{4}|\d{2}[ -]?\d{2}[ -]?\d{3})$/;
+            if (!phoneRegex.test(phone)) {
+                return res.status(400).json({
+                    message: "Érvénytelen magyar telefonszám formátum! Példák: +36201234567, 06-30-123-4567"
+                });
+            }
+        }
+
+        // Keresztnév validáció (ha meg van adva)
+        if (firstName) {
+            if (firstName.length < 2 || firstName.length > 15) {
+                return res.status(400).json({
+                    message: "A keresztnév 2-15 karakter hosszú lehet!"
+                });
+            }
+
+            if (!/^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]+$/.test(firstName)) {
+                return res.status(400).json({
+                    message: "A keresztnév csak betűket tartalmazhat!"
+                });
+            }
+        }
+
+        // Családnév validáció (ha meg van adva)
+        if (lastName) {
+            if (lastName.length < 2 || lastName.length > 15) {
+                return res.status(400).json({
+                    message: "A családnév 2-15 karakter hosszú lehet!"
+                });
+            }
+
+            if (!/^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]+$/.test(lastName)) {
+                return res.status(400).json({
+                    message: "A családnév csak betűket tartalmazhat!"
+                });
+            }
+        }
+
+        // Születési dátum validáció
+        if (birthDate) {
+            const birthDateObj = new Date(birthDate);
+            const today = new Date();
+
+            // Életkor kiszámítása
+            let age = today.getFullYear() - birthDateObj.getFullYear();
+            const m = today.getMonth() - birthDateObj.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
+                age--;
+            }
+
+            // Ellenőrzés: 6-100 év közötti életkor
+            if (age < 6) {
+                return res.status(400).json({
+                    message: "A felhasználónak legalább 6 évesnek kell lennie!"
+                });
+            }
+            if (age > 100) {
+                return res.status(400).json({
+                    message: "A felhasználó nem lehet 100 évnél idősebb!"
+                });
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await User.create({ email, password: hashedPassword, username, phone, firstName, lastName, birthDate });
         res.status(201).json({ message: "User created successfully!", user: newUser });
     } catch (error) {
-        res.status(500).json({ message: "Error creating user", error });
+        // Sequelize validációs hibák kezelése
+        if (error.name === 'SequelizeValidationError') {
+            const validationErrors = error.errors.map(err => err.message);
+            return res.status(400).json({
+                message: "Validation error",
+                errors: validationErrors
+            });
+        }
+
+        // Egyedi mezők megsértése (pl. már létező felhasználónév vagy email)
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({
+                message: "A megadott felhasználónév vagy email cím már foglalt!"
+            });
+        }
+
+        res.status(500).json({ message: "Error creating user", error: error.message });
     }
 };
+
+
+
+
+
 
 // Authenticate User (Login)
 const authenticateUser = async (req, res) => {
