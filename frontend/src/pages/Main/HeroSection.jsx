@@ -1,6 +1,54 @@
 "use client"
 
+import { useNavigate } from "react-router-dom";
+
 const HeroSection = ({ Image }) => {
+  const navigate = useNavigate();
+
+  // Esemény létrehozása gombra kattintás kezelése
+  const handleCreateEventClick = (e) => {
+    e.preventDefault();
+
+    // Megkeressük az event-section elemet
+    const section = document.getElementById('event-section');
+    if (section) {
+      // Fejléc magassága
+      const headerHeight = 120;
+
+      // Kiszámoljuk a pozíciót
+      const sectionPosition = section.getBoundingClientRect().top;
+      const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+      // Görgetés
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    } else {
+      // Ha nem találjuk az elemet, próbáljuk a create-event ID-t
+      const element = document.getElementById('create-event');
+      if (element) {
+        const headerHeight = 120;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
+  // Események böngészése gombra kattintás kezelése - minden esemény, csak kor szerinti szűrés
+  const handleBrowseEventsClick = (e) => {
+    e.preventDefault();
+
+    // Átirányítás a sportmate oldalra, ahol az események a felhasználó korának megfelelően lesznek szűrve
+    // Az "all-events" paraméter jelzi, hogy minden eseményt szeretnénk lekérni
+    navigate('/sportmate?allEvents=true');
+  };
+
   return (
     <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
       {/* Background image with parallax effect */}
@@ -106,10 +154,11 @@ const HeroSection = ({ Image }) => {
 
           <div className="flex flex-wrap gap-4">
             <a
-              href="#search"
+              href="#create-event"
+              onClick={handleCreateEventClick}
               className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-purple-700/30 hover:shadow-purple-700/50 transform hover:-translate-y-1 flex items-center group"
             >
-              <span>Keresés indítása</span>
+              <span>Esemény létrehozása</span>
               <svg
                 className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
                 fill="none"
@@ -122,7 +171,8 @@ const HeroSection = ({ Image }) => {
             </a>
 
             <a
-              href="#events"
+              href="#"
+              onClick={handleBrowseEventsClick}
               className="px-8 py-4 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-medium rounded-xl transition-all duration-300 transform hover:-translate-y-1"
             >
               Események böngészése
@@ -156,4 +206,3 @@ const HeroSection = ({ Image }) => {
 }
 
 export default HeroSection
-

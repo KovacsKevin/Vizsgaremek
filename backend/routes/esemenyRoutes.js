@@ -61,6 +61,10 @@ router.post("/remove-participant", authenticateToken, esemenyController.removePa
 // New endpoint to get event details by ID for the search form
 router.get("/event-search-data/:id", esemenyController.getEventSearchData);
 
+// Get all events filtered by user age
+router.get('/all-events-by-age', authenticateToken, esemenyController.getAllEsemenyekFilteredByUserAge);
+
+
 
 
 

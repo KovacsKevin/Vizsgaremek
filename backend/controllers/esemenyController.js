@@ -1104,6 +1104,74 @@ const getEventSearchData = async (req, res) => {
     }
 };
 
+// Get all events filtered by user age
+const getAllEsemenyekFilteredByUserAge = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        // Fetch all events filtered by user age
+        const events = await Esemény.findAll({
+            where: {
+                minimumEletkor: { [Op.lte]: age },
+                maximumEletkor: { [Op.gte]: age }
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // If no events are found, return a 404 response
+        if (events.length === 0) {
+            return res.status(404).json({
+                message: "No events found for your age range.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -1123,7 +1191,8 @@ module.exports = {
     getParticipatedEvents,
     getAllEsemenyWithDetails,
     removeParticipant,
-    getEventSearchData
+    getEventSearchData,
+    getAllEsemenyekFilteredByUserAge
 };
 
 

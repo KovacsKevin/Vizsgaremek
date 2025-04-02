@@ -4,24 +4,24 @@ import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin, ArrowRight 
 
 const Footer = ({ Link, Image }) => {
   const supportLinks = [
-    { text: "Help Center", href: "#" },
-    { text: "Safety Information", href: "#" },
-    { text: "Cancellation Options", href: "#" },
-    { text: "Contact Us", href: "#" },
+    { text: "Segítség Központ", href: "#" },
+    { text: "Biztonsági Információk", href: "#" },
+    { text: "Lemondási Lehetőségek", href: "#" },
+    { text: "Kapcsolat", href: "#" },
   ]
 
   const companyLinks = [
-    { text: "About Us", href: "#" },
-    { text: "Careers", href: "#" },
-    { text: "Press", href: "#" },
-    { text: "Investors", href: "#" },
+    { text: "Rólunk", href: "#" },
+    { text: "Karrier", href: "#" },
+    { text: "Sajtó", href: "#" },
+    { text: "Befektetők", href: "#" },
   ]
 
   const partnerLinks = [
-    { text: "Partner Portal", href: "#" },
-    { text: "List Your Property", href: "#" },
-    { text: "Affiliate Program", href: "#" },
-    { text: "Connectivity Partners", href: "#" },
+    { text: "Partner Portál", href: "#" },
+    { text: "Hirdesd Létesítményed", href: "#" },
+    { text: "Partnerprogram", href: "#" },
+    { text: "Kapcsolódó Partnerek", href: "#" },
   ]
 
   return (
@@ -79,7 +79,7 @@ const Footer = ({ Link, Image }) => {
       </div>
 
       <div className="container mx-auto px-4 pt-24 pb-12 relative z-20">
-        {/* Newsletter section */}
+        {/* Elérhetőségek section */}
         <div className="max-w-4xl mx-auto mb-16">
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50 shadow-xl relative overflow-hidden">
             {/* Decorative elements */}
@@ -88,48 +88,32 @@ const Footer = ({ Link, Image }) => {
 
             <div className="relative text-center mb-6">
               <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400 mb-2">
-                Iratkozz fel hírlevelünkre
+                Elérhetőségek
               </h3>
               <p className="text-gray-300 max-w-2xl mx-auto">
-                Értesülj elsőként a legújabb sportlehetőségekről, eseményekről és exkluzív ajánlatokról.
+                Kérdésed van? Vedd fel velünk a kapcsolatot az alábbi elérhetőségeken.
               </p>
             </div>
-
-            <form className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto">
-              <input
-                type="email"
-                placeholder="Email címed"
-                className="flex-1 bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/30 focus:border-purple-500/50 rounded-xl py-3 px-4 text-white placeholder:text-white/40 focus:outline-none transition-all duration-300"
-                required
-              />
-              <button
-                type="submit"
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-purple-700/20 hover:shadow-purple-700/40 flex items-center justify-center group"
-              >
-                <span>Feliratkozás</span>
-                <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform duration-300" />
-              </button>
-            </form>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Footer columns */}
-          <FooterColumn title="Support" links={supportLinks} Link={Link} />
-          <FooterColumn title="Company" links={companyLinks} Link={Link} />
-          <FooterColumn title="Partners" links={partnerLinks} Link={Link} />
+          <FooterColumn title="Támogatás" links={supportLinks} Link={Link} />
+          <FooterColumn title="Cégünk" links={companyLinks} Link={Link} />
+          <FooterColumn title="Partnerek" links={partnerLinks} Link={Link} />
 
           <div>
             <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
-              Mobile
+              Mobilalkalmazás
               <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
             </h3>
-            <p className="mb-4 text-gray-300">Get the app for easier booking and exclusive deals!</p>
+            <p className="mb-4 text-gray-300">Töltsd le az alkalmazást a könnyebb foglalásért és exkluzív ajánlatokért!</p>
             <div className="flex space-x-4">
               <Link href="#" className="block w-32 transform hover:scale-105 transition-transform duration-300">
                 <Image
                   src="/placeholder.svg?height=40&width=120&text=App+Store"
-                  alt="Download on App Store"
+                  alt="Letöltés App Store-ból"
                   width={120}
                   height={40}
                   className="w-full rounded-md shadow-lg"
@@ -138,7 +122,7 @@ const Footer = ({ Link, Image }) => {
               <Link href="#" className="block w-32 transform hover:scale-105 transition-transform duration-300">
                 <Image
                   src="/placeholder.svg?height=40&width=120&text=Google+Play"
-                  alt="Get it on Google Play"
+                  alt="Letöltés Google Play-ből"
                   width={120}
                   height={40}
                   className="w-full rounded-md shadow-lg"
@@ -219,7 +203,7 @@ const Footer = ({ Link, Image }) => {
             </a>
           </div>
 
-          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} Sporthaver. All rights reserved.</p>
+          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} Sporthaver. Minden jog fenntartva.</p>
         </div>
       </div>
     </footer>
@@ -251,4 +235,3 @@ const FooterColumn = ({ title, links, Link }) => {
 }
 
 export default Footer
-

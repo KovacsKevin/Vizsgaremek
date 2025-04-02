@@ -37,6 +37,7 @@ const SportMateFinder = () => {
     return {
       telepules: params.get("telepules"),
       sport: params.get("sport"),
+      allEvents: params.get("allEvents") === "true"
     }
   }
 
@@ -80,10 +81,11 @@ const SportMateFinder = () => {
   // Most már a szerepet is tároljuk (szervező vagy résztvevő)
   const [joinedEvents, setJoinedEvents] = useState([]) // {id: number, role: string}
   const [currentUser, setCurrentUser] = useState(null)
+  const [isAllEvents, setIsAllEvents] = useState(false)
 
   // Inicializálás URL paraméterekből és felhasználó beállítása
   useEffect(() => {
-    const { telepules, sport } = getQueryParams()
+    const { telepules, sport, allEvents } = getQueryParams()
 
     // Update selected location and sport from query parameters if they exist
     if (telepules) {
@@ -93,6 +95,9 @@ const SportMateFinder = () => {
     if (sport) {
       setSelectedSport(decodeURIComponent(sport))
     }
+
+    // Set if we're showing all events
+    setIsAllEvents(allEvents)
 
     // Set current user
     const user = getCurrentUser();
@@ -123,9 +128,9 @@ const SportMateFinder = () => {
           const data = await response.json();
           if (data.isParticipant) {
             // Ellenőrizzük, hogy a felhasználó szervező-e
-            const isOrganizer = event.szervezoId === user.id || 
-                               (event.szervezo && event.szervezo.id === user.id);
-            
+            const isOrganizer = event.szervezoId === user.id ||
+              (event.szervezo && event.szervezo.id === user.id);
+
             joinedEventDetails.push({
               id: event.id,
               role: isOrganizer ? "szervező" : "résztvevő"
@@ -146,27 +151,46 @@ const SportMateFinder = () => {
       setLoading(true);
       setError(null);
       try {
-        // Use query params or defaults
-        const sportParam = selectedSport || "Kosárlabda"; // Default to Kosárlabda if no sport selected
-        const locationParam = selectedLocation || "Budapest"; // Default to Budapest if no location selected
-
         // Get the authentication token
         const token = getAuthToken();
 
-        // Determine which API endpoint to use based on whether we have a token
+        // Check if we want all events by age
+        const { allEvents } = getQueryParams();
+
         let apiUrl;
         let headers = {};
 
         if (token) {
-          // Use the age-filtered endpoint if we have a token
-          apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAge/${encodeURIComponent(locationParam)}/${encodeURIComponent(sportParam)}`;
           headers = {
             "Authorization": `Bearer ${token}`
           };
-        } else {
-          // Fall back to the regular endpoint if no token is available
-          apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(locationParam)}/${encodeURIComponent(sportParam)}`;
         }
+
+        if (allEvents) {
+          // Use the endpoint that returns all events filtered by age
+          if (!token) {
+            setError("A funkció használatához be kell jelentkezni!");
+            setLoading(false);
+            return;
+          }
+          apiUrl = `http://localhost:8081/api/v1/all-events-by-age`;
+        } else {
+          // Csak akkor folytassuk, ha mindkét paraméter meg van adva
+          if (!selectedSport || !selectedLocation) {
+            setError("A kereséshez meg kell adni a sportot és a települést!");
+            setLoading(false);
+            return;
+          }
+
+          // Használjuk a megadott végpontot, alapértelmezett értékek nélkül
+          if (token) {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAge/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
+          } else {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
+          }
+        }
+
+        console.log("Fetching events from:", apiUrl);
 
         const response = await fetch(apiUrl, { headers });
         if (!response.ok) {
@@ -217,11 +241,14 @@ const SportMateFinder = () => {
       }
     };
 
-    // Only fetch if we have both parameters or if we're using defaults
-    if (selectedLocation || selectedSport) {
-      fetchEvents();
-    }
-  }, [selectedSport, selectedLocation]);
+    // Ellenőrizzük, hogy van-e allEvents paraméter az URL-ben
+    const params = new URLSearchParams(window.location.search);
+    const allEvents = params.get("allEvents") === "true";
+
+    // Ha allEvents=true, akkor csak akkor futtatjuk a fetchEvents-t, ha változik az allEvents értéke
+    // Egyébként akkor futtatjuk, ha változik a selectedSport vagy selectedLocation
+    fetchEvents();
+  }, [selectedSport, selectedLocation, window.location.search]);
 
   // Módosított függvény a résztvevők frissítésére
   const handleParticipantUpdate = (eventId, isJoined, participant) => {
@@ -265,9 +292,9 @@ const SportMateFinder = () => {
     // Ha a felhasználó csatlakozott, frissítsük a csatlakozott események listáját
     if (isJoined) {
       const user = getCurrentUser();
-      const isOrganizer = participant.isOrganizer || 
-                         (user && events.find(e => e.id === eventId)?.szervezoId === user.id);
-      
+      const isOrganizer = participant.isOrganizer ||
+        (user && events.find(e => e.id === eventId)?.szervezoId === user.id);
+
       // Ellenőrizzük, hogy már szerepel-e az esemény a listában
       if (!joinedEvents.some(event => event.id === eventId)) {
         setJoinedEvents(prev => [...prev, {
@@ -343,7 +370,19 @@ const SportMateFinder = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-800 to-zinc-900 text-white">
         <div className="container mx-auto px-4 py-8">
-          {/* Eltávolítottam a címet és a szűrési információkat */}
+          {/* Cím hozzáadása, ha az allEvents=true */}
+          {isAllEvents && (
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-white">
+                Minden esemény a korodnak megfelelően
+              </h1>
+              {userAge && (
+                <p className="text-white/60">
+                  Életkorod: {userAge} év
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Search Results */}
           <div className="w-full">
@@ -377,7 +416,8 @@ const SportMateFinder = () => {
                       key={event.id}
                       className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg overflow-hidden hover:border-white/40 transition-all duration-300"
                     >
-                      <div className="flex flex-col md:flex-row">                        <div className="w-full md:w-72 relative">
+                      <div className="flex flex-col md:flex-row">
+                        <div className="w-full md:w-72 relative">
                           <Image
                             src={event.imageUrl}
                             alt={event.Sportok?.Nev || "Sport esemény"}
@@ -416,7 +456,7 @@ const SportMateFinder = () => {
                                   {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
                                 </span>
                               </div>
-                              
+
                               {/* Sport szint áthelyezve ide a kezdő és záróidő alá */}
                               <div className="flex items-center gap-2 mt-1 text-white/60">
                                 <span className="px-2 py-0.5 bg-white/10 text-white/80 rounded text-xs">
@@ -469,14 +509,13 @@ const SportMateFinder = () => {
                             {getUserEventRole(event.id) ? (
                               <button
                                 onClick={() => openEventModal(event)}
-                                className={`px-4 py-1.5 ${
-                                  getUserEventRole(event.id) === "szervező" 
-                                    ? "bg-purple-600 hover:bg-purple-700" 
+                                className={`px-4 py-1.5 ${getUserEventRole(event.id) === "szervező"
+                                    ? "bg-purple-600 hover:bg-purple-700"
                                     : "bg-green-600 hover:bg-green-700"
-                                } text-white rounded-md transition-colors`}
+                                  } text-white rounded-md transition-colors`}
                               >
-                                {getUserEventRole(event.id) === "szervező" 
-                                  ? "Szervezőként csatlakozva" 
+                                {getUserEventRole(event.id) === "szervező"
+                                  ? "Szervezőként csatlakozva"
                                   : "Résztvevőként csatlakozva"}
                               </button>
                             ) : (
@@ -513,4 +552,3 @@ const SportMateFinder = () => {
 }
 
 export default SportMateFinder
-
