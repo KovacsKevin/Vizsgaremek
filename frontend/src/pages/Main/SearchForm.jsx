@@ -183,14 +183,8 @@ const SearchForm = () => {
     setShowSportSuggestions(false)
   }
 
-  // Handle search button click
+  // Handle search button click - updated for flexible search
   const handleSearchClick = () => {
-    // Check if both location and sport are selected
-    if (!searchTerm || !sportSearchTerm) {
-      alert("Kérjük válassz települést és sportot a kereséshez!")
-      return
-    }
-
     // Add loading indicator or animation here if desired
     const searchButton = document.querySelector('#search button');
     if (searchButton) {
@@ -198,8 +192,26 @@ const SearchForm = () => {
       searchButton.innerHTML = '<span class="inline-block animate-spin mr-2 h-4 w-4 border-t-2 border-white rounded-full"></span>Keresés...';
     }
 
-    // Navigate to the SportMate page with query parameters using browser API
-    window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&sport=${encodeURIComponent(sportSearchTerm)}`
+    // Check if both fields are empty - show all events
+    if (!searchTerm && !sportSearchTerm) {
+      window.location.href = `/sportmate?allEvents=true`;
+      return;
+    }
+
+    // If only location is provided
+    if (searchTerm && !sportSearchTerm) {
+      window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&locationOnly=true`;
+      return;
+    }
+
+    // If only sport is provided
+    if (!searchTerm && sportSearchTerm) {
+      window.location.href = `/sportmate?sport=${encodeURIComponent(sportSearchTerm)}&sportOnly=true`;
+      return;
+    }
+
+    // If both are provided - original behavior
+    window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&sport=${encodeURIComponent(sportSearchTerm)}`;
   }
 
   // Handle click outside to close suggestions
@@ -235,7 +247,7 @@ const SearchForm = () => {
                 </div>
                 <input
                   id="destination"
-                  placeholder="Település neve"
+                  placeholder="Település neve vagy hagyd üresen"
                   className="w-full pl-10 py-3 bg-white rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300"
                   value={searchTerm}
                   onChange={handleLocationInputChange}
@@ -270,7 +282,7 @@ const SearchForm = () => {
                 </div>
                 <input
                   id="sport"
-                  placeholder="Sport neve"
+                  placeholder="Sport neve vagy hagyd üresen"
                   className="w-full pl-10 py-3 bg-white rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300"
                   value={sportSearchTerm}
                   onChange={handleSportInputChange}
@@ -305,6 +317,9 @@ const SearchForm = () => {
               </button>
             </div>
           </div>
+          <div className="mt-2 text-xs text-white/60">
+            Kereshetsz csak település vagy csak sport alapján is. Ha mindkét mezőt üresen hagyod, az összes eseményt láthatod.
+          </div>
         </div>
       </div>
     </section>
@@ -312,4 +327,3 @@ const SearchForm = () => {
 }
 
 export default SearchForm
-
