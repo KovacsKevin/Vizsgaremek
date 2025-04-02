@@ -2,6 +2,18 @@
 
 import { useState, useEffect } from "react"
 
+// Helper function to format dates for datetime-local inputs
+const formatDateForInput = (date) => {
+  return date.toISOString().slice(0, 16);
+};
+
+// Helper function to truncate date to minutes (ignore seconds and milliseconds)
+const truncateToMinutes = (date) => {
+  const newDate = new Date(date);
+  newDate.setSeconds(0, 0);
+  return newDate;
+};
+
 export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, openSportModal }) {
   const [formData, setFormData] = useState({
     helyszinId: "",
@@ -13,6 +25,24 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     maximumEletkor: "",
     maximumLetszam: "",
   })
+
+  // Add field-specific error states
+  const [fieldErrors, setFieldErrors] = useState({
+    helyszinId: "",
+    sportId: "",
+    kezdoIdo: "",
+    zaroIdo: "",
+    szint: "",
+    maximumLetszam: "",
+    minimumEletkor: "",
+    maximumEletkor: ""
+  })
+
+  // Add state for min date values
+  const [minDates, setMinDates] = useState({
+    kezdoIdo: formatDateForInput(truncateToMinutes(new Date())),
+    zaroIdo: formatDateForInput(truncateToMinutes(new Date()))
+  });
 
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState("")
@@ -30,6 +60,40 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     if (isOpen) {
       fetchLocations()
       fetchSports()
+
+      // Reset form and errors when modal opens
+      setFormData({
+        helyszinId: "",
+        sportId: "",
+        kezdoIdo: "",
+        zaroIdo: "",
+        szint: "",
+        minimumEletkor: "",
+        maximumEletkor: "",
+        maximumLetszam: "",
+      })
+      setFieldErrors({
+        helyszinId: "",
+        sportId: "",
+        kezdoIdo: "",
+        zaroIdo: "",
+        szint: "",
+        maximumLetszam: "",
+        minimumEletkor: "",
+        maximumEletkor: ""
+      })
+
+      // Reset min dates with current time (truncated to minutes)
+      setMinDates({
+        kezdoIdo: formatDateForInput(truncateToMinutes(new Date())),
+        zaroIdo: formatDateForInput(truncateToMinutes(new Date()))
+      });
+
+      setImageFile(null)
+      setImagePreview("")
+      setErrorMessage("")
+      setImageError(false)
+      setSuccess(false)
     }
   }, [isOpen])
 
@@ -105,12 +169,167 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     }
   }
 
+  // Validate field when it changes
+  const validateField = (name, value) => {
+    let error = "";
+    const now = truncateToMinutes(new Date()); // Truncate current time to minutes
+
+    switch (name) {
+      case "kezdoIdo":
+        if (value) {
+          const inputDate = truncateToMinutes(new Date(value));
+          if (inputDate < now) {
+            error = "A kezdő időpont nem lehet korábbi, mint a jelenlegi időpont.";
+          }
+        }
+        break;
+      case "zaroIdo":
+        if (value && formData.kezdoIdo) {
+          const startDate = truncateToMinutes(new Date(formData.kezdoIdo));
+          const endDate = truncateToMinutes(new Date(value));
+          if (endDate <= startDate) {
+            error = "A záró időpont nem lehet korábbi vagy egyenlő, mint a kezdő időpont.";
+          }
+        }
+        break;
+      case "maximumLetszam":
+        if (value && parseInt(value) < 2) {
+          error = "A maximum létszám legalább 2 fő kell legyen.";
+        }
+        break;
+      case "minimumEletkor":
+        const minAge = parseInt(value);
+        if (value && minAge <= 5) {
+          error = "A minimum életkor nagyobb kell legyen, mint 5 év.";
+        } else if (value && formData.maximumEletkor && minAge >= parseInt(formData.maximumEletkor)) {
+          // Don't show error here if ages are equal, we'll show it only on maximumEletkor
+          if (minAge > parseInt(formData.maximumEletkor)) {
+            error = "A minimum életkor kisebb kell legyen, mint a maximum életkor.";
+          }
+        }
+        break;
+      case "maximumEletkor":
+        const maxAge = parseInt(value);
+        if (value && maxAge >= 100) {
+          error = "A maximum életkor kisebb kell legyen, mint 100 év.";
+        } else if (value && formData.minimumEletkor) {
+          const minAge = parseInt(formData.minimumEletkor);
+          if (maxAge <= minAge) {
+            if (maxAge === minAge) {
+              error = "A maximum életkor nem lehet egyenlő a minimum életkorral.";
+            } else {
+              error = "A maximum életkor nagyobb kell legyen, mint a minimum életkor.";
+            }
+          }
+        }
+        break;
+      default:
+        break;
+    }
+
+    return error;
+  }
+
   const handleChange = (e) => {
     const { id, value } = e.target
+
+    // Update form data
     setFormData((prevState) => ({
       ...prevState,
       [id]: value,
     }))
+
+    // If start time changes, update the minimum end time
+    if (id === "kezdoIdo" && value) {
+      const kezdoDate = new Date(value);
+      // Add at least 1 minute to the start time for the minimum end time
+      kezdoDate.setMinutes(kezdoDate.getMinutes() + 1);
+      setMinDates(prev => ({
+        ...prev,
+        zaroIdo: formatDateForInput(kezdoDate)
+      }));
+
+      // If current end time is now invalid, clear it
+      if (formData.zaroIdo && new Date(formData.zaroIdo) <= new Date(value)) {
+        setFormData(prev => ({
+          ...prev,
+          zaroIdo: ""
+        }));
+        // Clear any error for zaroIdo since we've reset it
+        setFieldErrors(prev => ({
+          ...prev,
+          zaroIdo: ""
+        }));
+      }
+    }
+
+    // Validate the field
+    const error = validateField(id, value);
+
+    // Update field errors
+    setFieldErrors(prev => ({
+      ...prev,
+      [id]: error
+    }));
+
+    // Also validate related fields if needed
+    if (id === "kezdoIdo" && formData.zaroIdo) {
+      const zaroIdoError = validateField("zaroIdo", formData.zaroIdo);
+      setFieldErrors(prev => ({
+        ...prev,
+        zaroIdo: zaroIdoError
+      }));
+    }
+
+    if (id === "minimumEletkor" && formData.maximumEletkor) {
+      // Check if ages are equal
+      const minAge = parseInt(value);
+      const maxAge = parseInt(formData.maximumEletkor);
+
+      if (minAge === maxAge) {
+        // If ages are equal, only show error on maximum age field
+        setFieldErrors(prev => ({
+          ...prev,
+          minimumEletkor: "",
+          maximumEletkor: "A maximum életkor nem lehet egyenlő a minimum életkorral."
+        }));
+      } else {
+        // Otherwise validate normally
+        const maxAgeError = validateField("maximumEletkor", formData.maximumEletkor);
+        setFieldErrors(prev => ({
+          ...prev,
+          maximumEletkor: maxAgeError
+        }));
+      }
+    }
+
+    if (id === "maximumEletkor" && formData.minimumEletkor) {
+      // Check if ages are equal
+      const minAge = parseInt(formData.minimumEletkor);
+      const maxAge = parseInt(value);
+
+      if (minAge === maxAge) {
+        // If ages are equal, only show error on maximum age field
+        setFieldErrors(prev => ({
+          ...prev,
+          minimumEletkor: "",
+          maximumEletkor: "A maximum életkor nem lehet egyenlő a minimum életkorral."
+        }));
+      } else if (minAge > 5 && minAge < maxAge) {
+        // If min age is valid, clear any error
+        setFieldErrors(prev => ({
+          ...prev,
+          minimumEletkor: ""
+        }));
+      } else {
+        // Otherwise validate normally
+        const minAgeError = validateField("minimumEletkor", formData.minimumEletkor);
+        setFieldErrors(prev => ({
+          ...prev,
+          minimumEletkor: minAgeError
+        }));
+      }
+    }
   }
 
   const handleFileChange = (e) => {
@@ -136,6 +355,78 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       setImageError(true)
       setSubmitting(false)
       return
+    }
+
+    // Validate all fields before submission
+    let hasErrors = false;
+    const newErrors = { ...fieldErrors };
+
+    // Validate required fields
+    if (!formData.helyszinId) {
+      newErrors.helyszinId = "Helyszín kiválasztása kötelező";
+      hasErrors = true;
+    }
+
+    if (!formData.sportId) {
+      newErrors.sportId = "Sport kiválasztása kötelező";
+      hasErrors = true;
+    }
+
+    if (!formData.szint) {
+      newErrors.szint = "Szint kiválasztása kötelező";
+      hasErrors = true;
+    }
+
+    // Validate kezdoIdo
+    const kezdoIdoError = validateField("kezdoIdo", formData.kezdoIdo);
+    if (kezdoIdoError) {
+      newErrors.kezdoIdo = kezdoIdoError;
+      hasErrors = true;
+    }
+
+    // Validate zaroIdo
+    const zaroIdoError = validateField("zaroIdo", formData.zaroIdo);
+    if (zaroIdoError) {
+      newErrors.zaroIdo = zaroIdoError;
+      hasErrors = true;
+    }
+
+    // Validate maximumLetszam
+    const maxLetszamError = validateField("maximumLetszam", formData.maximumLetszam);
+    if (maxLetszamError) {
+      newErrors.maximumLetszam = maxLetszamError;
+      hasErrors = true;
+    }
+
+    // Validate age range
+    const minAgeError = validateField("minimumEletkor", formData.minimumEletkor);
+    if (minAgeError) {
+      newErrors.minimumEletkor = minAgeError;
+      hasErrors = true;
+    }
+
+    const maxAgeError = validateField("maximumEletkor", formData.maximumEletkor);
+    if (maxAgeError) {
+      newErrors.maximumEletkor = maxAgeError;
+      hasErrors = true;
+    }
+
+    // Check if min and max age are equal
+    if (formData.minimumEletkor && formData.maximumEletkor &&
+      parseInt(formData.minimumEletkor) === parseInt(formData.maximumEletkor)) {
+      // Only show error on maximum age field
+      newErrors.minimumEletkor = "";
+      newErrors.maximumEletkor = "A maximum életkor nem lehet egyenlő a minimum életkorral.";
+      hasErrors = true;
+    }
+
+    // Update error states
+    setFieldErrors(newErrors);
+
+    if (hasErrors) {
+      setSubmitting(false);
+      setErrorMessage("Kérjük, javítsa a hibákat a folytatás előtt.");
+      return;
     }
 
     try {
@@ -227,7 +518,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-300">
       <div
-        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-[600px] w-full p-6 shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50"
+        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-[600px] w-full p-6 shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50 max-h-[90vh] overflow-y-auto"
         style={{
           animation: "modal-appear 0.3s ease-out forwards",
           transform: "scale(0.95)",
@@ -332,7 +623,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               <div className="flex gap-2">
                 <select
                   id="helyszinId"
-                  className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                  className={`bg-slate-800/80 border ${fieldErrors.helyszinId ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                   value={formData.helyszinId}
                   onChange={handleChange}
                   required
@@ -379,38 +670,31 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                   Helyszínek betöltése...
                 </p>
               )}
+              {fieldErrors.helyszinId && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.helyszinId}</p>
+              )}
             </div>
 
-            {/* Sport selector - now with dynamic data */}
+            {/* Sport selector - now with dynamic data (removed + button) */}
             <div>
               <label htmlFor="sportId" className="block mb-2 text-sm font-medium text-gray-300">
                 Sport
               </label>
-              <div className="flex gap-2">
-                <select
-                  id="sportId"
-                  className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                  value={formData.sportId}
-                  onChange={handleChange}
-                  required
-                  disabled={loadingSports}
-                >
-                  <option value="">Válassz sportot</option>
-                  {sports.map((sport) => (
-                    <option key={sport.Id} value={sport.Id}>
-                      {sport.Nev}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleCreateSport}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm rounded-xl px-3 transition duration-300 shadow-lg shadow-purple-700/20 hover:shadow-purple-700/40 flex items-center justify-center"
-                  title="Új sport létrehozása"
-                  type="button"
-                >
-                  +
-                </button>
-              </div>
+              <select
+                id="sportId"
+                className={`bg-slate-800/80 border ${fieldErrors.sportId ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
+                value={formData.sportId}
+                onChange={handleChange}
+                required
+                disabled={loadingSports}
+              >
+                <option value="">Válassz sportot</option>
+                {sports.map((sport) => (
+                  <option key={sport.Id} value={sport.Id}>
+                    {sport.Nev}
+                  </option>
+                ))}
+              </select>
               {loadingSports && (
                 <p className="text-purple-400 text-xs mt-2 flex items-center">
                   <svg
@@ -436,6 +720,9 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                   Sportok betöltése...
                 </p>
               )}
+              {fieldErrors.sportId && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.sportId}</p>
+              )}
             </div>
 
             <div>
@@ -445,12 +732,17 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               <input
                 type="datetime-local"
                 id="kezdoIdo"
-                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                className={`bg-slate-800/80 border ${fieldErrors.kezdoIdo ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                 value={formData.kezdoIdo}
                 onChange={handleChange}
+                min={minDates.kezdoIdo}
                 required
               />
+              {fieldErrors.kezdoIdo && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.kezdoIdo}</p>
+              )}
             </div>
+
             <div>
               <label htmlFor="zaroIdo" className="block mb-2 text-sm font-medium text-gray-300">
                 Záró időpont
@@ -458,12 +750,21 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               <input
                 type="datetime-local"
                 id="zaroIdo"
-                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                className={`bg-slate-800/80 border ${fieldErrors.zaroIdo ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                 value={formData.zaroIdo}
                 onChange={handleChange}
+                min={formData.kezdoIdo ? minDates.zaroIdo : minDates.kezdoIdo}
+                disabled={!formData.kezdoIdo}
                 required
               />
+              {!formData.kezdoIdo && (
+                <p className="text-amber-500 text-xs mt-1">Először válassz kezdő időpontot</p>
+              )}
+              {fieldErrors.zaroIdo && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.zaroIdo}</p>
+              )}
             </div>
+
             <div>
               <label htmlFor="maximumLetszam" className="block mb-2 text-sm font-medium text-gray-300">
                 Létszám
@@ -471,22 +772,26 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               <input
                 type="number"
                 id="maximumLetszam"
-                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                className={`bg-slate-800/80 border ${fieldErrors.maximumLetszam ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                 placeholder="Pl. 5"
-                min="1"
+                min="2"
                 max="100"
                 value={formData.maximumLetszam}
                 onChange={handleChange}
                 required
               />
+              {fieldErrors.maximumLetszam && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.maximumLetszam}</p>
+              )}
             </div>
+
             <div>
               <label htmlFor="szint" className="block mb-2 text-sm font-medium text-gray-300">
                 Szint
               </label>
               <select
                 id="szint"
-                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                className={`bg-slate-800/80 border ${fieldErrors.szint ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                 value={formData.szint}
                 onChange={handleChange}
                 required
@@ -496,7 +801,11 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                 <option value="haladó">Haladó</option>
                 <option value="profi">Profi</option>
               </select>
+              {fieldErrors.szint && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.szint}</p>
+              )}
             </div>
+
             <div>
               <label htmlFor="minimumEletkor" className="block mb-2 text-sm font-medium text-gray-300">
                 Minimum életkor
@@ -504,15 +813,19 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               <input
                 type="number"
                 id="minimumEletkor"
-                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                className={`bg-slate-800/80 border ${fieldErrors.minimumEletkor ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                 placeholder="Pl. 16"
-                min="1"
-                max="100"
+                min="6"
+                max="99"
                 value={formData.minimumEletkor}
                 onChange={handleChange}
                 required
               />
+              {fieldErrors.minimumEletkor && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.minimumEletkor}</p>
+              )}
             </div>
+
             <div>
               <label htmlFor="maximumEletkor" className="block mb-2 text-sm font-medium text-gray-300">
                 Maximum életkor
@@ -520,14 +833,17 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               <input
                 type="number"
                 id="maximumEletkor"
-                className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                className={`bg-slate-800/80 border ${fieldErrors.maximumEletkor ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
                 placeholder="Pl. 99"
-                min="1"
-                max="100"
+                min={formData.minimumEletkor ? parseInt(formData.minimumEletkor) + 1 : 7}
+                max="99"
                 value={formData.maximumEletkor}
                 onChange={handleChange}
                 required
               />
+              {fieldErrors.maximumEletkor && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.maximumEletkor}</p>
+              )}
             </div>
 
             {/* Image Upload */}
@@ -536,20 +852,18 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                 Kép feltöltése <span className="text-red-400">*</span>
               </label>
               <div className="relative">
-                <input 
-                  type="file" 
-                  id="imageFile" 
-                  className="hidden" 
-                  accept="image/*" 
+                <input
+                  type="file"
+                  id="imageFile"
+                  className="hidden"
+                  accept="image/*"
                   onChange={handleFileChange}
                 />
                 <label
                   htmlFor="imageFile"
-                  className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${
-                    imageError ? "border-red-500/70" : "border-slate-600/50 hover:border-purple-500/50"
-                  } rounded-xl cursor-pointer ${
-                    imageError ? "bg-red-500/10" : "bg-slate-800/50 hover:bg-slate-700/50"
-                  } transition-all duration-300`}
+                  className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${imageError ? "border-red-500/70" : "border-slate-600/50 hover:border-purple-500/50"
+                    } rounded-xl cursor-pointer ${imageError ? "bg-red-500/10" : "bg-slate-800/50 hover:bg-slate-700/50"
+                    } transition-all duration-300`}
                 >
                   {imagePreview ? (
                     <div className="w-full h-full flex items-center justify-center">
@@ -585,7 +899,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                   )}
                 </label>
                 {imageError && (
-                  <p className="text-red-400 text-xs mt-2">Kérem töltsön fel képet</p>
+                  <p className="text-red-500 text-xs mt-1">Kérem töltsön fel képet</p>
                 )}
               </div>
             </div>
@@ -593,11 +907,10 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 
           <button
             type="submit"
-            className={`text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg ${
-              submitting
+            className={`text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg ${submitting
                 ? "bg-purple-700/50 cursor-not-allowed"
                 : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
-            }`}
+              }`}
             disabled={submitting}
             style={{
               animation: submitting ? "none" : "pulse-glow 2s infinite",
@@ -631,4 +944,5 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 }
 
 export default EventModal
+
 

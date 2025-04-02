@@ -68,11 +68,30 @@ const createEsemeny = async (req, res) => {
                 return res.status(400).json({ message: "Missing required fields for creating event!" });
             }
 
+            // Validate maximum participants
+            if (parseInt(maximumLetszam) < 2) {
+                return res.status(400).json({ message: "Maximum létszám legalább 2 fő kell legyen!" });
+            }
+
+            // Validate dates
+            const now = new Date();
+            const kezdoIdoDate = new Date(kezdoIdo);
+            const zaroIdoDate = new Date(zaroIdo);
+
+            if (kezdoIdoDate < now) {
+                return res.status(400).json({ message: "A kezdő időpont nem lehet korábbi, mint a jelenlegi időpont!" });
+            }
+
+            if (zaroIdoDate <= kezdoIdoDate) {
+                return res.status(400).json({ message: "A záró időpont nem lehet korábbi vagy egyenlő, mint a kezdő időpont!" });
+            }
+
             // Get the file path if a file was uploaded
             let imageUrl = null;
             if (req.file) {
                 imageUrl = `/uploads/${req.file.filename}`;
             }
+
 
             // Use a transaction to ensure both operations succeed or fail together
             const result = await sequelize.transaction(async (t) => {
@@ -197,6 +216,27 @@ const updateEsemeny = async (req, res) => {
 
             if (!esemeny) {
                 return res.status(404).json({ message: "Event not found!" });
+            }
+
+            // Validate maximum participants
+            if (parseInt(maximumLetszam) < 2) {
+                return res.status(400).json({ message: "Maximum létszám legalább 2 fő kell legyen!" });
+            }
+
+            // Validate dates
+            const kezdoIdoDate = new Date(kezdoIdo);
+            const zaroIdoDate = new Date(zaroIdo);
+
+            // Only check against current time for future events
+            const now = new Date();
+            const currentKezdoIdo = new Date(esemeny.kezdoIdo);
+
+            if (currentKezdoIdo > now && kezdoIdoDate < now) {
+                return res.status(400).json({ message: "A kezdő időpont nem lehet korábbi, mint a jelenlegi időpont!" });
+            }
+
+            if (zaroIdoDate <= kezdoIdoDate) {
+                return res.status(400).json({ message: "A záró időpont nem lehet korábbi vagy egyenlő, mint a kezdő időpont!" });
             }
 
             // Check if user is the organizer

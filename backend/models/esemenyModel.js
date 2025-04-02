@@ -38,10 +38,24 @@ const Esemény = sequelize.define("Esemény", {
     kezdoIdo: {
         type: DataTypes.DATE,
         allowNull: false,
+        validate: {
+            isAfterNow(value) {
+                if (new Date(value) < new Date()) {
+                    throw new Error('A kezdő időpont nem lehet korábbi, mint a jelenlegi időpont!');
+                }
+            }
+        }
     },
     zaroIdo: {
         type: DataTypes.DATE,
         allowNull: false,
+        validate: {
+            isAfterKezdoIdo(value) {
+                if (new Date(value) <= new Date(this.kezdoIdo)) {
+                    throw new Error('A záró időpont nem lehet korábbi vagy egyenlő, mint a kezdő időpont!');
+                }
+            }
+        }
     },
     szint: {
         type: DataTypes.TEXT,
@@ -59,6 +73,9 @@ const Esemény = sequelize.define("Esemény", {
     maximumLetszam: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        validate: {
+            min: 2
+        }
     },
 
     imageUrl: { 
