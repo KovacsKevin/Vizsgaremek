@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+// Import eye icons for password visibility toggle
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Register = () => {
   const [felhasznalonev, setFelhasznalonev] = useState("");
   const [email, setEmail] = useState("");
   const [jelszo, setJelszo] = useState("");
+  // Add state for password confirmation
+  const [jelszoMegerosites, setJelszoMegerosites] = useState("");
   const [telefonszam, setTelefonszam] = useState("");
   const [csaladnev, setCsaladnev] = useState("");
   const [keresztnev, setKeresztnev] = useState("");
@@ -12,24 +16,29 @@ const Register = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
-  
+
+  // Add states for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Új állapotok a mezőkre kattintás nyomon követésére
   const [focusedFields, setFocusedFields] = useState({
     username: false,
     email: false,
     password: false,
+    confirmPassword: false,
     phone: false,
     lastName: false,
     firstName: false,
     birthDate: false
   });
-  
+
   const navigate = useNavigate();
 
   // Felhasználónév validáció
   const validateUsername = (username) => {
     let errors = {};
-    
+
     if (username.length < 4) {
       errors.username = "A felhasználónév legalább 4 karakter hosszú kell legyen!";
     } else if (username.length > 16) {
@@ -37,26 +46,26 @@ const Register = () => {
     } else if (!/^[a-zA-Z0-9]+$/.test(username)) {
       errors.username = "A felhasználónév csak betűket és számokat tartalmazhat!";
     }
-    
+
     return errors;
   };
 
   // Email validáció
   const validateEmail = (email) => {
     let errors = {};
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       errors.email = "Érvénytelen email formátum!";
     }
-    
+
     return errors;
   };
 
   // Jelszó validáció
   const validatePassword = (password) => {
     let errors = {};
-    
+
     if (password.length < 10) {
       errors.password = "A jelszó legalább 10 karakter hosszú kell legyen!";
     } else if (password.length > 25) {
@@ -67,33 +76,44 @@ const Register = () => {
       const hasUpperCase = /[A-Z]/.test(password);
       const hasNumber = /[0-9]/.test(password);
       const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-      
+
       if (!hasLowerCase || !hasUpperCase || !hasNumber || !hasSpecialChar) {
         errors.password = "A jelszónak tartalmaznia kell kisbetűt, nagybetűt, számot és speciális karaktert!";
       }
     }
-    
+
+    return errors;
+  };
+
+  // Add password confirmation validation
+  const validatePasswordConfirmation = (password, confirmation) => {
+    let errors = {};
+
+    if (password !== confirmation) {
+      errors.confirmPassword = "A két jelszó nem egyezik meg!";
+    }
+
     return errors;
   };
 
   // Telefonszám validáció
   const validatePhone = (phone) => {
     let errors = {};
-    
+
     if (phone) {
       const phoneRegex = /^(\+36|06)[ -]?(1|20|30|31|50|70)[ -]?(\d{3}[ -]?\d{4}|\d{2}[ -]?\d{2}[ -]?\d{3})$/;
       if (!phoneRegex.test(phone)) {
         errors.phone = "Érvénytelen magyar telefonszám formátum! Példák: +36201234567, 06-30-123-4567";
       }
     }
-    
+
     return errors;
   };
 
   // Név validáció (keresztnév és családnév)
   const validateName = (name, fieldName) => {
     let errors = {};
-    
+
     if (name) {
       if (name.length < 2) {
         errors[fieldName] = `A ${fieldName === 'firstName' ? 'keresztnév' : 'családnév'} legalább 2 karakter hosszú kell legyen!`;
@@ -103,25 +123,25 @@ const Register = () => {
         errors[fieldName] = `A ${fieldName === 'firstName' ? 'keresztnév' : 'családnév'} csak betűket tartalmazhat!`;
       }
     }
-    
+
     return errors;
   };
 
   // Születési dátum validáció
   const validateBirthDate = (birthDate) => {
     let errors = {};
-    
+
     if (birthDate) {
       const birthDateObj = new Date(birthDate);
       const today = new Date();
-      
+
       // Életkor kiszámítása
       let age = today.getFullYear() - birthDateObj.getFullYear();
       const m = today.getMonth() - birthDateObj.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
         age--;
       }
-      
+
       // Ellenőrzés: 6-100 év közötti életkor
       if (age < 6) {
         errors.birthDate = "A felhasználónak legalább 6 évesnek kell lennie!";
@@ -129,7 +149,7 @@ const Register = () => {
         errors.birthDate = "A felhasználó nem lehet 100 évnél idősebb!";
       }
     }
-    
+
     return errors;
   };
 
@@ -137,7 +157,7 @@ const Register = () => {
   const handleUsernameChange = (e) => {
     const value = e.target.value;
     setFelhasznalonev(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validateUsername(value);
@@ -158,7 +178,7 @@ const Register = () => {
   const handleEmailChange = (e) => {
     const value = e.target.value;
     setEmail(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validateEmail(value);
@@ -179,7 +199,7 @@ const Register = () => {
   const handlePasswordChange = (e) => {
     const value = e.target.value;
     setJelszo(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validatePassword(value);
@@ -187,6 +207,15 @@ const Register = () => {
         ...prev,
         password: errors.password
       }));
+
+      // Validate password confirmation if it exists
+      if (jelszoMegerosites) {
+        const confirmErrors = validatePasswordConfirmation(value, jelszoMegerosites);
+        setValidationErrors(prev => ({
+          ...prev,
+          confirmPassword: confirmErrors.confirmPassword
+        }));
+      }
     } else {
       // Ha üres, töröljük a hibaüzenetet
       setValidationErrors(prev => ({
@@ -196,11 +225,32 @@ const Register = () => {
     }
   };
 
+  // Add password confirmation change handler
+  const handlePasswordConfirmationChange = (e) => {
+    const value = e.target.value;
+    setJelszoMegerosites(value);
+
+    // Validate only if there's content
+    if (value) {
+      const errors = validatePasswordConfirmation(jelszo, value);
+      setValidationErrors(prev => ({
+        ...prev,
+        confirmPassword: errors.confirmPassword
+      }));
+    } else {
+      // If empty, clear error message
+      setValidationErrors(prev => ({
+        ...prev,
+        confirmPassword: undefined
+      }));
+    }
+  };
+
   // Telefonszám változás kezelése validációval
   const handlePhoneChange = (e) => {
     const value = e.target.value;
     setTelefonszam(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validatePhone(value);
@@ -221,7 +271,7 @@ const Register = () => {
   const handleLastNameChange = (e) => {
     const value = e.target.value;
     setCsaladnev(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validateName(value, 'lastName');
@@ -242,7 +292,7 @@ const Register = () => {
   const handleFirstNameChange = (e) => {
     const value = e.target.value;
     setKeresztnev(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validateName(value, 'firstName');
@@ -263,7 +313,7 @@ const Register = () => {
   const handleBirthDateChange = (e) => {
     const value = e.target.value;
     setSzuletesiDatum(value);
-    
+
     // Csak akkor validáljuk, ha már van tartalom
     if (value) {
       const errors = validateBirthDate(value);
@@ -279,7 +329,7 @@ const Register = () => {
       }));
     }
   };
-  
+
   // Új függvények a mezőkre kattintás kezelésére
   const handleFocus = (field) => {
     setFocusedFields(prev => ({
@@ -287,12 +337,22 @@ const Register = () => {
       [field]: true
     }));
   };
-  
+
   const handleBlur = (field) => {
     setFocusedFields(prev => ({
       ...prev,
       [field]: false
     }));
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Toggle confirm password visibility
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   const handleRegister = async (e) => {
@@ -304,34 +364,43 @@ const Register = () => {
     const usernameErrors = validateUsername(felhasznalonev);
     const emailErrors = validateEmail(email);
     const passwordErrors = validatePassword(jelszo);
+    const confirmPasswordErrors = validatePasswordConfirmation(jelszo, jelszoMegerosites);
     const phoneErrors = validatePhone(telefonszam);
     const lastNameErrors = validateName(csaladnev, 'lastName');
     const firstNameErrors = validateName(keresztnev, 'firstName');
     const birthDateErrors = validateBirthDate(szuletesiDatum);
-    
+
     // Frissítjük a validációs hibákat
     setValidationErrors({
       ...validationErrors,
       username: usernameErrors.username,
       email: emailErrors.email,
       password: passwordErrors.password,
+      confirmPassword: confirmPasswordErrors.confirmPassword,
       phone: phoneErrors.phone,
       lastName: lastNameErrors.lastName,
       firstName: firstNameErrors.firstName,
       birthDate: birthDateErrors.birthDate
     });
-    
+
     // Ha bármilyen validációs hiba van, megállítjuk a folyamatot
-    if (usernameErrors.username || emailErrors.email || passwordErrors.password || 
-        phoneErrors.phone || lastNameErrors.lastName || firstNameErrors.firstName ||
-        birthDateErrors.birthDate) {
+    if (usernameErrors.username || emailErrors.email || passwordErrors.password ||
+      confirmPasswordErrors.confirmPassword || phoneErrors.phone ||
+      lastNameErrors.lastName || firstNameErrors.firstName ||
+      birthDateErrors.birthDate) {
       setError("Kérjük, javítsa a hibákat a regisztráció előtt!");
       return;
     }
 
     // Basic validation
-    if (!felhasznalonev || !email || !jelszo) {
-      setError("Felhasználónév, email és jelszó megadása kötelező!");
+    if (!felhasznalonev || !email || !jelszo || !jelszoMegerosites) {
+      setError("Felhasználónév, email, jelszó és jelszó megerősítés megadása kötelező!");
+      return;
+    }
+
+    // Check if passwords match
+    if (jelszo !== jelszoMegerosites) {
+      setError("A jelszavak nem egyeznek meg!");
       return;
     }
 
@@ -370,29 +439,28 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 to-zinc-900 text-white p-4">
       <div className="w-full max-w-md backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg shadow-lg p-6 my-8">
         <h1 className="text-2xl font-bold text-center mb-6">Fiók létrehozása</h1>
-        
+
         {error && (
           <div className="mb-4 backdrop-blur-md bg-red-500/20 border border-red-500/30 text-white p-3 rounded-md text-sm">
             {error}
           </div>
         )}
-        
+
         {success && (
           <div className="mb-4 backdrop-blur-md bg-green-500/20 border border-green-500/30 text-white p-3 rounded-md text-sm">
             {success}
           </div>
         )}
-        
+
         <form className="space-y-4" onSubmit={handleRegister}>
           <div className="space-y-2">
             <label className="block text-white/90 font-medium">Felhasználónév</label>
             <input
               type="text"
-              className={`w-full py-2 px-3 bg-white/5 border ${
-                validationErrors.username 
-                  ? "border-red-500/50 focus:border-red-500/70" 
+              className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.username
+                  ? "border-red-500/50 focus:border-red-500/70"
                   : "border-white/10 focus:border-white/30"
-              } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
               placeholder="Felhasználónév"
               value={felhasznalonev}
               onChange={handleUsernameChange}
@@ -409,16 +477,15 @@ const Register = () => {
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <label className="block text-white/90 font-medium">Email</label>
             <input
               type="email"
-              className={`w-full py-2 px-3 bg-white/5 border ${
-                validationErrors.email 
-                  ? "border-red-500/50 focus:border-red-500/70" 
+              className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.email
+                  ? "border-red-500/50 focus:border-red-500/70"
                   : "border-white/10 focus:border-white/30"
-              } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
               placeholder="nev@email.com"
               value={email}
               onChange={handleEmailChange}
@@ -435,23 +502,31 @@ const Register = () => {
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <label className="block text-white/90 font-medium">Jelszó</label>
-            <input
-              type="password"
-              className={`w-full py-2 px-3 bg-white/5 border ${
-                validationErrors.password 
-                  ? "border-red-500/50 focus:border-red-500/70" 
-                  : "border-white/10 focus:border-white/30"
-              } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
-              placeholder="••••••••"
-              value={jelszo}
-              onChange={handlePasswordChange}
-              onFocus={() => handleFocus('password')}
-              onBlur={() => handleBlur('password')}
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.password
+                    ? "border-red-500/50 focus:border-red-500/70"
+                    : "border-white/10 focus:border-white/30"
+                  } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                placeholder="••••••••"
+                value={jelszo}
+                onChange={handlePasswordChange}
+                onFocus={() => handleFocus('password')}
+                onBlur={() => handleBlur('password')}
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/70 hover:text-white/90"
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
             {validationErrors.password && (
               <p className="text-red-400 text-xs mt-1">{validationErrors.password}</p>
             )}
@@ -461,15 +536,50 @@ const Register = () => {
               </p>
             )}
           </div>
+
+          {/* Jelszó megerősítés mező */}
+          <div className="space-y-2">
+            <label className="block text-white/90 font-medium">Jelszó megerősítése</label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.confirmPassword
+                    ? "border-red-500/50 focus:border-red-500/70"
+                    : "border-white/10 focus:border-white/30"
+                  } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                placeholder="••••••••"
+                value={jelszoMegerosites}
+                onChange={handlePasswordConfirmationChange}
+                onFocus={() => handleFocus('confirmPassword')}
+                onBlur={() => handleBlur('confirmPassword')}
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/70 hover:text-white/90"
+                onClick={toggleConfirmPasswordVisibility}
+              >
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            {validationErrors.confirmPassword && (
+              <p className="text-red-400 text-xs mt-1">{validationErrors.confirmPassword}</p>
+            )}
+            {focusedFields.confirmPassword && (
+              <p className="text-white text-xs mt-1">
+                Adja meg újra a jelszót a megerősítéshez.
+              </p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <label className="block text-white/90 font-medium">Telefonszám</label>
             <input
               type="tel"
-              className={`w-full py-2 px-3 bg-white/5 border ${
-                validationErrors.phone 
-                  ? "border-red-500/50 focus:border-red-500/70" 
+              className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.phone
+                  ? "border-red-500/50 focus:border-red-500/70"
                   : "border-white/10 focus:border-white/30"
-              } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
               placeholder="+36201234567"
               value={telefonszam}
               onChange={handlePhoneChange}
@@ -486,17 +596,16 @@ const Register = () => {
               </p>
             )}
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-white/90 font-medium">Családnév</label>
               <input
                 type="text"
-                className={`w-full py-2 px-3 bg-white/5 border ${
-                  validationErrors.lastName 
-                    ? "border-red-500/50 focus:border-red-500/70" 
+                className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.lastName
+                    ? "border-red-500/50 focus:border-red-500/70"
                     : "border-white/10 focus:border-white/30"
-                } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                  } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
                 placeholder="Családnév"
                 value={csaladnev}
                 onChange={handleLastNameChange}
@@ -513,16 +622,15 @@ const Register = () => {
                 </p>
               )}
             </div>
-            
+
             <div className="space-y-2">
               <label className="block text-white/90 font-medium">Keresztnév</label>
               <input
                 type="text"
-                className={`w-full py-2 px-3 bg-white/5 border ${
-                  validationErrors.firstName 
-                    ? "border-red-500/50 focus:border-red-500/70" 
+                className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.firstName
+                    ? "border-red-500/50 focus:border-red-500/70"
                     : "border-white/10 focus:border-white/30"
-                } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                  } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
                 placeholder="Keresztnév"
                 value={keresztnev}
                 onChange={handleFirstNameChange}
@@ -540,16 +648,15 @@ const Register = () => {
               )}
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <label className="block text-white/90 font-medium">Születési dátum</label>
             <input
               type="date"
-              className={`w-full py-2 px-3 bg-white/5 border ${
-                validationErrors.birthDate 
-                  ? "border-red-500/50 focus:border-red-500/70" 
+              className={`w-full py-2 px-3 bg-white/5 border ${validationErrors.birthDate
+                  ? "border-red-500/50 focus:border-red-500/70"
                   : "border-white/10 focus:border-white/30"
-              } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
+                } rounded-md text-white placeholder:text-white/40 focus:ring-white/20`}
               value={szuletesiDatum}
               onChange={handleBirthDateChange}
               onFocus={() => handleFocus('birthDate')}
@@ -565,14 +672,14 @@ const Register = () => {
               </p>
             )}
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             className="w-full py-3 mt-2 bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30 rounded-md transition-colors font-medium"
           >
             Regisztráció
           </button>
-          
+
           <p className="text-sm text-white/70 text-center">
             Már van fiókod? <a href="/login" className="text-white hover:text-white/90 transition-colors">Bejelentkezés</a>
           </p>
@@ -583,7 +690,4 @@ const Register = () => {
 };
 
 export default Register;
-
-         
-
 
