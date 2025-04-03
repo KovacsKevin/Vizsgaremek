@@ -115,6 +115,24 @@ const SportMateFinder = () => {
   // Add this to the Header component
   const [pendingRequests, setPendingRequests] = useState(0);
 
+  // Format full date and time
+  const formatDateTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("hu-HU", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long",
+      }) + ' ' + date.toLocaleTimeString("hu-HU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      return "N/A";
+    }
+  };
+
   // Add this useEffect to fetch pending requests count
   useEffect(() => {
     const fetchPendingRequestsCount = async () => {
@@ -140,7 +158,7 @@ const SportMateFinder = () => {
     // Fetch on load and every 5 minutes
     fetchPendingRequestsCount();
     const interval = setInterval(fetchPendingRequestsCount, 300000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -588,30 +606,6 @@ const SportMateFinder = () => {
     setSelectedEvent(null)
   }
 
-  // Format date to Hungarian format
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("hu-HU", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      weekday: "short",
-    })
-  }
-
-  // Format time from date
-  const formatTime = (dateString) => {
-    try {
-      const date = new Date(dateString)
-      return date.toLocaleTimeString("hu-HU", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    } catch (error) {
-      return "N/A"
-    }
-  }
-
   // Check if facility is available
   const isFacilityAvailable = (event, facility) => {
     if (!event.Helyszin) return false
@@ -755,7 +749,7 @@ const SportMateFinder = () => {
           <div className="w-full">
             {loading ? (
               <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
-                <Loader className="h-8 w-8 animate-spin mx-auto text-blue-400" />
+                                <Loader className="h-8 w-8 animate-spin mx-auto text-blue-400" />
                 <p className="mt-4">Események betöltése...</p>
               </div>
             ) : error ? (
@@ -812,16 +806,20 @@ const SportMateFinder = () => {
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2 mt-1 text-white/60">
-                                <Calendar className="h-4 w-4 flex-shrink-0" />
-                                <span>{formatDate(event.kezdoIdo)}</span>
+                              <div className="flex items-start gap-2 mt-1 text-white/60">
+                                <Clock className="h-4 w-4 flex-shrink-0 mt-1" />
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-white/80">Kezdés:</span>
+                                  <span>{formatDateTime(event.kezdoIdo)}</span>
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-2 mt-1 text-white/60">
-                                <Clock className="h-4 w-4 flex-shrink-0" />
-                                <span>
-                                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
-                                </span>
+                              <div className="flex items-start gap-2 mt-1 text-white/60">
+                                <Clock className="h-4 w-4 flex-shrink-0 mt-1" />
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-white/80">Befejezés:</span>
+                                  <span>{formatDateTime(event.zaroIdo)}</span>
+                                </div>
                               </div>
 
                               {/* Sport szint áthelyezve ide a kezdő és záróidő alá */}
