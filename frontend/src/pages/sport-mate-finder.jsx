@@ -104,8 +104,8 @@ const SportMateFinder = () => {
   const [showModal, setShowModal] = useState(false)
   const [userAge, setUserAge] = useState(null)
   // Módosított állapot a felhasználó által csatlakozott események követésére
-  // Most már a szerepet is tároljuk (szervező vagy résztvevő)
-  const [joinedEvents, setJoinedEvents] = useState([]) // {id: number, role: string}
+  // Most már a szerepet és státuszt is tároljuk (szervező vagy résztvevő, elfogadva/függőben/elutasítva)
+  const [joinedEvents, setJoinedEvents] = useState([]) // {id: number, role: string, status: string}
   const [currentUser, setCurrentUser] = useState(null)
   const [isAllEvents, setIsAllEvents] = useState(false)
   const [isAgeFilter, setIsAgeFilter] = useState(false)
@@ -343,10 +343,11 @@ const SportMateFinder = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.isParticipant) {
-            // Itt a szervertől kapott szerepet használjuk
+            // Itt a szervertől kapott szerepet és státuszt használjuk
             joinedEventDetails.push({
               id: event.id,
-              role: data.role // A szervertől kapott szerep
+              role: data.role, // A szervertől kapott szerep
+              status: data.status // A szervertől kapott státusz (elfogadva, elutasítva, függőben)
             });
           }
         }
@@ -526,11 +527,19 @@ const SportMateFinder = () => {
     if (isJoined) {
       // Ellenőrizzük, hogy már szerepel-e az esemény a listában
       if (!joinedEvents.some(event => event.id === eventId)) {
-        // Itt a participant objektumból vesszük a szerepet, nem próbáljuk kitalálni
+        // Itt a participant objektumból vesszük a szerepet és státuszt
         setJoinedEvents(prev => [...prev, {
           id: eventId,
-          role: participant.role || "résztvevő" // Használjuk a szervertől kapott szerepet
+          role: participant.role || "játékos", // Használjuk a szervertől kapott szerepet
+          status: participant.status || "függőben" // Használjuk a szervertől kapott státuszt
         }]);
+      } else {
+        // Ha már szerepel, akkor frissítsük a státuszát
+        setJoinedEvents(prev => prev.map(event =>
+          event.id === eventId
+            ? { ...event, status: participant.status || event.status }
+            : event
+        ));
       }
     } else if (!isJoined) {
       setJoinedEvents(prev => prev.filter(event => event.id !== eventId));
@@ -591,6 +600,12 @@ const SportMateFinder = () => {
   const getUserEventRole = (eventId) => {
     const eventInfo = joinedEvents.find(event => event.id === eventId);
     return eventInfo ? eventInfo.role : null;
+  }
+
+  // Segédfüggvény a felhasználó eseményben való részvételi státuszának lekérdezésére
+  const getUserEventStatus = (eventId) => {
+    const eventInfo = joinedEvents.find(event => event.id === eventId);
+    return eventInfo ? eventInfo.status : null;
   }
 
   return (
@@ -773,7 +788,8 @@ const SportMateFinder = () => {
                               <div className="flex items-center gap-2 mt-1 text-white/60">
                                 <Clock className="h-4 w-4 flex-shrink-0" />
                                 <span>
-                                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}                                </span>
+                                  {formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}
+                                </span>
                               </div>
 
                               {/* Sport szint áthelyezve ide a kezdő és záróidő alá */}
@@ -824,18 +840,27 @@ const SportMateFinder = () => {
                           </div>
 
                           <div className="mt-6 flex justify-end items-center">
-                            {/* Módosított gomb: "Szervező vagyok" vagy "Csatlakozva résztvevőként" */}
+                            {/* Módosított gomb: státusz alapján különböző megjelenítés */}
                             {getUserEventRole(event.id) ? (
                               <button
                                 onClick={() => openEventModal(event)}
-                                className={`px-4 py-1.5 ${getUserEventRole(event.id) === "szervező"
-                                  ? "bg-purple-600 hover:bg-purple-700"
-                                  : "bg-green-600 hover:bg-green-700"
-                                  } text-white rounded-md transition-colors`}
+                                className={`px-4 py-1.5 ${
+                                  getUserEventRole(event.id) === "szervező"
+                                    ? "bg-purple-600 hover:bg-purple-700"
+                                    : getUserEventStatus(event.id) === "elfogadva"
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : getUserEventStatus(event.id) === "függőben"
+                                    ? "bg-yellow-600 hover:bg-yellow-700"
+                                    : "bg-red-600 hover:bg-red-700"
+                                } text-white rounded-md transition-colors`}
                               >
                                 {getUserEventRole(event.id) === "szervező"
                                   ? "Szervező vagyok"
-                                  : "Csatlakozva résztvevőként"}
+                                  : getUserEventStatus(event.id) === "elfogadva"
+                                  ? "Csatlakozva résztvevőként"
+                                  : getUserEventStatus(event.id) === "függőben"
+                                  ? "Jóváhagyásra vár"
+                                  : "Elutasítva"}
                               </button>
                             ) : (
                               <button
@@ -864,6 +889,7 @@ const SportMateFinder = () => {
           onClose={closeEventModal}
           onParticipantUpdate={handleParticipantUpdate}
           userRole={getUserEventRole(selectedEvent.id)}
+          userStatus={getUserEventStatus(selectedEvent.id)}
         />
       )}
     </>

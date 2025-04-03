@@ -38,7 +38,7 @@ const Résztvevő = sequelize.define("Résztvevő", {
     státusz: {
         type: DataTypes.ENUM('elfogadva', 'elutasítva', 'függőben'),
         allowNull: false,
-        defaultValue: 'elfogadva'
+        defaultValue: 'függőben'  // Changed from 'elfogadva' to 'függőben'
     },
     megjegyzés: {
         type: DataTypes.TEXT,
@@ -52,7 +52,10 @@ const Résztvevő = sequelize.define("Résztvevő", {
             fields: ['eseményId', 'userId']
         }
     ]
+
+    
 });
+
 
 // Establish relationships
 Résztvevő.belongsTo(Esemény, { foreignKey: 'eseményId' });
