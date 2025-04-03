@@ -41,21 +41,15 @@ const MyEvents = () => {
     description: "Tölts ki minden mezőt a helyszín létrehozásához"
   }
 
-  // Format date to Hungarian format
-  const formatDate = (dateString) => {
+  // Format full date and time
+  const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("hu-HU", {
       year: "numeric",
       month: "long",
       day: "numeric",
-      weekday: "short",
-    });
-  };
-
-  // Format time from date
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("hu-HU", {
+      weekday: "long",
+    }) + ' ' + date.toLocaleTimeString("hu-HU", {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -516,13 +510,19 @@ const MyEvents = () => {
                         <MapPin size={16} className="mr-2 text-slate-400" />
                         <span>{event.Helyszin?.Telepules || "Ismeretlen helyszín"}</span>
                       </div>
-                      <div className="flex items-center text-sm text-slate-300">
-                        <Calendar size={16} className="mr-2 text-slate-400" />
-                        <span>{formatDate(event.kezdoIdo)}</span>
+                      <div className="flex items-start text-sm text-slate-300">
+                        <Clock size={16} className="mr-2 mt-1 text-slate-400 flex-shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="font-medium text-white/80">Kezdés:</span>
+                          <span>{formatDateTime(event.kezdoIdo)}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center text-sm text-slate-300">
-                        <Clock size={16} className="mr-2 text-slate-400" />
-                        <span>{formatTime(event.kezdoIdo)} - {formatTime(event.zaroIdo)}</span>
+                      <div className="flex items-start text-sm text-slate-300">
+                        <Clock size={16} className="mr-2 mt-1 text-slate-400 flex-shrink-0" />
+                        <div className="flex flex-col">
+                          <span className="font-medium text-white/80">Befejezés:</span>
+                          <span>{formatDateTime(event.zaroIdo)}</span>
+                        </div>
                       </div>
                       <div className="flex items-center text-sm text-slate-300">
                         <Users size={16} className="mr-2 text-slate-400" />
@@ -609,4 +609,3 @@ const MyEvents = () => {
 }
 
 export default MyEvents
-
