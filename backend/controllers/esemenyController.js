@@ -397,8 +397,14 @@ const getEsemenyById = async (req, res) => {
 // Get All Events (Public - No authentication required)
 const getAllEsemeny = async (req, res) => {
     try {
-        // Find all events
-        const events = await Esemény.findAll();
+        // Only get events that haven't ended yet
+        const currentTime = new Date();
+
+        const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            }
+        });
 
         if (events.length === 0) {
             return res.status(404).json({ message: "No events found." });
@@ -453,6 +459,7 @@ const configureMulter = (req, res, next) => {
 const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
     try {
         const { telepules, sportNev } = req.params;
+        const currentTime = new Date();
 
         // Check if both city (telepules) and sport name (sportNev) are provided
         if (!telepules || !sportNev) {
@@ -461,6 +468,9 @@ const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
 
         // Fetch events based on city and sport name using Sequelize ORM
         const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
             include: [
                 {
                     model: Helyszin,
@@ -502,6 +512,7 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
+        const currentTime = new Date();
 
         // Get user details to calculate age
         const user = await User.findByPk(userId);
@@ -530,7 +541,8 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
         const events = await Esemény.findAll({
             where: {
                 minimumEletkor: { [Op.lte]: age },
-                maximumEletkor: { [Op.gte]: age }
+                maximumEletkor: { [Op.gte]: age },
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
             },
             include: [
                 {
@@ -593,6 +605,12 @@ const joinEsemeny = async (req, res) => {
         const esemény = await Esemény.findByPk(eseményId);
         if (!esemény) {
             return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if event has already ended
+        const currentTime = new Date();
+        if (new Date(esemény.zaroIdo) <= currentTime) {
+            return res.status(400).json({ message: "This event has already ended!" });
         }
 
         // Check if user is already a participant
@@ -814,9 +832,13 @@ const getOrganizedEvents = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
+        const currentTime = new Date();
 
         // Lekérjük azokat az eseményeket, ahol a felhasználó szervező
         const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only active events
+            },
             include: [
                 {
                     model: Résztvevő,
@@ -874,9 +896,13 @@ const getParticipatedEvents = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
+        const currentTime = new Date();
 
         // Lekérjük azokat az eseményeket, ahol a felhasználó játékos
         const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only active events
+            },
             include: [
                 {
                     model: Résztvevő,
@@ -924,11 +950,88 @@ const getParticipatedEvents = async (req, res) => {
     }
 };
 
+// Get archived events (ended within the last 31 days)
+const getArchivedEvents = async (req, res) => {
+    try {
+        // Authenticate user
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Calculate date range (now to 31 days ago)
+        const now = new Date();
+        const thirtyOneDaysAgo = new Date();
+        thirtyOneDaysAgo.setDate(thirtyOneDaysAgo.getDate() - 31);
+
+        // Find events where the user participated (either as organizer or player)
+        // and the event has ended (zaroIdo < now) but not older than 31 days
+        const archivedEvents = await Esemény.findAll({
+            where: {
+                zaroIdo: {
+                    [Op.lt]: now,
+                    [Op.gt]: thirtyOneDaysAgo
+                }
+            },
+            include: [
+                {
+                    model: Résztvevő,
+                    where: {
+                        userId: userId,
+                        státusz: 'elfogadva'
+                    },
+                    attributes: ['szerep'], // Include role to distinguish between organizer and player
+                    required: true
+                },
+                {
+                    model: Helyszin,
+                    attributes: ['Telepules', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles', 'Nev', 'Cim']
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Nev', 'KepUrl']
+                }
+            ],
+            attributes: {
+                include: [
+                    [
+                        sequelize.literal(`(
+                            SELECT COUNT(*)
+                            FROM Résztvevős
+                            WHERE 
+                                Résztvevős.eseményId = Esemény.id
+                                AND Résztvevős.státusz = 'elfogadva'
+                        )`),
+                        'résztvevőkSzáma' // Include participant count
+                    ]
+                ]
+            }
+        });
+
+        if (archivedEvents.length === 0) {
+            return res.status(404).json({ message: "Nem találhatók archivált események." });
+        }
+
+        res.json({ events: archivedEvents });
+    } catch (error) {
+        console.error("Hiba az archivált események lekérésekor:", error);
+        res.status(500).json({ message: "Szerver hiba", error: error.message });
+    }
+};
+
 // Get all events with participant count, ordered by start time descending
 const getAllEsemenyWithDetails = async (req, res) => {
     try {
-        // Find all events with venue information
+        const currentTime = new Date();
+
+        // Find all events with venue information that haven't ended yet
         const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
             include: [
                 {
                     model: Helyszin,
@@ -1114,6 +1217,7 @@ const getAllEsemenyekFilteredByUserAge = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
+        const currentTime = new Date();
 
         // Get user details to calculate age
         const user = await User.findByPk(userId);
@@ -1134,7 +1238,8 @@ const getAllEsemenyekFilteredByUserAge = async (req, res) => {
         const events = await Esemény.findAll({
             where: {
                 minimumEletkor: { [Op.lte]: age },
-                maximumEletkor: { [Op.gte]: age }
+                maximumEletkor: { [Op.gte]: age },
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
             },
             include: [
                 {
@@ -1175,6 +1280,7 @@ const getAllEsemenyekFilteredByUserAge = async (req, res) => {
 const getEsemenyekByTelepules = async (req, res) => {
     try {
         const { telepules } = req.params;
+        const currentTime = new Date();
 
         // Check if city (telepules) is provided
         if (!telepules) {
@@ -1183,6 +1289,9 @@ const getEsemenyekByTelepules = async (req, res) => {
 
         // Fetch events based on city using Sequelize ORM
         const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
             include: [
                 {
                     model: Helyszin,
@@ -1217,6 +1326,7 @@ const getEsemenyekByTelepules = async (req, res) => {
 const getEsemenyekBySportNev = async (req, res) => {
     try {
         const { sportNev } = req.params;
+        const currentTime = new Date();
 
         // Check if sport name is provided
         if (!sportNev) {
@@ -1225,6 +1335,9 @@ const getEsemenyekBySportNev = async (req, res) => {
 
         // Fetch events based on sport name using Sequelize ORM
         const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
             include: [
                 {
                     model: Helyszin,
@@ -1265,6 +1378,7 @@ const getEsemenyekByTelepulesAndAge = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
+        const currentTime = new Date();
 
         // Get user details to calculate age
         const user = await User.findByPk(userId);
@@ -1292,7 +1406,8 @@ const getEsemenyekByTelepulesAndAge = async (req, res) => {
         const events = await Esemény.findAll({
             where: {
                 minimumEletkor: { [Op.lte]: age },
-                maximumEletkor: { [Op.gte]: age }
+                maximumEletkor: { [Op.gte]: age },
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
             },
             include: [
                 {
@@ -1340,6 +1455,7 @@ const getEsemenyekBySportNevAndAge = async (req, res) => {
 
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
+        const currentTime = new Date();
 
         // Get user details to calculate age
         const user = await User.findByPk(userId);
@@ -1367,7 +1483,8 @@ const getEsemenyekBySportNevAndAge = async (req, res) => {
         const events = await Esemény.findAll({
             where: {
                 minimumEletkor: { [Op.lte]: age },
-                maximumEletkor: { [Op.gte]: age }
+                maximumEletkor: { [Op.gte]: age },
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
             },
             include: [
                 {
@@ -1405,8 +1522,6 @@ const getEsemenyekBySportNevAndAge = async (req, res) => {
     }
 };
 
-
-
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -1424,6 +1539,7 @@ module.exports = {
     leaveEsemeny,
     getOrganizedEvents,
     getParticipatedEvents,
+    getArchivedEvents,
     getAllEsemenyWithDetails,
     removeParticipant,
     getEventSearchData,

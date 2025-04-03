@@ -9,10 +9,10 @@ const path = require('path');
 // Aktív időzítések tárolása
 const activeJobs = new Map();
 
-// Esemény törlése és a résztvevők eltávolítása
+// Esemény végleges törlése és a résztvevők eltávolítása (31 nap után)
 const deleteEvent = async (eventId) => {
   try {
-    console.log(`Esemény törlése (ID: ${eventId}) a záróidő lejárta miatt...`);
+    console.log(`Esemény végleges törlése (ID: ${eventId}) a 31 napos archiválási időszak lejárta után...`);
     
     // Tranzakció kezdése
     await sequelize.transaction(async (t) => {
@@ -42,7 +42,7 @@ const deleteEvent = async (eventId) => {
       // Esemény törlése
       await event.destroy({ transaction: t });
       
-      console.log(`Esemény (ID: ${eventId}) sikeresen törölve. ${deletedParticipants} résztvevő eltávolítva.`);
+      console.log(`Esemény (ID: ${eventId}) véglegesen törölve. ${deletedParticipants} résztvevő eltávolítva.`);
     });
     
     // Töröljük az időzítést a Map-ből
@@ -51,11 +51,11 @@ const deleteEvent = async (eventId) => {
     }
     
   } catch (error) {
-    console.error(`Hiba az esemény (ID: ${eventId}) törlésekor:`, error);
+    console.error(`Hiba az esemény (ID: ${eventId}) végleges törlésekor:`, error);
   }
 };
 
-// Időzítés beállítása egy eseményhez
+// Időzítés beállítása egy eseményhez (záróidő + 31 nap után törlés)
 const scheduleEventDeletion = (event) => {
   try {
     // Ha már van időzítés ehhez az eseményhez, töröljük
@@ -66,23 +66,27 @@ const scheduleEventDeletion = (event) => {
     
     const endTime = new Date(event.zaroIdo);
     
-    // Ellenőrizzük, hogy a záróidő a jövőben van-e
-    if (endTime <= new Date()) {
-      // Ha már lejárt, azonnal töröljük
-      console.log(`Az esemény (ID: ${event.id}) záróideje már lejárt, azonnali törlés...`);
+    // Kiszámoljuk a törlési időpontot (záróidő + 31 nap)
+    const deletionTime = new Date(endTime);
+    deletionTime.setDate(deletionTime.getDate() + 31);
+    
+    // Ellenőrizzük, hogy a törlési időpont a jövőben van-e
+    if (deletionTime <= new Date()) {
+      // Ha már lejárt a 31 napos időszak is, azonnal töröljük
+      console.log(`Az esemény (ID: ${event.id}) archiválási időszaka már lejárt, azonnali törlés...`);
       deleteEvent(event.id);
       return;
     }
     
-    // Időzítés beállítása a záróidőre
-    const job = schedule.scheduleJob(endTime, () => {
+    // Időzítés beállítása a törlési időpontra (záróidő + 31 nap)
+    const job = schedule.scheduleJob(deletionTime, () => {
       deleteEvent(event.id);
     });
     
     // Időzítés mentése
     activeJobs.set(event.id, job);
     
-    console.log(`Esemény törlés időzítve (ID: ${event.id}) - Záróidő: ${endTime.toLocaleString()}`);
+    console.log(`Esemény végleges törlés időzítve (ID: ${event.id}) - Archiválási időszak vége: ${deletionTime.toLocaleString()}`);
     
   } catch (error) {
     console.error(`Hiba az esemény (ID: ${event.id}) időzítésekor:`, error);
@@ -92,30 +96,33 @@ const scheduleEventDeletion = (event) => {
 // Összes aktív esemény időzítésének beállítása
 const scheduleAllEvents = async () => {
   try {
-    console.log('Összes aktív esemény időzítésének beállítása...');
+    console.log('Összes esemény időzítésének beállítása...');
     
-    // Lekérjük az összes jövőbeli eseményt
+    // Lekérjük az összes eseményt, aminek a záróideje még nem régebbi 31 napnál
+    const thirtyOneDaysAgo = new Date();
+    thirtyOneDaysAgo.setDate(thirtyOneDaysAgo.getDate() - 31);
+    
     const events = await Esemény.findAll({
       where: {
-        zaroIdo: { [Op.gt]: new Date() } // Csak a jövőbeli záróidejű események
+        zaroIdo: { [Op.gt]: thirtyOneDaysAgo } // Csak azok az események, amik záróideje nem régebbi 31 napnál
       }
     });
     
-    console.log(`${events.length} aktív esemény található.`);
+    console.log(`${events.length} esemény található az időzítéshez.`);
     
     // Időzítés beállítása minden eseményhez
     events.forEach(event => {
       scheduleEventDeletion(event);
     });
     
-    // Lejárt események azonnali törlése
+    // 31 napnál régebbi események azonnali törlése
     const expiredEvents = await Esemény.findAll({
       where: {
-        zaroIdo: { [Op.lte]: new Date() } // Már lejárt záróidejű események
+        zaroIdo: { [Op.lte]: thirtyOneDaysAgo } // 31 napnál régebbi záróidejű események
       }
     });
     
-    console.log(`${expiredEvents.length} lejárt esemény azonnali törlése...`);
+    console.log(`${expiredEvents.length} 31 napnál régebbi esemény azonnali törlése...`);
     
     for (const event of expiredEvents) {
       await deleteEvent(event.id);

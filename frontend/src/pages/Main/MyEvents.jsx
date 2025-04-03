@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from './Header'
-import { Calendar, MapPin, Users, Clock, Plus, Loader, Filter } from "lucide-react"
+import { Calendar, MapPin, Users, Clock, Plus, Loader, Archive } from "lucide-react"
 import Cookies from "js-cookie"
 import EventModal from './event-modal'
 import SportEventDetailsModal from '../sport-event-details-modal'
@@ -14,9 +14,10 @@ const MyEvents = () => {
   const [activeTab, setActiveTab] = useState("myevents")
   const [organizedEvents, setOrganizedEvents] = useState([])
   const [participatedEvents, setParticipatedEvents] = useState([])
+  const [archivedEvents, setArchivedEvents] = useState([]) // New state for archived events
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeFilter, setActiveFilter] = useState("all") // Changed default from "organized" to "all"
+  const [activeFilter, setActiveFilter] = useState("all") // Default filter is "all"
   const [refreshData, setRefreshData] = useState(0)
 
   // Modal states
@@ -24,7 +25,7 @@ const MyEvents = () => {
   const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
   const [isSportModalOpen, setIsSportModalOpen] = useState(false)
 
-  // Új állapot a SportEventDetailsModal-hoz
+  // State for SportEventDetailsModal
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false)
 
@@ -72,20 +73,24 @@ const MyEvents = () => {
         setLoading(true)
         setError(null)
 
-        // Párhuzamosan lekérjük mindkét típusú eseményt
-        const [organizedResponse, participatedResponse] = await Promise.allSettled([
+        // Fetch all three types of events in parallel
+        const [organizedResponse, participatedResponse, archivedResponse] = await Promise.allSettled([
           fetch("http://localhost:8081/api/v1/organized-events", {
             headers: { Authorization: `Bearer ${token}` }
           }),
           fetch("http://localhost:8081/api/v1/participated-events", {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch("http://localhost:8081/api/v1/archived-events", {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
 
         console.log("Organized response status:", organizedResponse.status);
         console.log("Participated response status:", participatedResponse.status);
+        console.log("Archived response status:", archivedResponse.status);
 
-        // Szervezett események feldolgozása
+        // Process organized events
         if (organizedResponse.status === 'fulfilled') {
           if (organizedResponse.value.ok) {
             const data = await organizedResponse.value.json();
@@ -104,7 +109,7 @@ const MyEvents = () => {
           console.error("Organized events request failed:", organizedResponse.reason);
         }
 
-        // Résztvevőként szereplő események feldolgozása
+        // Process participated events
         if (participatedResponse.status === 'fulfilled') {
           if (participatedResponse.value.ok) {
             const data = await participatedResponse.value.json();
@@ -123,6 +128,25 @@ const MyEvents = () => {
           console.error("Participated events request failed:", participatedResponse.reason);
         }
 
+        // Process archived events
+        if (archivedResponse.status === 'fulfilled') {
+          if (archivedResponse.value.ok) {
+            const data = await archivedResponse.value.json();
+            console.log("Archived events data:", data);
+            setArchivedEvents(data.events || []);
+          } else if (archivedResponse.value.status === 404) {
+            // 404 is expected if user has no archived events
+            console.log("No archived events found");
+            setArchivedEvents([]);
+          } else {
+            console.error("Hiba az archivált események lekérésekor:", archivedResponse.value.status);
+            const errorText = await archivedResponse.value.text();
+            console.error("Error response:", errorText);
+          }
+        } else {
+          console.error("Archived events request failed:", archivedResponse.reason);
+        }
+
       } catch (err) {
         console.error("Hiba az események lekérésekor:", err)
         setError("Nem sikerült betölteni az eseményeket. Kérjük, próbáld újra később.")
@@ -134,26 +158,36 @@ const MyEvents = () => {
     fetchEvents()
   }, [navigate, refreshData])
 
-  // Szűrt események a kiválasztott filter alapján
+  // Filter events based on the selected filter
   const filteredEvents = () => {
     if (activeFilter === "organized") return organizedEvents;
     if (activeFilter === "participated") return participatedEvents;
-    // "all" esetén mindkét típusú eseményt megjelenítjük
+    if (activeFilter === "archived") return archivedEvents;
+    // "all" shows only active events (not archived)
     return [...organizedEvents, ...participatedEvents];
   }
 
-  // Esemény típusának meghatározása (szervező vagy játékos)
+  // Determine event role (organizer or player)
   const getEventRole = (eventId) => {
-    return organizedEvents.some(event => event.id === eventId) ? "szervező" : "játékos";
+    // Check if the event is in organized events
+    if (organizedEvents.some(event => event.id === eventId)) return "szervező";
+
+    // Check role in archived events
+    const archivedEvent = archivedEvents.find(event => event.id === eventId);
+    if (archivedEvent && archivedEvent.Résztvevős && archivedEvent.Résztvevős.length > 0) {
+      return archivedEvent.Résztvevős[0].szerep;
+    }
+
+    return "játékos";
   }
 
-  // Segédfüggvény a sport nevének kinyeréséhez
+  // Helper function to get sport name
   const getSportName = (event) => {
-    // Minden lehetséges helyet ellenőrzünk, ahol a sport neve lehet
+    // Check all possible locations for sport name
     return event.Sportok?.Nev || event.Sport?.Nev || "Esemény";
   }
 
-  // Segédfüggvény a sport képének kinyeréséhez - TestImages.jsx logikája alapján módosítva
+  // Helper function to get sport image
   const getSportImage = (event) => {
     if (event.imageUrl) {
       return `http://localhost:8081${event.imageUrl.startsWith('/') ? event.imageUrl : `/${event.imageUrl}`}`;
@@ -161,14 +195,14 @@ const MyEvents = () => {
     return event.Sport?.KepUrl || event.Sportok?.KepUrl || "/placeholder.svg";
   }
 
-  // Segédfüggvény a résztvevők számának kinyeréséhez
+  // Helper function to get participant count
   const getParticipantsCount = (event) => {
     if (event.résztvevőkSzáma !== undefined) return event.résztvevőkSzáma;
     if (event.resztvevoCount !== undefined) return event.resztvevoCount;
     return event.resztvevok_lista?.length || 0;
   }
 
-  // Modal kezelő függvények
+  // Modal handler functions
   const openEventModal = () => {
     setIsEventModalOpen(true);
   }
@@ -183,17 +217,17 @@ const MyEvents = () => {
 
   const closeHelyszinModal = () => {
     setIsHelyszinModalOpen(false);
-    // Újra megnyitjuk az esemény modalt
+    // Reopen event modal
     setIsEventModalOpen(true);
   }
 
   const closeSportModal = () => {
     setIsSportModalOpen(false);
-    // Újra megnyitjuk az esemény modalt
+    // Reopen event modal
     setIsEventModalOpen(true);
   }
 
-  // Új függvények a SportEventDetailsModal kezeléséhez
+  // Functions for SportEventDetailsModal
   const openSportEventDetailsModal = (event) => {
     setSelectedEvent(event);
     setIsSportEventDetailsModalOpen(true);
@@ -204,15 +238,15 @@ const MyEvents = () => {
     setSelectedEvent(null);
   }
 
-  // Résztvevők frissítésének kezelése
+  // Handle participant updates
   const handleParticipantUpdate = (eventId, isJoining, participant) => {
     console.log(`Participant update for event ${eventId}:`, participant);
 
-    // Ha ez egy esemény frissítés értesítés
+    // If this is an event update notification
     if (participant.userId === 'event-updated' && participant.eventData) {
       console.log("Event was updated, updating local state with:", participant.eventData);
 
-      // Frissítsük a helyi állapotot az új esemény adatokkal
+      // Update local state with new event data
       setOrganizedEvents(prev =>
         prev.map(event =>
           event.id === eventId ? { ...event, ...participant.eventData } : event
@@ -228,13 +262,13 @@ const MyEvents = () => {
       return;
     }
 
-    // Ha ez egy résztvevők számának frissítése
+    // If this is a participant count update
     if (participant.userId === 'count-update' && participant.fullParticipantsList) {
       console.log("Participants count updated:", participant.fullParticipantsList.length);
 
       const updatedCount = participant.fullParticipantsList.length;
 
-      // Frissítsük mindkét listát, mert nem tudjuk melyikben van az esemény
+      // Update both lists because we don't know which one contains the event
       setOrganizedEvents(prev =>
         prev.map(event =>
           event.id === eventId ? { ...event, resztvevoCount: updatedCount } : event
@@ -250,15 +284,15 @@ const MyEvents = () => {
       return;
     }
 
-    // Ha egy felhasználó csatlakozott vagy kilépett
+    // If a user joined or left
     if (participant.userId && participant.userId !== 'event-updated' && participant.userId !== 'count-update') {
       console.log(`User ${participant.userId} ${isJoining ? 'joined' : 'left'} event ${eventId}`);
 
-      // Frissítsük a résztvevők számát mindkét listában
+      // Update participant count in both lists
       const updateParticipantCount = (events) => {
         return events.map(event => {
           if (event.id === eventId) {
-            // Ha van resztvevoCount, frissítsük, egyébként számoljuk ki a resztvevok_lista alapján
+            // If resztvevoCount exists, update it, otherwise calculate from resztvevok_lista
             const currentCount = event.resztvevoCount !== undefined
               ? event.resztvevoCount
               : (event.resztvevok_lista?.length || 0);
@@ -275,8 +309,7 @@ const MyEvents = () => {
       setOrganizedEvents(prev => updateParticipantCount(prev));
       setParticipatedEvents(prev => updateParticipantCount(prev));
 
-      // Ha a felhasználó kilépett egy eseményből, és ez a "participated" tab, 
-      // akkor frissítsük a teljes listát
+      // If user left an event and we're on the "participated" tab, refresh the list
       if (!isJoining && activeFilter === "participated") {
         setRefreshData(prev => prev + 1);
       }
@@ -284,14 +317,75 @@ const MyEvents = () => {
       return;
     }
 
-    // Ha nem tudjuk pontosan kezelni a változást, akkor frissítsünk mindent
+    // If we can't handle the change precisely, refresh everything
     console.log("Unknown participant update, refreshing all data");
     setRefreshData(prev => prev + 1);
   };
 
-  // Sikeres helyszín létrehozás kezelése
+  // Handle successful location creation
   const handleHelyszinSuccess = (newLocation) => {
     closeHelyszinModal();
+  }
+
+  // Get appropriate empty state message based on active filter
+  const getEmptyStateMessage = () => {
+    switch (activeFilter) {
+      case "organized":
+        return "Még nincsenek szervezett eseményeid";
+      case "participated":
+        return "Még nem veszel részt eseményeken";
+      case "archived":
+        return "Nincsenek archivált eseményeid az elmúlt 31 napból";
+      default:
+        return "Még nincsenek eseményeid";
+    }
+  }
+
+  // Get appropriate empty state description based on active filter
+  const getEmptyStateDescription = () => {
+    switch (activeFilter) {
+      case "organized":
+        return "Hozz létre új eseményt, hogy itt megjelenjen.";
+      case "participated":
+        return "Csatlakozz eseményekhez, hogy itt megjelenjenek.";
+      case "archived":
+        return "Az elmúlt 31 napban lezárult események itt jelennek meg.";
+      default:
+        return "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek.";
+    }
+  }
+
+  // Get appropriate action button text based on active filter
+  const getActionButtonText = () => {
+    switch (activeFilter) {
+      case "organized":
+      case "all":
+        return "Új esemény létrehozása";
+      case "participated":
+        return "Események böngészése";
+      case "archived":
+        return "Aktív események megtekintése";
+      default:
+        return "Új esemény létrehozása";
+    }
+  }
+
+  // Handle action button click based on active filter
+  const handleActionButtonClick = () => {
+    switch (activeFilter) {
+      case "organized":
+      case "all":
+        openEventModal();
+        break;
+      case "participated":
+        navigate("/events");
+        break;
+      case "archived":
+        setActiveFilter("all");
+        break;
+      default:
+        openEventModal();
+    }
   }
 
   return (
@@ -304,13 +398,15 @@ const MyEvents = () => {
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
               Eseményeim
             </h1>
-            <button
-              onClick={openEventModal}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
-            >
-              <Plus size={18} />
-              <span>Új esemény</span>
-            </button>
+            {activeFilter !== "archived" && (
+              <button
+                onClick={openEventModal}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
+              >
+                <Plus size={18} />
+                <span>Új esemény</span>
+              </button>
+            )}
           </div>
 
           {/* Szűrők */}
@@ -342,6 +438,16 @@ const MyEvents = () => {
             >
               Résztvevőként
             </button>
+            <button
+              onClick={() => setActiveFilter("archived")}
+              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "archived"
+                ? "bg-gradient-to-r from-amber-500/20 to-orange-600/20 text-white"
+                : "text-slate-300 hover:bg-white/5"
+                }`}
+            >
+              <Archive size={16} className="inline mr-1" />
+              Archívum
+            </button>
           </div>
 
           {loading ? (
@@ -361,27 +467,23 @@ const MyEvents = () => {
           ) : filteredEvents().length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-20 h-20 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
-                <Calendar className="w-10 h-10 text-slate-400" />
+                {activeFilter === "archived" ? (
+                  <Archive className="w-10 h-10 text-slate-400" />
+                ) : (
+                  <Calendar className="w-10 h-10 text-slate-400" />
+                )}
               </div>
               <h3 className="text-xl font-semibold mb-2">
-                {activeFilter === "organized"
-                  ? "Még nincsenek szervezett eseményeid"
-                  : activeFilter === "participated"
-                    ? "Még nem veszel részt eseményeken"
-                    : "Még nincsenek eseményeid"}
+                {getEmptyStateMessage()}
               </h3>
               <p className="text-slate-400 max-w-md mb-6">
-                {activeFilter === "organized"
-                  ? "Hozz létre új eseményt, hogy itt megjelenjen."
-                  : activeFilter === "participated"
-                    ? "Csatlakozz eseményekhez, hogy itt megjelenjenek."
-                    : "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek."}
+                {getEmptyStateDescription()}
               </p>
               <button
-                onClick={activeFilter === "participated" ? () => navigate("/events") : openEventModal}
+                onClick={handleActionButtonClick}
                 className="px-5 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
               >
-                {activeFilter === "participated" ? "Események böngészése" : "Új esemény létrehozása"}
+                {getActionButtonText()}
               </button>
             </div>
           ) : (
@@ -389,8 +491,13 @@ const MyEvents = () => {
               {filteredEvents().map((event) => (
                 <div
                   key={event.id}
-                  className="bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
+                  className={`bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 ${activeFilter === "archived" ? "relative" : ""}`}
                 >
+                  {activeFilter === "archived" && (
+                    <div className="absolute top-2 right-2 z-10 bg-amber-600/80 text-white text-xs px-2 py-1 rounded-md">
+                      Archivált
+                    </div>
+                  )}
                   <div className="h-40 bg-slate-600 overflow-hidden">
                     <img
                       src={getSportImage(event)}
@@ -425,11 +532,16 @@ const MyEvents = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className={`text-xs px-2 py-1 rounded-full ${getEventRole(event.id) === "szervező"
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-blue-500/20 text-blue-400"
+                      <span className={`text-xs px-2 py-1 rounded-full ${activeFilter === "archived"
+                          ? "bg-amber-500/20 text-amber-400"
+                          : getEventRole(event.id) === "szervező"
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-blue-500/20 text-blue-400"
                         }`}>
-                        {getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"}
+                        {activeFilter === "archived"
+                          ? getEventRole(event.id) === "szervező" ? "Szervező (archív)" : "Résztvevő (archív)"
+                          : getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"
+                        }
                       </span>
                       <button
                         onClick={() => openSportEventDetailsModal(event)}
@@ -475,21 +587,22 @@ const MyEvents = () => {
           event={selectedEvent}
           onClose={closeSportEventDetailsModal}
           onParticipantUpdate={handleParticipantUpdate}
+          isArchived={activeFilter === "archived"} // Pass isArchived flag to disable editing for archived events
         />
       )}
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal
-                        isOpen={isSportModalOpen}
-                        onClose={closeSportModal}
-                        modalContent={{
-                          title: "Új sport létrehozása",
-                          description: "Tölts ki minden mezőt a sport létrehozásához"
-                        }}
-                        onSuccess={() => {
-                          closeSportModal();
-                        }}
-                      /> */}
+        isOpen={isSportModalOpen}
+        onClose={closeSportModal}
+        modalContent={{
+          title: "Új sport létrehozása",
+          description: "Tölts ki minden mezőt a sport létrehozásához"
+        }}
+        onSuccess={() => {
+          closeSportModal();
+        }}
+      /> */}
     </div>
   )
 }

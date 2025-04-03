@@ -18,8 +18,12 @@ const PopularDestinations = ({ Image, Link }) => {
         }
         const data = await response.json();
 
+        // Filter out events with expired closing times
+        const currentTime = new Date();
+        const activeEvents = data.events.filter(event => new Date(event.zaroIdo) > currentTime);
+
         // Sort by esemenyId in descending order
-        const sortedEvents = [...data.events].sort((a, b) => b.esemenyId - a.esemenyId);
+        const sortedEvents = [...activeEvents].sort((a, b) => b.esemenyId - a.esemenyId);
 
         // Take only the first 8 events after sorting
         const latestEvents = sortedEvents.slice(0, 8);
@@ -34,6 +38,7 @@ const PopularDestinations = ({ Image, Link }) => {
 
     fetchEvents();
   }, []);
+
 
   return (
     <section id="popular-destinations" className="py-16 relative overflow-hidden">

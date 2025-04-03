@@ -70,6 +70,10 @@ router.get('/getEsemenyekBySportNev/:sportNev', esemenyController.getEsemenyekBy
 router.get('/getEsemenyekByTelepulesAndAge/:telepules', authenticateToken, esemenyController.getEsemenyekByTelepulesAndAge);
 router.get('/getEsemenyekBySportNevAndAge/:sportNev', authenticateToken, esemenyController.getEsemenyekBySportNevAndAge);
 
+// New route for archived events
+router.get('/archived-events', authenticateToken, esemenyController.getArchivedEvents);
+
+
 
 
 

@@ -433,7 +433,11 @@ const SportMateFinder = () => {
         }
 
         const data = await response.json();
-        const fetchedEvents = data.events || [];
+        let fetchedEvents = data.events || [];
+
+        // Filter out events with expired closing times
+        const currentTime = new Date();
+        fetchedEvents = fetchedEvents.filter(event => new Date(event.zaroIdo) > currentTime);
 
         // Now fetch participant data for each event
         const eventsWithParticipants = await Promise.all(
@@ -477,6 +481,7 @@ const SportMateFinder = () => {
 
     fetchEvents();
   }, [selectedSport, selectedLocation, window.location.search]);
+
 
   // Módosított függvény a résztvevők frissítésére
   const handleParticipantUpdate = (eventId, isJoined, participant) => {
