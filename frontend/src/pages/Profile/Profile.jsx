@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { User, Mail, Phone, Calendar, Edit, Save, Trash2, AlertTriangle, X, Upload, FileText } from "lucide-react";
+import Header from "../Main/Header"; // Import the Header component
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [activeTab, setActiveTab] = useState("profile"); // Add state for active tab
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -300,275 +302,280 @@ const Profile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 py-12 px-4">
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-xl border border-slate-700/50">
-                    {/* Profil fejléc */}
-                    <div className="bg-gradient-to-r from-blue-600/30 to-purple-600/30 p-8 relative">
-                        <div className="flex flex-col md:flex-row items-center gap-6">
-                            {/* Profilkép */}
-                            <div
-                                className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 relative group cursor-pointer"
-                                onClick={handleProfilePicClick}
-                            >
-                                <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
-                                    {profilePicture ? (
-                                        <img
-                                            src={profilePicture}
-                                            alt={user?.username}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <span className="font-bold text-white text-4xl">{getUserInitials()}</span>
-                                    )}
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                                        <Upload className="h-8 w-8 text-white" />
+        <>
+            {/* Include the Header component at the top */}
+            <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+
+            <div className="min-h-screen bg-slate-900 py-12 px-4">
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-xl border border-slate-700/50">
+                        {/* Profil fejléc */}
+                        <div className="bg-gradient-to-r from-blue-600/30 to-purple-600/30 p-8 relative">
+                            <div className="flex flex-col md:flex-row items-center gap-6">
+                                {/* Profilkép */}
+                                <div
+                                    className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 relative group cursor-pointer"
+                                    onClick={handleProfilePicClick}
+                                >
+                                    <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
+                                        {profilePicture ? (
+                                            <img
+                                                src={profilePicture}
+                                                alt={user?.username}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <span className="font-bold text-white text-4xl">{getUserInitials()}</span>
+                                        )}
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                                            <Upload className="h-8 w-8 text-white" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <input
+                                    type="file"
+                                    ref={profilePicInputRef}
+                                    onChange={handleProfilePicUpload}
+                                    accept="image/*"
+                                    className="hidden"
+                                />
+
+                                {/* Felhasználói adatok */}
+                                <div className="flex-1">
+                                    <h1 className="text-3xl font-bold text-white mb-2">
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                name="username"
+                                                value={formData.username}
+                                                onChange={handleInputChange}
+                                                className="bg-slate-700 text-white px-3 py-2 rounded-lg w-full"
+                                            />
+                                        ) : (
+                                            user?.username
+                                        )}
+                                    </h1>
+                                    <p className="text-slate-300 mb-4">
+                                        {isEditing ? (
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                className="bg-slate-700 text-white px-3 py-2 rounded-lg w-full"
+                                            />
+                                        ) : (
+                                            user?.email
+                                        )}
+                                    </p>
+
+                                    {/* Szerkesztés/Mentés gombok */}
+                                    <div className="flex gap-3">
+                                        {isEditing ? (
+                                            <button
+                                                onClick={handleSaveProfile}
+                                                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                            >
+                                                <Save className="h-4 w-4" />
+                                                Mentés
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => setIsEditing(true)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                                Szerkesztés
+                                            </button>
+                                        )}
+
+                                        {isEditing && (
+                                            <button
+                                                onClick={() => setIsEditing(false)}
+                                                className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                                            >
+                                                <X className="h-4 w-4" />
+                                                Mégse
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors ml-auto"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Profil törlése
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                            <input
-                                type="file"
-                                ref={profilePicInputRef}
-                                onChange={handleProfilePicUpload}
-                                accept="image/*"
-                                className="hidden"
-                            />
+                        </div>
 
-                            {/* Felhasználói adatok */}
-                            <div className="flex-1">
-                                <h1 className="text-3xl font-bold text-white mb-2">
+                        {/* Profil részletek */}
+                        <div className="p-8">
+                            {/* Bemutatkozás szekció */}
+                            <div className="mb-8">
+                                <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Bemutatkozás</h2>
+
+                                {isEditing ? (
+                                    <textarea
+                                        name="bio"
+                                        value={formData.bio}
+                                        onChange={handleInputChange}
+                                        className="w-full h-32 bg-slate-700 text-white px-4 py-3 rounded-lg resize-none"
+                                        placeholder="Írj magadról néhány mondatot..."
+                                    />
+                                ) : (
+                                    <div className="bg-slate-700/50 rounded-lg p-4">
+                                        {user?.bio ? (
+                                            <p className="text-slate-300 whitespace-pre-line">{user.bio}</p>
+                                        ) : (
+                                            <p className="text-slate-500 italic">Nincs bemutatkozás megadva</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Személyes adatok</h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Vezetéknév */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Vezetéknév</label>
                                     {isEditing ? (
                                         <input
                                             type="text"
-                                            name="username"
-                                            value={formData.username}
+                                            name="lastName"
+                                            value={formData.lastName}
                                             onChange={handleInputChange}
-                                            className="bg-slate-700 text-white px-3 py-2 rounded-lg w-full"
+                                            className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
                                         />
                                     ) : (
-                                        user?.username
+                                        <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
+                                            <User className="h-5 w-5 text-slate-400" />
+                                            <span className="text-white">{user?.lastName || "Nincs megadva"}</span>
+                                        </div>
                                     )}
-                                </h1>
-                                <p className="text-slate-300 mb-4">
+                                </div>
+
+                                {/* Keresztnév */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Keresztnév</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            name="firstName"
+                                            value={formData.firstName}
+                                            onChange={handleInputChange}
+                                            className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
+                                            <User className="h-5 w-5 text-slate-400" />
+                                            <span className="text-white">{user?.firstName || "Nincs megadva"}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Email */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Email cím</label>
                                     {isEditing ? (
                                         <input
                                             type="email"
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            className="bg-slate-700 text-white px-3 py-2 rounded-lg w-full"
+                                            className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
                                         />
                                     ) : (
-                                        user?.email
+                                        <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
+                                            <Mail className="h-5 w-5 text-slate-400" />
+                                            <span className="text-white">{user?.email}</span>
+                                        </div>
                                     )}
-                                </p>
+                                </div>
 
-                                {/* Szerkesztés/Mentés gombok */}
-                                <div className="flex gap-3">
+                                {/* Telefonszám */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Telefonszám</label>
                                     {isEditing ? (
-                                        <button
-                                            onClick={handleSaveProfile}
-                                            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                                        >
-                                            <Save className="h-4 w-4" />
-                                            Mentés
-                                        </button>
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleInputChange}
+                                            className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
+                                        />
                                     ) : (
-                                        <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                                        >
-                                            <Edit className="h-4 w-4" />
-                                            Szerkesztés
-                                        </button>
+                                        <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
+                                            <Phone className="h-5 w-5 text-slate-400" />
+                                            <span className="text-white">{user?.phone || "Nincs megadva"}</span>
+                                        </div>
                                     )}
-
-                                    {isEditing && (
-                                        <button
-                                            onClick={() => setIsEditing(false)}
-                                            className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-                                        >
-                                            <X className="h-4 w-4" />
-                                            Mégse
-                                        </button>
-                                    )}
-
-                                    <button
-                                        onClick={() => setShowDeleteConfirm(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors ml-auto"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        Profil törlése
-                                    </button>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Profil részletek */}
-                    <div className="p-8">
-                        {/* Bemutatkozás szekció */}
-                        <div className="mb-8">
-                            <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Bemutatkozás</h2>
-
-                            {isEditing ? (
-                                <textarea
-                                    name="bio"
-                                    value={formData.bio}
-                                    onChange={handleInputChange}
-                                    className="w-full h-32 bg-slate-700 text-white px-4 py-3 rounded-lg resize-none"
-                                    placeholder="Írj magadról néhány mondatot..."
-                                />
-                            ) : (
-                                <div className="bg-slate-700/50 rounded-lg p-4">
-                                    {user?.bio ? (
-                                        <p className="text-slate-300 whitespace-pre-line">{user.bio}</p>
+                                {/* Születési dátum */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Születési dátum</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="date"
+                                            name="birthDate"
+                                            value={formData.birthDate}
+                                            onChange={handleInputChange}
+                                            className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
+                                        />
                                     ) : (
-                                        <p className="text-slate-500 italic">Nincs bemutatkozás megadva</p>
+                                        <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
+                                            <Calendar className="h-5 w-5 text-slate-400" />
+                                            <span className="text-white">
+                                                {user?.birthDate
+                                                    ? new Date(user.birthDate).toLocaleDateString('hu-HU', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })
+                                                    : "Nincs megadva"}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
-                            )}
-                        </div>
 
-                        <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Személyes adatok</h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Vezetéknév */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Vezetéknév</label>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        value={formData.lastName}
-                                        onChange={handleInputChange}
-                                        className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
-                                        <User className="h-5 w-5 text-slate-400" />
-                                        <span className="text-white">{user?.lastName || "Nincs megadva"}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Keresztnév */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Keresztnév</label>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        value={formData.firstName}
-                                        onChange={handleInputChange}
-                                        className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
-                                        <User className="h-5 w-5 text-slate-400" />
-                                        <span className="text-white">{user?.firstName || "Nincs megadva"}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Email cím</label>
-                                {isEditing ? (
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
-                                        <Mail className="h-5 w-5 text-slate-400" />
-                                        <span className="text-white">{user?.email}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Telefonszám */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Telefonszám</label>
-                                {isEditing ? (
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleInputChange}
-                                        className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
-                                        <Phone className="h-5 w-5 text-slate-400" />
-                                        <span className="text-white">{user?.phone || "Nincs megadva"}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Születési dátum */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Születési dátum</label>
-                                {isEditing ? (
-                                    <input
-                                        type="date"
-                                        name="birthDate"
-                                        value={formData.birthDate}
-                                        onChange={handleInputChange}
-                                        className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
-                                        <Calendar className="h-5 w-5 text-slate-400" />
-                                        <span className="text-white">
-                                            {user?.birthDate
-                                                ? new Date(user.birthDate).toLocaleDateString('hu-HU', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })
-                                                : "Nincs megadva"}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Felhasználónév */}
-                            <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Felhasználónév</label>
-                                {isEditing ? (
-                                    <input
-                                        type="text"
-                                        name="username"
-                                        value={formData.username}
-                                        onChange={handleInputChange}
-                                        className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
-                                    />
-                                ) : (
-                                    <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
-                                        <User className="h-5 w-5 text-slate-400" />
-                                        <span className="text-white">{user?.username}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Események statisztikák */}
-                        <div className="mt-10">
-                            <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Esemény statisztikák</h2>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-6">
-                                    <h3 className="text-blue-400 font-medium mb-2">Létrehozott események</h3>
-                                    <p className="text-3xl font-bold text-white">{stats.createdEvents}</p>
+                                {/* Felhasználónév */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">Felhasználónév</label>
+                                    {isEditing ? (
+                                        <input
+                                            type="text"
+                                            name="username"
+                                            value={formData.username}
+                                            onChange={handleInputChange}
+                                            className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center gap-3 bg-slate-700/50 px-4 py-3 rounded-lg">
+                                            <User className="h-5 w-5 text-slate-400" />
+                                            <span className="text-white">{user?.username}</span>
+                                        </div>
+                                    )}
                                 </div>
+                            </div>
 
-                                <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-6">
-                                    <h3 className="text-purple-400 font-medium mb-2">Részvételek</h3>
-                                    <p className="text-3xl font-bold text-white">{stats.participatedEvents}</p>
+                            {/* Események statisztikák */}
+                            <div className="mt-10">
+                                <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Esemény statisztikák</h2>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-6">
+                                        <h3 className="text-blue-400 font-medium mb-2">Létrehozott események</h3>
+                                        <p className="text-3xl font-bold text-white">{stats.createdEvents}</p>
+                                    </div>
+
+                                    <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-6">
+                                        <h3 className="text-purple-400 font-medium mb-2">Részvételek</h3>
+                                        <p className="text-3xl font-bold text-white">{stats.participatedEvents}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -631,15 +638,15 @@ const Profile = () => {
             )}
 
             <style jsx>{`
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.2s ease-out forwards;
-    }
-  `}</style>
-        </div>
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(-10px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    .animate-fadeIn {
+                        animation: fadeIn 0.2s ease-out forwards;
+                    }
+                `}</style>
+        </>
     );
 };
 
