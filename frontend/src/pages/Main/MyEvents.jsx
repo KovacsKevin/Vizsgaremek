@@ -533,10 +533,10 @@ const MyEvents = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${activeFilter === "archived"
-                          ? "bg-amber-500/20 text-amber-400"
-                          : getEventRole(event.id) === "szervező"
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-blue-500/20 text-blue-400"
+                        ? "bg-amber-500/20 text-amber-400"
+                        : getEventRole(event.id) === "szervező"
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-blue-500/20 text-blue-400"
                         }`}>
                         {activeFilter === "archived"
                           ? getEventRole(event.id) === "szervező" ? "Szervező (archív)" : "Résztvevő (archív)"
@@ -590,6 +590,7 @@ const MyEvents = () => {
           isArchived={activeFilter === "archived"} // Pass isArchived flag to disable editing for archived events
         />
       )}
+
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal

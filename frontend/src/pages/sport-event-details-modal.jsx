@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus } from "lucide-react"
+import { X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus, Archive } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
 // Javított Image komponens hibakezeléssel
@@ -98,7 +98,7 @@ const getCurrentUser = () => {
   }
 };
 
-const EventModal = ({ event, onClose, onParticipantUpdate }) => {
+const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
   const [isJoining, setIsJoining] = useState(false)
@@ -676,7 +676,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
-                    {isParticipant ? (
+                    {isArchived ? (
+                      <div className="w-full px-6 py-3 bg-amber-600/30 text-amber-300 rounded-md flex items-center justify-center">
+                        <Archive className="h-4 w-4 mr-2" />
+                        Ez az esemény már lejárt
+                      </div>
+                    ) : isParticipant ? (
                       <>
                         <button
                           className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
@@ -731,9 +736,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                       >
                         {isJoining ? "Csatlakozás..." : "Csatlakozás"}
                       </button>
-                    )}
-
-                    {joinError && (
+                    )}                    {joinError && (
                       <p className="text-red-400 text-sm mt-2">{joinError}</p>
                     )}
                     {leaveError && (
@@ -838,8 +841,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate }) => {
                             </div>
                           </div>
 
-                          {/* Kuka ikon - csak a szervező látja és csak más játékosoknál */}
-                          {currentUser &&
+                          {/* Kuka ikon - csak a szervező látja és csak más játékosoknál, és nem archivált eseménynél */}
+                          {!isArchived && currentUser &&
                             participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
                             participant.id !== currentUser.userId && (
                               <button
@@ -1867,7 +1870,19 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   );
 };
 
-export default EventModal;
+// Create a new component for archived events
+const SportEventDetailsModal = ({ event, onClose, onParticipantUpdate, isArchived = false }) => {
+  return (
+    <EventModal
+      event={event}
+      onClose={onClose}
+      onParticipantUpdate={onParticipantUpdate}
+      isArchived={isArchived}
+    />
+  );
+};
+
+export default SportEventDetailsModal;
 
 
 
