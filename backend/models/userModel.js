@@ -113,6 +113,10 @@ const User = sequelize.define("User", {
     },
     profilePicture: {
         type: DataTypes.TEXT('long'),  // Nagyobb méretű TEXT típus a képadatokhoz
+    },
+    bio: {
+        type: DataTypes.TEXT,
+        allowNull: true,
     }
 }, {
     timestamps: true,

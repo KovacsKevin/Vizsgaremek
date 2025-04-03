@@ -466,6 +466,35 @@ const saveUserSettings = async (req, res) => {
     }
 };
 
+// Felhasználói statisztikák lekérése
+const getUserStats = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        
+        // Létrehozott események számának lekérése
+        const createdEvents = await Esemény.count({
+            where: { userId: userId }
+        });
+        
+        // Részvételek számának lekérése (csak azok, ahol nem ő a szervező)
+        const participatedEvents = await Résztvevő.count({
+            where: { 
+                userId: userId,
+                szerep: 'játékos',
+                státusz: 'elfogadva'
+            }
+        });
+        
+        res.status(200).json({
+            createdEvents,
+            participatedEvents
+        });
+    } catch (error) {
+        console.error('Hiba a felhasználói statisztikák lekérésekor:', error);
+        res.status(500).json({ message: 'Szerver hiba történt a statisztikák lekérésekor' });
+    }
+};
+
 module.exports = {
     createUser,
     authenticateUser,
@@ -474,5 +503,6 @@ module.exports = {
     deleteUser,
     createEsemeny,
     getUserSettings,
-    saveUserSettings
+    saveUserSettings,
+    getUserStats
 };

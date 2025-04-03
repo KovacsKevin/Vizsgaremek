@@ -2,9 +2,152 @@
 
 import { useState, useEffect } from "react"
 import {
-  X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus, Archive
+  X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus, Archive,
+  Mail, Phone, AlertTriangle
 } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
+
+
+// Új komponens: Felhasználói profil modal
+const UserProfileModal = ({ userId, onClose }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = getCookie('token');
+        if (!token) {
+          setError("Nincs bejelentkezve");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(`http://localhost:8081/api/v1/getUser/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+          throw new Error("Nem sikerült lekérni a felhasználói adatokat");
+        }
+
+        const userData = await response.json();
+        setUser(userData);
+        setLoading(false);
+      } catch (err) {
+        console.error("Hiba a felhasználói adatok betöltésekor:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchUserData();
+    }
+  }, [userId]);
+
+  // Felhasználói inicálék megjelenítése
+  const getUserInitials = () => {
+    if (!user || !user.username) return "";
+    return user.username
+      .split(" ")
+      .map((name) => name.charAt(0))
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+        <div className="bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg max-w-md w-full p-6">
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+        <div className="bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg max-w-md w-full p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-white">Hiba</h2>
+            <button onClick={onClose} className="text-white/70 hover:text-white">
+              <X size={24} />
+            </button>
+          </div>
+          <p className="text-red-400">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+      <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="flex flex-col items-center text-center">
+          <Image
+            src={user.profilePicture || "/placeholder.svg"}
+            alt={user.username}
+            className="w-24 h-24 rounded-full object-cover mb-4"
+          />
+          <h3 className="text-xl font-bold">{user.username}</h3>
+          <p className="text-white/60 mb-4">
+            {user.firstName && user.lastName && (
+              <span className="text-white/80">{user.lastName} {user.firstName}</span>
+            )}
+          </p>
+
+          <div className="w-full space-y-4 mt-2">
+            {/* Bemutatkozás */}
+            {user.bio && (
+              <div className="bg-white/5 p-4 rounded-lg">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4" /> Bemutatkozás
+                </h4>
+                <p className="text-sm text-white/80 whitespace-pre-line">
+                  {user.bio}
+                </p>
+              </div>
+            )}
+
+            {/* Elérhetőségek */}
+            <div className="bg-white/5 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Elérhetőségek</h4>
+              {user.email && (
+                <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                  <Mail className="h-4 w-4 text-blue-400" />
+                  <span>{user.email}</span>
+                </div>
+              )}
+              {user.phone && (
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <Phone className="h-4 w-4 text-green-400" />
+                  <span>{user.phone}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Javított Image komponens hibakezeléssel
 const Image = ({ src, alt, className }) => {
@@ -128,7 +271,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
   const [isApproving, setIsApproving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
   const [approveRejectError, setApproveRejectError] = useState('')
-
+  // Új állapot a felhasználói profil megtekintéséhez
+  const [showUserProfile, setShowUserProfile] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState(null)
   // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
     if (!eventId) return;
@@ -162,6 +307,19 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
       console.error("Error fetching participants:", error);
     }
   };
+
+  // Felhasználói profil megnyitása
+  const handleOpenUserProfile = (userId) => {
+    setSelectedUserId(userId);
+    setShowUserProfile(true);
+  };
+
+  // Felhasználói profil bezárása
+  const handleCloseUserProfile = () => {
+    setShowUserProfile(false);
+    setSelectedUserId(null);
+  };
+
 
   // Függőben lévő résztvevők lekérése
   const fetchPendingParticipants = async (eventId) => {
@@ -272,15 +430,55 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
     }
   }
 
-  const openProfileModal = (participant) => {
-    setSelectedParticipant(participant)
-    setShowProfileModal(true)
-  }
+  // Update the handleParticipantClick function to fetch user data
+  const handleParticipantClick = async (participant) => {
+    try {
+      const token = getCookie('token');
+      if (!token) {
+        // If no token, just use the basic participant data
+        setSelectedParticipant(participant);
+        setShowProfileModal(true);
+        return;
+      }
+
+      // Fetch the complete user data
+      const response = await fetch(`http://localhost:8081/api/v1/getUser/${participant.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch user data");
+        // Fall back to basic participant data
+        setSelectedParticipant(participant);
+        setShowProfileModal(true);
+        return;
+      }
+
+      const userData = await response.json();
+
+      // Merge the participant data with the user data
+      const enrichedParticipant = {
+        ...participant,
+        bio: userData.bio,
+        email: userData.email,
+        phone: userData.phone,
+        profilePicture: userData.profilePicture
+      };
+
+      setSelectedParticipant(enrichedParticipant);
+      setShowProfileModal(true);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      // Fall back to showing just the participant data
+      setSelectedParticipant(participant);
+      setShowProfileModal(true);
+    }
+  };
 
   const closeProfileModal = () => {
-    setShowProfileModal(false)
-    setSelectedParticipant(null)
-  }
+    setShowProfileModal(false);
+    setSelectedParticipant(null);
+  };
 
   // Handle join event functionality
   const handleJoinEvent = async () => {
@@ -621,12 +819,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
   // Szerkesztő modal bezárása
   const closeEditModal = () => {
     setIsEditModalOpen(false);
-  };
-
-  // Add a function to handle participant click, including the current user
-  const handleParticipantClick = (participant) => {
-    // If the participant is the current user, show their profile too
-    openProfileModal(participant);
   };
 
   // Esemény frissítése sikeres szerkesztés után
@@ -1112,7 +1304,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
 
             <div className="flex flex-col items-center text-center">
               <Image
-                src={selectedParticipant.image || "/placeholder.svg"}
+                src={selectedParticipant.profilePicture || selectedParticipant.image || "/placeholder.svg"}
                 alt={selectedParticipant.name}
                 className="w-24 h-24 rounded-full object-cover mb-4"
               />
@@ -1126,24 +1318,31 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
               </p>
 
               <div className="w-full space-y-4 mt-2">
+                {/* Bemutatkozás */}
                 <div className="bg-white/5 p-4 rounded-lg">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <User className="h-4 w-4" /> Profil
+                    <User className="h-4 w-4" /> Bemutatkozás
                   </h4>
-                  <p className="text-sm text-white/80">
+                  <p className="text-sm text-white/80 whitespace-pre-line">
                     {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
                   </p>
                 </div>
 
+                {/* Elérhetőségek */}
                 <div className="bg-white/5 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Kedvenc sportok</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedParticipant.sports?.map((sport, index) => (
-                      <span key={index} className="px-3 py-1 bg-white/10 rounded-full text-sm">
-                        {sport}
-                      </span>
-                    )) || <span className="text-sm text-white/60">Nincs megadva kedvenc sport.</span>}
-                  </div>
+                  <h4 className="font-medium mb-2">Elérhetőségek</h4>
+                  {selectedParticipant.email && (
+                    <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                      <Mail className="h-4 w-4 text-blue-400" />
+                      <span>{selectedParticipant.email}</span>
+                    </div>
+                  )}
+                  {selectedParticipant.phone && (
+                    <div className="flex items-center gap-2 text-white/80 text-sm">
+                      <Phone className="h-4 w-4 text-green-400" />
+                      <span>{selectedParticipant.phone}</span>
+                    </div>
+                  )}
                 </div>
 
                 <button className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
@@ -1218,6 +1417,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
           </div>
         </div>
       )}
+
+      {/* User Profile Modal */}
+      {showUserProfile && selectedUserId && (
+        <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
+      )}
     </>
   );
 };
@@ -1247,8 +1451,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     helyszinParkolas: safeEvent.Helyszin?.Parkolas || "nincs",
     helyszinBerles: Boolean(safeEvent.Helyszin?.Berles) || false,
     helyszinLeiras: safeEvent.Helyszin?.Leiras || "",
-   
-    
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -1603,28 +1805,28 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }}
       >
         <style jsx>{`
-                  @keyframes modal-appear {
-                    0% {
-                      transform: scale(0.95);
-                      opacity: 0;
-                    }
-                    100% {
-                      transform: scale(1);
-                      opacity: 1;
-                    }
+                @keyframes modal-appear {
+                  0% {
+                    transform: scale(0.95);
+                    opacity: 0;
                   }
-                  @keyframes pulse-glow {
-                    0% {
-                      box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                    }
-                    50% {
-                      box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-                    }
-                    100% {
-                      box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                    }
+                  100% {
+                    transform: scale(1);
+                    opacity: 1;
                   }
-                `}</style>
+                }
+                @keyframes pulse-glow {
+                  0% {
+                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                  }
+                  50% {
+                    box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+                  }
+                  100% {
+                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                  }
+                }
+              `}</style>
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -1848,8 +2050,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
-
-               
 
                 {/* Esemény leírása */}
                 <div className="md:col-span-2">
@@ -2134,6 +2334,8 @@ const SportEventDetailsModal = ({ event, onClose, onParticipantUpdate, isArchive
 };
 
 export default SportEventDetailsModal;
+
+
 
 
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import { User, Mail, Phone, Calendar, Edit, Save, Trash2, AlertTriangle, X, Upload } from "lucide-react";
+import { User, Mail, Phone, Calendar, Edit, Save, Trash2, AlertTriangle, X, Upload, FileText } from "lucide-react";
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -18,9 +18,16 @@ const Profile = () => {
         lastName: "",
         phone: "",
         birthDate: "",
+        bio: "", // Új mező a bemutatkozáshoz
     });
     const [profilePicture, setProfilePicture] = useState(null);
     const profilePicInputRef = useRef(null);
+
+    // Statisztikák
+    const [stats, setStats] = useState({
+        createdEvents: 0,
+        participatedEvents: 0
+    });
 
     // Felhasználói adatok betöltése
     useEffect(() => {
@@ -65,11 +72,15 @@ const Profile = () => {
                     lastName: userData.lastName || "",
                     phone: userData.phone || "",
                     birthDate: userData.birthDate ? new Date(userData.birthDate).toISOString().split('T')[0] : "",
+                    bio: userData.bio || "", // Bemutatkozás inicializálása
                 });
 
                 if (userData.profilePicture) {
                     setProfilePicture(userData.profilePicture);
                 }
+
+                // Statisztikák lekérése
+                fetchUserStats(userId, token);
 
                 setLoading(false);
             } catch (err) {
@@ -81,6 +92,25 @@ const Profile = () => {
 
         fetchUserData();
     }, [navigate]);
+
+    // Felhasználói statisztikák lekérése
+    const fetchUserStats = async (userId, token) => {
+        try {
+            const statsResponse = await fetch(`http://localhost:8081/api/v1/user-stats/${userId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (statsResponse.ok) {
+                const statsData = await statsResponse.json();
+                setStats({
+                    createdEvents: statsData.createdEvents || 0,
+                    participatedEvents: statsData.participatedEvents || 0
+                });
+            }
+        } catch (err) {
+            console.error("Hiba a statisztikák lekérésekor:", err);
+        }
+    };
 
     // Űrlap mezők változásának kezelése
     const handleInputChange = (e) => {
@@ -139,7 +169,6 @@ const Profile = () => {
     };
 
     // Felhasználói adatok mentése
-    // Felhasználói adatok mentése
     const handleSaveProfile = async () => {
         try {
             const token = Cookies.get("token");
@@ -191,7 +220,6 @@ const Profile = () => {
         }
     };
 
-
     // Profil törlése
     const handleDeleteProfile = async () => {
         try {
@@ -234,7 +262,6 @@ const Profile = () => {
             setIsDeleting(false);
         }
     };
-
 
     // Felhasználói inicálék megjelenítése
     const getUserInitials = () => {
@@ -380,6 +407,29 @@ const Profile = () => {
 
                     {/* Profil részletek */}
                     <div className="p-8">
+                        {/* Bemutatkozás szekció */}
+                        <div className="mb-8">
+                            <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Bemutatkozás</h2>
+
+                            {isEditing ? (
+                                <textarea
+                                    name="bio"
+                                    value={formData.bio}
+                                    onChange={handleInputChange}
+                                    className="w-full h-32 bg-slate-700 text-white px-4 py-3 rounded-lg resize-none"
+                                    placeholder="Írj magadról néhány mondatot..."
+                                />
+                            ) : (
+                                <div className="bg-slate-700/50 rounded-lg p-4">
+                                    {user?.bio ? (
+                                        <p className="text-slate-300 whitespace-pre-line">{user.bio}</p>
+                                    ) : (
+                                        <p className="text-slate-500 italic">Nincs bemutatkozás megadva</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Személyes adatok</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -510,20 +560,15 @@ const Profile = () => {
                         <div className="mt-10">
                             <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Esemény statisztikák</h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-6">
                                     <h3 className="text-blue-400 font-medium mb-2">Létrehozott események</h3>
-                                    <p className="text-3xl font-bold text-white">0</p>
+                                    <p className="text-3xl font-bold text-white">{stats.createdEvents}</p>
                                 </div>
 
                                 <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-6">
                                     <h3 className="text-purple-400 font-medium mb-2">Részvételek</h3>
-                                    <p className="text-3xl font-bold text-white">0</p>
-                                </div>
-
-                                <div className="bg-gradient-to-br from-green-500/10 to-green-600/20 rounded-xl p-6">
-                                    <h3 className="text-green-400 font-medium mb-2">Kedvenc helyszínek</h3>
-                                    <p className="text-3xl font-bold text-white">0</p>
+                                    <p className="text-3xl font-bold text-white">{stats.participatedEvents}</p>
                                 </div>
                             </div>
                         </div>
@@ -585,18 +630,18 @@ const Profile = () => {
                 </div>
             )}
 
-
             <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out forwards;
-        }
-      `}</style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+  `}</style>
         </div>
     );
 };
 
 export default Profile;
+

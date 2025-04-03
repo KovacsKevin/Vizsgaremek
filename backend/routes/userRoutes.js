@@ -3,6 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const userController = require("../controllers/userController");
+const authMiddleware = require("../auth/Middleware");
 
 // Middleware to authenticate token
 const authenticateToken = (req, res, next) => {
@@ -27,6 +28,9 @@ router.delete("/deleteUser/:id", authenticateToken, userController.deleteUser); 
 router.get("/users/:id/settings", authenticateToken, userController.getUserSettings); // Beállítások lekérése
 router.post("/users/:id/settings", authenticateToken, userController.saveUserSettings); // Beállítások mentése
 
+// Felhasználói statisztikák lekérése
+router.get('/user-stats/:userId', authenticateToken, userController.getUserStats);
+
 // Changed from /protected to /login to verify a token and return user info
 router.get("/login", authenticateToken, (req, res) => {
     res.json({ 
@@ -35,5 +39,7 @@ router.get("/login", authenticateToken, (req, res) => {
         isAuthenticated: true
     });
 });
+
+
 
 module.exports = router;
