@@ -112,6 +112,38 @@ const SportMateFinder = () => {
   const [isLocationOnly, setIsLocationOnly] = useState(false)
   const [isSportOnly, setIsSportOnly] = useState(false)
 
+  // Add this to the Header component
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  // Add this useEffect to fetch pending requests count
+  useEffect(() => {
+    const fetchPendingRequestsCount = async () => {
+      try {
+        const token = getCookie('token');
+        if (!token) return;
+
+        const response = await fetch("http://localhost:8081/api/v1/pending-requests-count", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setPendingRequests(data.pendingCount);
+        }
+      } catch (error) {
+        console.error("Error fetching pending requests:", error);
+      }
+    };
+
+    // Fetch on load and every 5 minutes
+    fetchPendingRequestsCount();
+    const interval = setInterval(fetchPendingRequestsCount, 300000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   // Fókusz kezelő függvények
   const handleLocationFocus = () => {
     setLocationInputFocused(true);

@@ -70,6 +70,16 @@ router.get('/getEsemenyekBySportNev/:sportNev', esemenyController.getEsemenyekBy
 router.get('/getEsemenyekByTelepulesAndAge/:telepules', authenticateToken, esemenyController.getEsemenyekByTelepulesAndAge);
 router.get('/getEsemenyekBySportNevAndAge/:sportNev', authenticateToken, esemenyController.getEsemenyekBySportNevAndAge);
 
+// Get pending participants for an event (only for organizers)
+router.get("/events/:id/pending-participants", authenticateToken, esemenyController.getPendingParticipants);
+
+// Approve a participant's request
+router.post("/approve-participant", authenticateToken, esemenyController.approveParticipant);
+
+// Reject a participant's request
+router.post("/reject-participant", authenticateToken, esemenyController.rejectParticipant);
+
+
 // New route for archived events
 router.get('/archived-events', authenticateToken, esemenyController.getArchivedEvents);
 

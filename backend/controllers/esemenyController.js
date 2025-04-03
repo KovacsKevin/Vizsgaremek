@@ -582,101 +582,69 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
 };
 
 // Update the joinEsemeny function to properly check capacity
+// In the joinEsemeny function
 const joinEsemeny = async (req, res) => {
     try {
-        // Authenticate user
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ message: "Authentication token is required!" });
-        }
-
-        const decoded = jwt.verify(token, "secretkey");
-        const userId = decoded.userId;
-
-        // Get event ID from request body
         const { eseményId } = req.body;
-        const { megjegyzés } = req.body || { megjegyzés: '' };
+        const userId = req.user.userId;
 
-        if (!eseményId) {
-            return res.status(400).json({ message: "Event ID is required!" });
+        // Check if the event exists
+        const event = await Esemény.findByPk(eseményId);
+        if (!event) {
+            return res.status(404).json({ message: "Esemény nem található" });
         }
 
-        // Check if event exists
-        const esemény = await Esemény.findByPk(eseményId);
-        if (!esemény) {
-            return res.status(404).json({ message: "Event not found!" });
-        }
-
-        // Check if event has already ended
-        const currentTime = new Date();
-        if (new Date(esemény.zaroIdo) <= currentTime) {
-            return res.status(400).json({ message: "This event has already ended!" });
-        }
-
-        // Check if user is already a participant
+        // Check if the user is already a participant
         const existingParticipant = await Résztvevő.findOne({
-            where: {
-                eseményId: eseményId,
-                userId: userId
-            }
+            where: { eseményId, userId }
         });
 
         if (existingParticipant) {
-            return res.status(400).json({
-                message: "You are already a participant in this event!",
-                status: existingParticipant.státusz,
-                role: existingParticipant.szerep
-            });
+            return res.status(400).json({ message: "A felhasználó már résztvevője az eseménynek" });
         }
 
-        // Check if the event is at capacity
-        const participantCount = await Résztvevő.count({
+        // Check if the user is the organizer
+        const isOrganizer = await Résztvevő.findOne({
             where: {
-                eseményId: eseményId,
-                státusz: 'elfogadva'
+                eseményId,
+                userId,
+                szerep: 'szervező'
             }
         });
 
-        if (participantCount >= esemény.maximumLetszam) {
-            return res.status(400).json({ message: "This event is at full capacity!" });
-        }
-
-        // Create a new participant record - automatically accepted
+        // Create a new participant with pending status (always pending unless the user is the organizer)
         const newParticipant = await Résztvevő.create({
-            eseményId: eseményId,
-            userId: userId,
-            szerep: 'játékos', // Default role is player
-            státusz: 'elfogadva', // Auto-accept the participant
-            csatlakozásDátuma: new Date(),
-            megjegyzés: megjegyzés || ''
+            eseményId,
+            userId,
+            szerep: 'játékos',
+            státusz: isOrganizer ? 'elfogadva' : 'függőben' // Only auto-approve if the user is the organizer
         });
 
-        // Get user details to return in response - FIXED: use correct field names
+        // Get user details to return
         const user = await User.findByPk(userId, {
-            attributes: ['id', 'username', 'email', 'firstName', 'lastName', 'profilePicture'] // Changed 'name' to 'username'
+            attributes: ['id', 'name', 'email', 'image', 'age', 'level']
         });
 
-        // Prepare user name from available fields
-        const userName = user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Felhasználó';
-
-        res.status(201).json({
-            message: "You have successfully joined the event!",
+        // Return success response with participant details
+        return res.status(201).json({
+            message: isOrganizer ? "Sikeresen csatlakozott az eseményhez" : "Csatlakozási kérelem elküldve",
             participant: {
-                id: newParticipant.id,
-                userId: userId,
-                name: userName, // Use the constructed name
-                image: user.profilePicture || '', // Changed from profileImage to profilePicture
-                status: newParticipant.státusz,
-                role: newParticipant.szerep,
-                joinDate: newParticipant.csatlakozásDátuma
+                userId: user.id,
+                name: user.name,
+                image: user.image,
+                age: user.age,
+                level: user.level,
+                role: 'játékos',
+                joinDate: newParticipant.csatlakozásDátuma,
+                status: newParticipant.státusz
             }
         });
-
     } catch (error) {
-        console.error("Error joining event:", error);
-        res.status(500).json({ message: "Error joining event", error: error.message });
+        console.error("Hiba a csatlakozás során:", error);
+        return res.status(500).json({ message: "Szerver hiba a csatlakozás során" });
     }
 };
+
 
 const getEsemenyMinimal = async (req, res) => {
     try {
@@ -1522,6 +1490,233 @@ const getEsemenyekBySportNevAndAge = async (req, res) => {
     }
 };
 
+// Add these functions to esemenyController.js
+
+// Get pending participants for an event (only for organizers)
+const getPendingParticipants = async (req, res) => {
+    try {
+        const { id: eseményId } = req.params;
+        const userId = req.user.userId;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the user is an organizer for this event
+        const isOrganizer = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: userId,
+                szerep: 'szervező'
+            }
+        });
+
+        if (!isOrganizer) {
+            return res.status(403).json({ message: "Only organizers can view pending participants!" });
+        }
+
+        // Get all pending participants for this event
+        const pendingParticipants = await Résztvevő.findAll({
+            where: {
+                eseményId: eseményId,
+                státusz: 'függőben'
+            },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'birthDate']
+                }
+            ]
+        });
+
+        // Format the participant data
+        const formattedParticipants = pendingParticipants.map(participant => {
+            // Calculate age if birthDate is available
+            let age = null;
+            if (participant.User.birthDate) {
+                const birthDate = new Date(participant.User.birthDate);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+            }
+
+            // Prepare user name from available fields
+            const name = participant.User.username ||
+                `${participant.User.firstName || ''} ${participant.User.lastName || ''}`.trim() ||
+                'Felhasználó';
+
+            return {
+                id: participant.userId,
+                name: name,
+                email: participant.User.email,
+                image: participant.User.profilePicture || '',
+                bio: participant.User.bio || '',
+                age: age,
+                role: participant.szerep,
+                joinDate: participant.csatlakozásDátuma
+            };
+        });
+
+        res.json({
+            pendingParticipants: formattedParticipants,
+            count: formattedParticipants.length
+        });
+    } catch (error) {
+        console.error("Error fetching pending participants:", error);
+        res.status(500).json({ message: "Error fetching pending participants", error: error.message });
+    }
+};
+
+// Approve a participant's request
+const approveParticipant = async (req, res) => {
+    try {
+        const { eseményId, userId: participantId } = req.body;
+        const organizerId = req.user.userId;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the user is an organizer for this event
+        const isOrganizer = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: organizerId,
+                szerep: 'szervező'
+            }
+        });
+
+        if (!isOrganizer) {
+            return res.status(403).json({ message: "Only organizers can approve participants!" });
+        }
+
+        // Check if the participant exists and is pending
+        const participant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: participantId,
+                státusz: 'függőben'
+            }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: "Pending participant not found!" });
+        }
+
+        // Check if approving would exceed the maximum number of participants
+        const currentParticipantCount = await Résztvevő.count({
+            where: {
+                eseményId: eseményId,
+                státusz: 'elfogadva'
+            }
+        });
+
+        if (currentParticipantCount >= esemény.maximumLetszam) {
+            return res.status(400).json({ message: "Cannot approve participant: maximum number of participants reached!" });
+        }
+
+        // Update the participant status to approved
+        await participant.update({ státusz: 'elfogadva' });
+
+        // Get user details to return
+        const user = await User.findByPk(participantId, {
+            attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'birthDate']
+        });
+
+        // Calculate age if birthDate is available
+        let age = null;
+        if (user.birthDate) {
+            const birthDate = new Date(user.birthDate);
+            const today = new Date();
+            age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+        }
+
+        // Prepare user name from available fields
+        const name = user.username ||
+            `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+            'Felhasználó';
+
+        res.status(200).json({
+            message: "Participant approved successfully!",
+            participant: {
+                id: user.id,
+                name: name,
+                email: user.email,
+                image: user.profilePicture || '',
+                age: age,
+                role: 'játékos',
+                status: 'elfogadva',
+                joinDate: participant.csatlakozásDátuma
+            }
+        });
+    } catch (error) {
+        console.error("Error approving participant:", error);
+        res.status(500).json({ message: "Error approving participant", error: error.message });
+    }
+};
+
+// Reject a participant's request
+const rejectParticipant = async (req, res) => {
+    try {
+        const { eseményId, userId: participantId } = req.body;
+        const organizerId = req.user.userId;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the user is an organizer for this event
+        const isOrganizer = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: organizerId,
+                szerep: 'szervező'
+            }
+        });
+
+        if (!isOrganizer) {
+            return res.status(403).json({ message: "Only organizers can reject participants!" });
+        }
+
+        // Check if the participant exists and is pending
+        const participant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: participantId,
+                státusz: 'függőben'
+            }
+        });
+
+        if (!participant) {
+            return res.status(404).json({ message: "Pending participant not found!" });
+        }
+
+        // Update the participant status to rejected
+        await participant.update({ státusz: 'elutasítva' });
+
+        res.status(200).json({
+            message: "Participant rejected successfully!",
+            participantId: participantId
+        });
+    } catch (error) {
+        console.error("Error rejecting participant:", error);
+        res.status(500).json({ message: "Error rejecting participant", error: error.message });
+    }
+};
+
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -1547,7 +1742,10 @@ module.exports = {
     getEsemenyekByTelepules,
     getEsemenyekBySportNev,
     getEsemenyekByTelepulesAndAge,
-    getEsemenyekBySportNevAndAge
+    getEsemenyekBySportNevAndAge,
+    getPendingParticipants,
+    approveParticipant,
+    rejectParticipant
 };
 
 

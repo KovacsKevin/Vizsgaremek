@@ -345,7 +345,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
       setIsParticipant(true);
 
       // Ha az esemény automatikus jóváhagyással működik, akkor a státusz "elfogadva", egyébként "függőben"
-      setUserStatus(currentEvent.autoApprove !== false ? 'elfogadva' : 'függőben');
+      setUserStatus('függőben');
 
       // Add the new participant to the list if we have the data
       if (responseData.participant) {
@@ -1247,8 +1247,8 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     helyszinParkolas: safeEvent.Helyszin?.Parkolas || "nincs",
     helyszinBerles: Boolean(safeEvent.Helyszin?.Berles) || false,
     helyszinLeiras: safeEvent.Helyszin?.Leiras || "",
-    // Új mező: automatikus jóváhagyás
-    autoApprove: safeEvent.autoApprove !== false
+   
+    
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -1849,29 +1849,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   />
                 </div>
 
-                {/* Automatikus jóváhagyás kapcsoló */}
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="autoApprove"
-                    className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                    checked={formData.autoApprove}
-                    onChange={handleChange}
-                  />
-                  <label htmlFor="autoApprove" className="ml-2 text-sm font-medium text-gray-300">
-                    Automatikus jóváhagyás
-                  </label>
-                  <div className="ml-2 group relative">
-                    <span className="cursor-help text-gray-400 hover:text-white">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </span>
-                    <div className="absolute left-0 bottom-full mb-2 w-64 bg-slate-700 text-white text-xs rounded p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      Ha be van kapcsolva, a csatlakozni kívánó játékosok automatikusan elfogadásra kerülnek. Kikapcsolt állapotban a szervezőnek jóvá kell hagynia a csatlakozási kérelmeket.
-                    </div>
-                  </div>
-                </div>
+               
 
                 {/* Esemény leírása */}
                 <div className="md:col-span-2">
