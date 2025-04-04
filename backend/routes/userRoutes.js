@@ -40,6 +40,6 @@ router.get("/login", authenticateToken, (req, res) => {
     });
 });
 
-
+router.get("/list",authenticateToken,userController.listAllUsers)
 
 module.exports = router;

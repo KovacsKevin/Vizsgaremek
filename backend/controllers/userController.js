@@ -495,6 +495,37 @@ const getUserStats = async (req, res) => {
     }
 };
 
+// List all users except the requesting user
+const listAllUsers = async (req, res) => {
+    try {
+        // Get the current user ID from the token
+        const currentUserId = req.user.userId;
+        
+        // Find all users except the current user
+        const users = await User.findAll({
+            where: {
+                id: { [Op.ne]: currentUserId } // Exclude the current user
+            },
+            attributes: ['id', 'username', 'profilePicture']
+        });
+        
+        // Format the results to include the actual profilePicture data
+        const formattedUsers = users.map(user => ({
+            id: user.id,
+            username: user.username,
+            profilePicture: user.profilePicture // Include the actual profile picture data
+        }));
+        
+        console.log(`Felhasználók listázása: ${formattedUsers.length} felhasználó, lekérdező: userId=${currentUserId}`);
+        
+        res.status(200).json({ users: formattedUsers });
+    } catch (error) {
+        console.error("Error listing users:", error);
+        res.status(500).json({ message: "Error listing users", error: error.message });
+    }
+};
+
+// Add this function to the exports
 module.exports = {
     createUser,
     authenticateUser,
@@ -504,5 +535,6 @@ module.exports = {
     createEsemeny,
     getUserSettings,
     saveUserSettings,
-    getUserStats
+    getUserStats,
+    listAllUsers  // Add the new function to exports
 };

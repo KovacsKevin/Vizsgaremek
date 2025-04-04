@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import {
   X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus, Archive,
-  Mail, Phone, AlertTriangle
+  Mail, Phone, AlertTriangle, Map
 } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
@@ -243,6 +243,127 @@ const getCurrentUser = () => {
   }
 };
 
+// Location Map Modal Component
+const LocationMapModal = ({ location, onClose }) => {
+  const [mapUrl, setMapUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    // Create Google Maps URL with the location
+    const encodedLocation = encodeURIComponent(location);
+    // Use the environment variable for the API key
+    setMapUrl(`https://www.google.com/maps/embed/v1/place?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&q=${encodedLocation}`);
+  }, [location]);
+
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setIsLoading(false);
+    setLoadError(true);
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
+      <div
+        className={`relative bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6 transition-all duration-300 ${isFullscreen
+          ? "w-[95vw] h-[95vh] m-0"
+          : "w-full max-w-4xl h-[80vh]"
+          }`}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+          title="Bezárás"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* Fullscreen toggle button */}
+        <button
+          onClick={toggleFullscreen}
+          className="absolute top-4 right-16 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+          title={isFullscreen ? "Kicsinyítés" : "Teljes képernyő"}
+        >
+          {isFullscreen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
+              <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
+              <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
+              <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+          )}
+        </button>
+
+        <h3 className="text-xl font-bold mb-4">Helyszín térképen</h3>
+        <p className="text-white/60 mb-4">{location}</p>
+
+        <div className="w-full h-[calc(100%-80px)] bg-slate-700/50 rounded-lg overflow-hidden relative">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-800/80">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+
+          {/* Google Maps iframe */}
+          <iframe
+            title="Location Map"
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            style={{ border: 0 }}
+            src={mapUrl}
+            allowFullScreen
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+          ></iframe>
+
+          {/* Fallback ha az iframe nem töltődik be */}
+          {loadError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/90 p-6 text-center">
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+              <h4 className="text-lg font-semibold mb-2">Nem sikerült betölteni a térképet</h4>
+              <p className="text-white/60 mb-4">A Google Maps betöltése sikertelen volt.</p>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+              >
+                <MapPin className="h-4 w-4" />
+                Megnyitás Google Maps-ben
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Információs szöveg a térkép alatt */}
+        <div className="mt-3 text-center text-white/50 text-sm">
+          <p>A térkép nagyításához és mozgatásához használd az egeret vagy az érintőképernyőt.</p>
+          <p>A teljes képernyős nézethez kattints a <span className="text-white">□</span> ikonra.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
 const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
@@ -274,6 +395,31 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
   // Új állapot a felhasználói profil megtekintéséhez
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState(null)
+  // Új állapot a térkép modal kezeléséhez
+  const [showMapModal, setShowMapModal] = useState(false);
+  // Új állapot a meghívás modal kezeléséhez
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
+  // Térkép modal megnyitása
+  const handleOpenMapModal = () => {
+    setShowMapModal(true);
+  };
+
+  // Térkép modal bezárása
+  const handleCloseMapModal = () => {
+    setShowMapModal(false);
+  };
+
+  // Meghívás modal megnyitása
+  const handleOpenInviteModal = () => {
+    setShowInviteModal(true);
+  };
+
+  // Meghívás modal bezárása
+  const handleCloseInviteModal = () => {
+    setShowInviteModal(false);
+  };
+
   // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
     if (!eventId) return;
@@ -337,8 +483,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setPendingParticipants(data.pendingParticipants || []);
+        const data = await response.json(); setPendingParticipants(data.pendingParticipants || []);
       }
     } catch (error) {
       console.error("Hiba a függőben lévő résztvevők lekérésekor:", error);
@@ -869,6 +1014,18 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
     return currentUser && participants.some(p => p.id === currentUser.userId && p.role === 'szervező');
   };
 
+  // Résztvevő kiválasztása profil megtekintéshez
+  const handleParticipantClick = (participant) => {
+    setSelectedParticipant(participant);
+    setShowProfileModal(true);
+  };
+
+  // Profil modal bezárása
+  const closeProfileModal = () => {
+    setShowProfileModal(false);
+    setSelectedParticipant(null);
+  };
+
   return (
     <>
       {/* Main Modal */}
@@ -904,6 +1061,17 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                   <span>
                     {currentEvent.Helyszin?.Telepules || "Város"}, {currentEvent.Helyszin?.Cim || "Cím"}
                   </span>
+                </div>
+
+                {/* Térkép megtekintése gomb */}
+                <div className="flex items-center gap-2 text-white/80 mt-1">
+                  <Map className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                  <button
+                    onClick={handleOpenMapModal}
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    Megtekintés térképen
+                  </button>
                 </div>
 
                 <div className="flex items-start gap-2 text-white/80">
@@ -943,9 +1111,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
                       <XCircle className="h-4 w-4 text-red-500" />)}
-                  </span>
-
-                  {/* Öltöző facility */}
+                  </span>                  {/* Öltöző facility */}
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
                     <DoorOpen className="h-4 w-4" /> Öltöző
                     {currentEvent.Helyszin?.Oltozo === true ? (
@@ -1004,9 +1170,21 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                           </button>
                         )}
 
-                        {/* Szerkesztés gomb csak akkor jelenik meg, ha a felhasználó szerepe "szervező" */}
+                        {/* Szerkesztés és meghívás gombok csak akkor jelennek meg, ha a felhasználó szerepe "szervező" */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
                           <>
+                            <button
+                              onClick={handleOpenInviteModal}
+                              className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <line x1="19" y1="8" x2="19" y2="14"></line>
+                                <line x1="22" y1="11" x2="16" y2="11"></line>
+                              </svg>
+                              Meghívás
+                            </button>
                             <button
                               onClick={handleEditEvent}
                               className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
@@ -1061,7 +1239,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                   </div>
                 </div>
               </div>
-            </div>            {/* Participants (Right Side) */}
+            </div>
+
+            {/* Participants (Right Side) */}
             <div className="w-full md:w-2/5 p-6">
               <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
 
@@ -1224,8 +1404,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                             participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
                             participant.id !== currentUser.userId && (
                               <button
-                                onClick={() => handleRemoveParticipant(
-                                  participant.id)}
+                                onClick={() => handleRemoveParticipant(participant.id)}
                                 className={`p-2 rounded-full ${isRemovingParticipant ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
                                   } text-red-400 transition-colors`}
                                 disabled={isRemovingParticipant}
@@ -1357,10 +1536,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                     <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path >
+                        <path
                           className="opacity-75"
-                          fill="currentColor                          d=" M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        </path>
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Törlés...
                     </>
@@ -1371,15 +1551,30 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
               </div>
             </div>
           </div>
-        </div >
+        </div>
       )}
 
       {/* User Profile Modal */}
-      {
-        showUserProfile && selectedUserId && (
-          <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
-        )
-      }
+      {showUserProfile && selectedUserId && (
+        <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
+      )}
+
+      {/* Map Modal */}
+      {showMapModal && (
+        <LocationMapModal
+          location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
+          onClose={handleCloseMapModal}
+        />
+      )}
+
+      {/* Invite Users Modal */}
+      {showInviteModal && (
+        <InviteUsersModal
+          isOpen={showInviteModal}
+          onClose={handleCloseInviteModal}
+          eventId={currentEvent.id}
+        />
+      )}
     </>
   );
 };
@@ -1724,7 +1919,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             Leiras: formData.helyszinLeiras || ""
           },
           imageUrl: data.esemeny?.imageUrl || safeEvent.imageUrl // Use new image URL if provided
-        };        // If the sport changed, we should update that object too
+        };
+
+        // If the sport changed, we should update that object too
         if (formData.sportId !== safeEvent.sportId) {
           const newSport = sports.find(sport => sport.Id.toString() === formData.sportId.toString());
           if (newSport) {
@@ -1761,28 +1958,28 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }}
       >
         <style jsx>{`
-                @keyframes modal-appear {
-                  0% {
-                    transform: scale(0.95);
-                    opacity: 0;
-                  }
-                  100% {
-                    transform: scale(1);
-                    opacity: 1;
-                  }
-                }
-                @keyframes pulse-glow {
-                  0% {
-                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                  }
-                  50% {
-                    box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-                  }
-                  100% {
-                    box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                  }
-                }
-              `}</style>
+                      @keyframes modal-appear {
+                        0% {
+                          transform: scale(0.95);
+                          opacity: 0;
+                        }
+                        100% {
+                          transform: scale(1);
+                          opacity: 1;
+                        }
+                      }
+                      @keyframes pulse-glow {
+                        0% {
+                          box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                        }
+                        50% {
+                          box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+                        }
+                        100% {
+                          box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                        }
+                      }
+                    `}</style>
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -1916,7 +2113,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                       Sportok betöltése...
                     </p>
                   )}
-                </div>                <div>
+                </div>
+
+                <div>
                   <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
                     Kezdő időpont
                   </label>
@@ -2277,6 +2476,310 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   );
 };
 
+// Új komponens a felhasználók meghívásához
+// Frissített komponens a felhasználók meghívásához - lista betöltésével
+const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Összes felhasználó betöltése a komponens megjelenésekor
+  useEffect(() => {
+    if (isOpen) {
+      loadAllUsers();
+    }
+  }, [isOpen]);
+
+  // Összes felhasználó betöltése
+  const loadAllUsers = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const token = getCookie('token');
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a felhasználók betöltéséhez");
+      }
+
+      const response = await fetch("http://localhost:8081/api/v1/list", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Hiba a felhasználók betöltése során");
+      }
+
+      const data = await response.json();
+      setAllUsers(data.users || []);
+      setSearchResults(data.users || []);
+    } catch (error) {
+      console.error("Hiba a felhasználók betöltése során:", error);
+      setErrorMessage(error.message || "Hiba a felhasználók betöltése során");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Felhasználók keresése a már betöltött adatok között
+  const searchUsers = () => {
+    if (!searchTerm.trim()) {
+      // Ha üres a keresés, minden felhasználót mutatunk
+      setSearchResults(allUsers);
+      return;
+    }
+
+    const filteredUsers = allUsers.filter(user => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        user.username.toLowerCase().includes(searchLower) ||
+        (user.email && user.email.toLowerCase().includes(searchLower))
+      );
+    });
+
+    setSearchResults(filteredUsers);
+  };
+
+  // Keresés változáskor azonnal frissítjük az eredményeket
+  useEffect(() => {
+    searchUsers();
+  }, [searchTerm]);
+
+  // Felhasználó kiválasztása/eltávolítása
+  const toggleUserSelection = (user) => {
+    setSelectedUsers(prev => {
+      const isSelected = prev.some(u => u.id === user.id);
+      if (isSelected) {
+        return prev.filter(u => u.id !== user.id);
+      } else {
+        return [...prev, user];
+      }
+    });
+  };
+
+  // Meghívók küldése
+  const sendInvitations = async () => {
+    if (selectedUsers.length === 0) {
+      setErrorMessage("Válassz ki legalább egy felhasználót a meghíváshoz");
+      return;
+    }
+
+    setIsSending(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const token = getCookie('token');
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a meghívók küldéséhez");
+      }
+
+      const userIds = selectedUsers.map(user => user.id);
+
+      const response = await fetch(`http://localhost:8081/api/v1/invite-users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eventId,
+          userIds
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Hiba a meghívók küldése során");
+      }
+
+      setSuccessMessage(`Sikeresen elküldtél ${selectedUsers.length} meghívót!`);
+      setSelectedUsers([]);
+
+      // Automatikus bezárás 3 másodperc után
+      setTimeout(() => {
+        onClose();
+      }, 3000);
+    } catch (error) {
+      console.error("Hiba a meghívók küldése során:", error);
+      setErrorMessage(error.message || "Hiba a meghívók küldése során");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg max-w-md w-full shadow-xl p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold">Felhasználók meghívása</h2>
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Success message */}
+        {successMessage && (
+          <div className="bg-green-500/20 border border-green-500/30 text-green-300 p-4 rounded-lg mb-4">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Error message */}
+        {errorMessage && (
+          <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-lg mb-4">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* Search input */}
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              className="bg-slate-700/50 border border-slate-600/50 text-white rounded-lg w-full p-3 pr-12 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Keresés név vagy email alapján..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/60">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* User list with loading state */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-10">
+            <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        ) : searchResults.length > 0 ? (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">
+              {searchTerm ? `Találatok (${searchResults.length})` : `Felhasználók (${searchResults.length})`}
+            </h3>
+            <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+              {searchResults.map(user => (
+                <div
+                  key={user.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedUsers.some(u => u.id === user.id)
+                      ? "bg-blue-600/30 border border-blue-500/50"
+                      : "bg-slate-700/50 border border-slate-600/50 hover:bg-slate-700"
+                    }`}
+                  onClick={() => toggleUserSelection(user)}
+                >
+                  <div className="flex-shrink-0">
+                    {user.profilePicture ? (
+                      <Image
+                        src={user.profilePicture}
+                        alt={user.username}
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center">
+                        <span className="text-lg font-medium text-white">{user.username.charAt(0).toUpperCase()}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className="font-medium">{user.username}</h4>
+                  </div>
+                  <div className="flex-shrink-0">
+                    {selectedUsers.some(u => u.id === user.id) ? (
+                      <CheckCircle className="h-6 w-6 text-blue-400" />
+                    ) : (
+                      <Plus className="h-6 w-6 text-white/60" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="py-8 text-center text-white/60">
+            {searchTerm ? "Nincs találat a keresési feltételeknek megfelelően" : "Nem található felhasználó"}
+          </div>
+        )}
+
+        {/* Selected users */}
+        {selectedUsers.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-2">Kiválasztott felhasználók ({selectedUsers.length})</h3>
+            <div className="flex flex-wrap gap-2">
+              {selectedUsers.map(user => (
+                <div
+                  key={user.id}
+                  className="flex items-center gap-2 bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full"
+                >
+                  <span>{user.username}</span>
+                  <button
+                    className="text-blue-300 hover:text-blue-100"
+                    onClick={() => toggleUserSelection(user)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+          >
+            Mégsem
+          </button>
+          <button
+            onClick={sendInvitations}
+            className={`px-4 py-2 ${isSending || selectedUsers.length === 0
+                ? "bg-blue-700/50 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+              } text-white rounded-md transition-colors flex items-center gap-2`}
+            disabled={isSending || selectedUsers.length === 0}
+          >
+            {isSending ? (
+              <>
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Küldés...
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4" />
+                Meghívók küldése
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Create a new component for archived events
 const SportEventDetailsModal = ({ event, onClose, onParticipantUpdate, isArchived = false }) => {
   return (
@@ -2290,8 +2793,6 @@ const SportEventDetailsModal = ({ event, onClose, onParticipantUpdate, isArchive
 };
 
 export default SportEventDetailsModal;
-
-
 
 
 

@@ -14,7 +14,8 @@ const MyEvents = () => {
   const [activeTab, setActiveTab] = useState("myevents")
   const [organizedEvents, setOrganizedEvents] = useState([])
   const [participatedEvents, setParticipatedEvents] = useState([])
-  const [archivedEvents, setArchivedEvents] = useState([]) // New state for archived events
+  const [archivedEvents, setArchivedEvents] = useState([]) // State for archived events
+  const [invitations, setInvitations] = useState([]) // New state for invitations
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState("all") // Default filter is "all"
@@ -67,8 +68,8 @@ const MyEvents = () => {
         setLoading(true)
         setError(null)
 
-        // Fetch all three types of events in parallel
-        const [organizedResponse, participatedResponse, archivedResponse] = await Promise.allSettled([
+        // Fetch all types of events in parallel, including invitations
+        const [organizedResponse, participatedResponse, archivedResponse, invitationsResponse] = await Promise.allSettled([
           fetch("http://localhost:8081/api/v1/organized-events", {
             headers: { Authorization: `Bearer ${token}` }
           }),
@@ -77,12 +78,16 @@ const MyEvents = () => {
           }),
           fetch("http://localhost:8081/api/v1/archived-events", {
             headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch("http://localhost:8081/api/v1/invitations", {
+            headers: { Authorization: `Bearer ${token}` }
           })
         ]);
 
         console.log("Organized response status:", organizedResponse.status);
         console.log("Participated response status:", participatedResponse.status);
         console.log("Archived response status:", archivedResponse.status);
+        console.log("Invitations response status:", invitationsResponse.status);
 
         // Process organized events
         if (organizedResponse.status === 'fulfilled') {
@@ -141,6 +146,25 @@ const MyEvents = () => {
           console.error("Archived events request failed:", archivedResponse.reason);
         }
 
+        // Process invitations
+        if (invitationsResponse.status === 'fulfilled') {
+          if (invitationsResponse.value.ok) {
+            const data = await invitationsResponse.value.json();
+            console.log("Invitations data:", data);
+            setInvitations(data.events || []);
+          } else if (invitationsResponse.value.status === 404) {
+            // 404 is expected if user has no invitations
+            console.log("No invitations found");
+            setInvitations([]);
+          } else {
+            console.error("Hiba a meghívások lekérésekor:", invitationsResponse.value.status);
+            const errorText = await invitationsResponse.value.text();
+            console.error("Error response:", errorText);
+          }
+        } else {
+          console.error("Invitations request failed:", invitationsResponse.reason);
+        }
+
       } catch (err) {
         console.error("Hiba az események lekérésekor:", err)
         setError("Nem sikerült betölteni az eseményeket. Kérjük, próbáld újra később.")
@@ -157,6 +181,7 @@ const MyEvents = () => {
     if (activeFilter === "organized") return organizedEvents;
     if (activeFilter === "participated") return participatedEvents;
     if (activeFilter === "archived") return archivedEvents;
+    if (activeFilter === "invitations") return invitations;
     // "all" shows only active events (not archived)
     return [...organizedEvents, ...participatedEvents];
   }
@@ -330,6 +355,8 @@ const MyEvents = () => {
         return "Még nem veszel részt eseményeken";
       case "archived":
         return "Nincsenek archivált eseményeid az elmúlt 31 napból";
+      case "invitations":
+        return "Nincsenek meghívásaid";
       default:
         return "Még nincsenek eseményeid";
     }
@@ -344,6 +371,8 @@ const MyEvents = () => {
         return "Csatlakozz eseményekhez, hogy itt megjelenjenek.";
       case "archived":
         return "Az elmúlt 31 napban lezárult események itt jelennek meg.";
+      case "invitations":
+        return "Itt jelennek meg azok az események, amelyekre meghívást kaptál.";
       default:
         return "Hozz létre vagy csatlakozz eseményekhez, hogy itt megjelenjenek.";
     }
@@ -359,6 +388,8 @@ const MyEvents = () => {
         return "Események böngészése";
       case "archived":
         return "Aktív események megtekintése";
+      case "invitations":
+        return "Események böngészése";
       default:
         return "Új esemény létrehozása";
     }
@@ -372,6 +403,7 @@ const MyEvents = () => {
         openEventModal();
         break;
       case "participated":
+      case "invitations":
         navigate("/events");
         break;
       case "archived":
@@ -404,7 +436,7 @@ const MyEvents = () => {
           </div>
 
           {/* Szűrők */}
-          <div className="flex mb-6 space-x-2 bg-slate-700/30 p-1 rounded-lg w-fit">
+          <div className="flex mb-6 space-x-2 bg-slate-700/30 p-1 rounded-lg w-fit overflow-x-auto">
             <button
               onClick={() => setActiveFilter("all")}
               className={`px-4 py-2 rounded-md transition-all ${activeFilter === "all"
@@ -431,6 +463,15 @@ const MyEvents = () => {
                 }`}
             >
               Résztvevőként
+            </button>
+            <button
+              onClick={() => setActiveFilter("invitations")}
+              className={`px-4 py-2 rounded-md transition-all ${activeFilter === "invitations"
+                ? "bg-gradient-to-r from-purple-500/20 to-pink-600/20 text-white"
+                : "text-slate-300 hover:bg-white/5"
+                }`}
+            >
+              Meghívásaim
             </button>
             <button
               onClick={() => setActiveFilter("archived")}
@@ -492,6 +533,11 @@ const MyEvents = () => {
                       Archivált
                     </div>
                   )}
+                  {activeFilter === "invitations" && (
+                    <div className="absolute top-2 right-2 z-10 bg-purple-600/80 text-white text-xs px-2 py-1 rounded-md">
+                      Meghívás
+                    </div>
+                  )}
                   <div className="h-40 bg-slate-600 overflow-hidden">
                     <img
                       src={getSportImage(event)}
@@ -533,14 +579,18 @@ const MyEvents = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${activeFilter === "archived"
-                        ? "bg-amber-500/20 text-amber-400"
-                        : getEventRole(event.id) === "szervező"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-blue-500/20 text-blue-400"
+                          ? "bg-amber-500/20 text-amber-400"
+                          : activeFilter === "invitations"
+                            ? "bg-purple-500/20 text-purple-400"
+                            : getEventRole(event.id) === "szervező"
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-blue-500/20 text-blue-400"
                         }`}>
                         {activeFilter === "archived"
                           ? getEventRole(event.id) === "szervező" ? "Szervező (archív)" : "Résztvevő (archív)"
-                          : getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"
+                          : activeFilter === "invitations"
+                            ? "Meghívott"
+                            : getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"
                         }
                       </span>
                       <button
@@ -594,18 +644,19 @@ const MyEvents = () => {
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal
-        isOpen={isSportModalOpen}
-        onClose={closeSportModal}
-        modalContent={{
-          title: "Új sport létrehozása",
-          description: "Tölts ki minden mezőt a sport létrehozásához"
-        }}
-        onSuccess={() => {
-          closeSportModal();
-        }}
-      /> */}
+          isOpen={isSportModalOpen}
+          onClose={closeSportModal}
+          modalContent={{
+            title: "Új sport létrehozása",
+            description: "Tölts ki minden mezőt a sport létrehozásához"
+          }}
+          onSuccess={() => {
+            closeSportModal();
+          }}
+        /> */}
     </div>
   )
 }
 
 export default MyEvents
+
