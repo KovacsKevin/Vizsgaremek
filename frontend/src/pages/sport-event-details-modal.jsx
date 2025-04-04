@@ -430,6 +430,20 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
     }
   }
 
+  // Format full date and time (matching the format in MyEvents.jsx)
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("hu-HU", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
+    }) + ' ' + date.toLocaleTimeString("hu-HU", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   // Update the handleParticipantClick function to fetch user data
   const handleParticipantClick = async (participant) => {
     try {
@@ -951,16 +965,20 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-white/80">
-                  <Calendar className="h-5 w-5 flex-shrink-0 text-blue-400" />
-                  <span>{formatDate(currentEvent.kezdoIdo)}</span>
+                <div className="flex items-start gap-2 text-white/80">
+                  <Clock className="h-5 w-5 flex-shrink-0 text-blue-400 mt-1" />
+                  <div className="flex flex-col">
+                    <span className="font-medium text-white/80">Kezdés:</span>
+                    <span>{formatDateTime(currentEvent.kezdoIdo)}</span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-white/80">
-                  <Clock className="h-5 w-5 flex-shrink-0 text-blue-400" />
-                  <span>
-                    {formatTime(currentEvent.kezdoIdo)} - {formatTime(currentEvent.zaroIdo)}
-                  </span>
+                <div className="flex items-start gap-2 text-white/80">
+                  <Clock className="h-5 w-5 flex-shrink-0 text-blue-400 mt-1" />
+                  <div className="flex flex-col">
+                    <span className="font-medium text-white/80">Befejezés:</span>
+                    <span>{formatDateTime(currentEvent.zaroIdo)}</span>
+                  </div>
                 </div>
 
                 {/* Participant count display */}
@@ -1102,9 +1120,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Participants (Right Side) */}
+            </div>            {/* Participants (Right Side) */}
             <div className="w-full md:w-2/5 p-6">
               <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
 
@@ -1400,28 +1416,29 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                     <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path
+                        <path >
                           className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Törlés...
-                    </>
-                  ) : (
-                    "Törlés"
+                          fill="currentColor                          d=" M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                       </path>
+                    </svg>
+                  Törlés...
+                </>
+                ) : (
+                "Törlés"
                   )}
-                </button>
-              </div>
+              </button>
             </div>
           </div>
         </div>
+        </div >
       )}
 
-      {/* User Profile Modal */}
-      {showUserProfile && selectedUserId && (
-        <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
-      )}
+{/* User Profile Modal */ }
+{
+  showUserProfile && selectedUserId && (
+    <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
+  )
+}
     </>
   );
 };
@@ -1766,9 +1783,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             Leiras: formData.helyszinLeiras || ""
           },
           imageUrl: data.esemeny?.imageUrl || safeEvent.imageUrl // Use new image URL if provided
-        };
-
-        // If the sport changed, we should update that object too
+        };        // If the sport changed, we should update that object too
         if (formData.sportId !== safeEvent.sportId) {
           const newSport = sports.find(sport => sport.Id.toString() === formData.sportId.toString());
           if (newSport) {
@@ -2334,6 +2349,7 @@ const SportEventDetailsModal = ({ event, onClose, onParticipantUpdate, isArchive
 };
 
 export default SportEventDetailsModal;
+
 
 
 
