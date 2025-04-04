@@ -536,42 +536,52 @@ const SportMateFinder = () => {
 
   // Módosított függvény a résztvevők frissítésére
   const handleParticipantUpdate = (eventId, isJoined, participant) => {
-    // Update the events array with the new participant count
-    setEvents(prevEvents =>
-      prevEvents.map(event => {
-        if (event.id === eventId) {
-          // If we received a full participants list, use it directly
-          // This replaces the current list instead of adding to it
-          if (participant.fullParticipantsList) {
-            return {
-              ...event,
-              resztvevok_lista: participant.fullParticipantsList
-            };
-          }
+    // Csak akkor frissítsük a résztvevők számát, ha:
+    // 1. Explicit módon kérjük (updateParticipantCount flag)
+    // 2. Teljes résztvevő lista frissítés történik (fullParticipantsList)
+    // 3. A felhasználó státusza "elfogadva"
+    const shouldUpdateParticipantCount =
+      participant.updateParticipantCount === true ||
+      participant.fullParticipantsList ||
+      participant.status === 'elfogadva';
 
-          // Otherwise handle individual participant updates
-          const currentParticipants = event.resztvevok_lista || [];
+    if (shouldUpdateParticipantCount) {
+      // Update the events array with the new participant count
+      setEvents(prevEvents =>
+        prevEvents.map(event => {
+          if (event.id === eventId) {
+            // If we received a full participants list, use it directly
+            if (participant.fullParticipantsList) {
+              return {
+                ...event,
+                resztvevok_lista: participant.fullParticipantsList
+              };
+            }
 
-          // If the user joined, add them to the list if not already there
-          if (isJoined && participant.userId !== 'count-update' &&
-            !currentParticipants.some(p => p.id === participant.userId)) {
-            return {
-              ...event,
-              resztvevok_lista: [...currentParticipants, participant]
-            };
-          }
+            // Otherwise handle individual participant updates
+            const currentParticipants = event.resztvevok_lista || [];
 
-          // If the user left, remove them from the list
-          if (!isJoined) {
-            return {
-              ...event,
-              resztvevok_lista: currentParticipants.filter(p => p.id !== participant.userId)
-            };
+            // If the user joined, add them to the list if not already there
+            if (isJoined && participant.userId !== 'count-update' &&
+              !currentParticipants.some(p => p.id === participant.userId)) {
+              return {
+                ...event,
+                resztvevok_lista: [...currentParticipants, participant]
+              };
+            }
+
+            // If the user left, remove them from the list
+            if (!isJoined) {
+              return {
+                ...event,
+                resztvevok_lista: currentParticipants.filter(p => p.id !== participant.userId)
+              };
+            }
           }
-        }
-        return event;
-      })
-    );
+          return event;
+        })
+      );
+    }
 
     // Ha a felhasználó csatlakozott, frissítsük a csatlakozott események listáját
     if (isJoined) {
@@ -595,6 +605,7 @@ const SportMateFinder = () => {
       setJoinedEvents(prev => prev.filter(event => event.id !== eventId));
     }
   };
+
 
   const openEventModal = (event) => {
     setSelectedEvent(event)
@@ -749,7 +760,7 @@ const SportMateFinder = () => {
           <div className="w-full">
             {loading ? (
               <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-8 text-center">
-                                <Loader className="h-8 w-8 animate-spin mx-auto text-blue-400" />
+                <Loader className="h-8 w-8 animate-spin mx-auto text-blue-400" />
                 <p className="mt-4">Események betöltése...</p>
               </div>
             ) : error ? (
@@ -874,23 +885,22 @@ const SportMateFinder = () => {
                             {getUserEventRole(event.id) ? (
                               <button
                                 onClick={() => openEventModal(event)}
-                                className={`px-4 py-1.5 ${
-                                  getUserEventRole(event.id) === "szervező"
+                                className={`px-4 py-1.5 ${getUserEventRole(event.id) === "szervező"
                                     ? "bg-purple-600 hover:bg-purple-700"
                                     : getUserEventStatus(event.id) === "elfogadva"
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : getUserEventStatus(event.id) === "függőben"
-                                    ? "bg-yellow-600 hover:bg-yellow-700"
-                                    : "bg-red-600 hover:bg-red-700"
-                                } text-white rounded-md transition-colors`}
+                                      ? "bg-green-600 hover:bg-green-700"
+                                      : getUserEventStatus(event.id) === "függőben"
+                                        ? "bg-yellow-600 hover:bg-yellow-700"
+                                        : "bg-red-600 hover:bg-red-700"
+                                  } text-white rounded-md transition-colors`}
                               >
                                 {getUserEventRole(event.id) === "szervező"
                                   ? "Szervező vagyok"
                                   : getUserEventStatus(event.id) === "elfogadva"
-                                  ? "Csatlakozva résztvevőként"
-                                  : getUserEventStatus(event.id) === "függőben"
-                                  ? "Jóváhagyásra vár"
-                                  : "Elutasítva"}
+                                    ? "Csatlakozva résztvevőként"
+                                    : getUserEventStatus(event.id) === "függőben"
+                                      ? "Jóváhagyásra vár"
+                                      : "Elutasítva"}
                               </button>
                             ) : (
                               <button
@@ -922,6 +932,7 @@ const SportMateFinder = () => {
           userStatus={getUserEventStatus(selectedEvent.id)}
         />
       )}
+
     </>
   )
 }

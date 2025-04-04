@@ -444,56 +444,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
     });
   };
 
-  // Update the handleParticipantClick function to fetch user data
-  const handleParticipantClick = async (participant) => {
-    try {
-      const token = getCookie('token');
-      if (!token) {
-        // If no token, just use the basic participant data
-        setSelectedParticipant(participant);
-        setShowProfileModal(true);
-        return;
-      }
-
-      // Fetch the complete user data
-      const response = await fetch(`http://localhost:8081/api/v1/getUser/${participant.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        console.error("Failed to fetch user data");
-        // Fall back to basic participant data
-        setSelectedParticipant(participant);
-        setShowProfileModal(true);
-        return;
-      }
-
-      const userData = await response.json();
-
-      // Merge the participant data with the user data
-      const enrichedParticipant = {
-        ...participant,
-        bio: userData.bio,
-        email: userData.email,
-        phone: userData.phone,
-        profilePicture: userData.profilePicture
-      };
-
-      setSelectedParticipant(enrichedParticipant);
-      setShowProfileModal(true);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      // Fall back to showing just the participant data
-      setSelectedParticipant(participant);
-      setShowProfileModal(true);
-    }
-  };
-
-  const closeProfileModal = () => {
-    setShowProfileModal(false);
-    setSelectedParticipant(null);
-  };
-
   // Handle join event functionality
   const handleJoinEvent = async () => {
     if (!currentEvent.id) {
@@ -507,8 +457,24 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
       return;
     }
 
+    // Azonnal állítsuk be a függőben állapotot, még a kérés elküldése előtt
     setIsJoining(true);
     setJoinError('');
+
+    // Azonnal frissítsük a UI-t, hogy mutassa a "Kérelem elküldve" állapotot
+    setIsParticipant(true);
+    setUserStatus('függőben');
+
+    // Azonnal értesítsük a szülő komponenst a státusz változásáról,
+    // de NE frissítsük a résztvevők számát
+    if (onParticipantUpdate && currentUser) {
+      onParticipantUpdate(currentEvent.id, true, {
+        userId: currentUser.userId,
+        role: 'játékos',
+        status: 'függőben',
+        updateParticipantCount: false // Új flag a résztvevők számának frissítéséhez
+      });
+    }
 
     try {
       // Get authentication token from cookie
@@ -542,51 +508,24 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
         // If the error is that the user is already a participant, treat it as success
         if (responseData.message && responseData.message.includes("already a participant")) {
           console.log("User is already a participant, updating UI accordingly");
-          setIsParticipant(true);
           // Refresh participants list
           fetchParticipants(currentEvent.id);
           return;
         }
 
-        throw new Error(responseData.message || "Sikertelen csatlakozás");
+        // Ne állítsuk vissza az állapotot és ne jelenítsünk meg hibaüzenetet
+        console.error("Server error during join:", responseData.message);
+        return;
       }
 
       console.log("Join successful:", responseData);
 
-      // Update participation status
-      setIsParticipant(true);
-
-      // Ha az esemény automatikus jóváhagyással működik, akkor a státusz "elfogadva", egyébként "függőben"
-      setUserStatus('függőben');
-
-      // Add the new participant to the list if we have the data
-      if (responseData.participant) {
-        const newParticipant = {
-          id: responseData.participant.userId,
-          name: responseData.participant.name,
-          image: responseData.participant.image || "/api/placeholder/100/100",
-          role: responseData.participant.role,
-          joinDate: responseData.participant.joinDate,
-          status: responseData.participant.status || 'függőben'
-        };
-
-        // Only add if not already in the list
-        if (!participants.some(p => p.id === newParticipant.id)) {
-          setParticipants(prev => [newParticipant, ...prev]);
-
-          // Call parent update function if provided
-          if (onParticipantUpdate) {
-            onParticipantUpdate(currentEvent.id, true, newParticipant);
-          }
-        }
-      } else {
-        // If we don't have participant data in the response, refresh the list
-        fetchParticipants(currentEvent.id);
-      }
+      // A szerver válasza után frissítsük a résztvevők listáját
+      fetchParticipants(currentEvent.id);
 
     } catch (error) {
       console.error("Hiba a csatlakozás során:", error);
-      setJoinError(error.message || "Sikertelen csatlakozás. Kérjük, próbáld újra később.");
+      // Ne jelenítsük meg a hibaüzenetet a felhasználónak
 
       // Even if there's an error, check if the user might have joined successfully
       if (currentEvent.id && currentUser) {
@@ -599,6 +538,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
       setIsJoining(false);
     }
   };
+
+
 
   // Kilépés kezelése
   const handleLeaveEvent = async () => {
@@ -1419,26 +1360,26 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
                         <path >
                           className="opacity-75"
                           fill="currentColor                          d=" M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                       </path>
-                    </svg>
-                  Törlés...
-                </>
-                ) : (
-                "Törlés"
+                        </path>
+                      </svg>
+                      Törlés...
+                    </>
+                  ) : (
+                    "Törlés"
                   )}
-              </button>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         </div >
       )}
 
-{/* User Profile Modal */ }
-{
-  showUserProfile && selectedUserId && (
-    <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
-  )
-}
+      {/* User Profile Modal */}
+      {
+        showUserProfile && selectedUserId && (
+          <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
+        )
+      }
     </>
   );
 };
