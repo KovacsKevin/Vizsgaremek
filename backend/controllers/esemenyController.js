@@ -2289,6 +2289,134 @@ const getAllEventInvitations = async (req, res) => {
     }
 };
 
+// Felhasználók keresése egy adott eseményhez, életkor szűréssel
+const searchUsersForEvent = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const currentUserId = decoded.userId;
+        const { id: eseményId } = req.params;
+        const { query, limit = 10, page = 1 } = req.query;
+
+        // Ellenőrizzük, hogy az esemény létezik-e
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Ellenőrizzük, hogy a felhasználó résztvevője-e az eseménynek
+        const isParticipant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: currentUserId,
+                státusz: 'elfogadva'
+            }
+        });
+
+        if (!isParticipant) {
+            return res.status(403).json({ message: "Only participants can search for users to invite!" });
+        }
+
+        // Számítsuk ki az offset-et a lapozáshoz
+        const offset = (page - 1) * limit;
+
+        // Alap keresési feltételek
+        let whereConditions = {
+            id: { [Op.ne]: currentUserId } // Ne jelenítse meg a saját felhasználót
+        };
+
+        // Ha van keresési kifejezés, akkor szűrünk arra is
+        if (query && query.length >= 2) {
+            whereConditions = {
+                ...whereConditions,
+                [Op.or]: [
+                    { username: { [Op.like]: `%${query}%` } },
+                    { firstName: { [Op.like]: `%${query}%` } },
+                    { lastName: { [Op.like]: `%${query}%` } },
+                    { email: { [Op.like]: `%${query}%` } }
+                ]
+            };
+        } else if (query) {
+            return res.status(400).json({ message: "Search query must be at least 2 characters long" });
+        }
+
+        // Kizárjuk a már résztvevő és meghívott felhasználókat
+        const participants = await Résztvevő.findAll({
+            where: { eseményId: eseményId },
+            attributes: ['userId']
+        });
+        
+        const participantIds = participants.map(p => p.userId);
+        const excludedUserIds = [...new Set([...participantIds, currentUserId])];
+        
+        whereConditions.id = { [Op.notIn]: excludedUserIds };
+
+        // Felhasználók keresése
+        const users = await User.findAll({
+            where: whereConditions,
+            attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'birthDate'],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [['username', 'ASC']]
+        });
+
+        // Életkor kiszámítása és szűrése az esemény korhatárai alapján
+        const minAge = parseInt(esemény.minimumEletkor);
+        const maxAge = parseInt(esemény.maximumEletkor);
+
+        const filteredUsers = users.map(user => {
+            let age = null;
+            if (user.birthDate) {
+                const birthDate = new Date(user.birthDate);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+            }
+
+            // Teljes név összeállítása
+            const fullName = user.username || 
+                `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+                'Felhasználó';
+
+            return {
+                id: user.id,
+                name: fullName,
+                username: user.username,
+                email: user.email,
+                profilePicture: user.profilePicture,
+                age: age,
+                // Csak akkor adjuk vissza, ha az életkor megfelel a korhatároknak
+                ageInRange: age !== null ? (age >= minAge && age <= maxAge) : false
+            };
+        }).filter(user => user.ageInRange);
+
+        // Válasz küldése
+        res.status(200).json({
+            users: filteredUsers,
+            total: filteredUsers.length,
+            page: parseInt(page),
+            totalPages: Math.ceil(filteredUsers.length / limit),
+            limit: parseInt(limit),
+            ageRange: {
+                min: minAge,
+                max: maxAge
+            }
+        });
+
+    } catch (error) {
+        console.error("Error searching users for event:", error);
+        res.status(500).json({ message: "Error searching users for event", error: error.message });
+    }
+};
+
+
 
 module.exports = {
     createEsemeny,
@@ -2325,7 +2453,8 @@ module.exports = {
     getUserInvitations,
     acceptInvitation,
     rejectInvitation,
-    getAllEventInvitations
+    getAllEventInvitations,
+    searchUsersForEvent
 };
 
 

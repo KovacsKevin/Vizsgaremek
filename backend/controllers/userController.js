@@ -470,21 +470,21 @@ const saveUserSettings = async (req, res) => {
 const getUserStats = async (req, res) => {
     try {
         const userId = req.params.userId;
-        
+
         // Létrehozott események számának lekérése
         const createdEvents = await Esemény.count({
             where: { userId: userId }
         });
-        
+
         // Részvételek számának lekérése (csak azok, ahol nem ő a szervező)
         const participatedEvents = await Résztvevő.count({
-            where: { 
+            where: {
                 userId: userId,
                 szerep: 'játékos',
                 státusz: 'elfogadva'
             }
         });
-        
+
         res.status(200).json({
             createdEvents,
             participatedEvents
@@ -500,7 +500,7 @@ const listAllUsers = async (req, res) => {
     try {
         // Get the current user ID from the token
         const currentUserId = req.user.userId;
-        
+
         // Find all users except the current user
         const users = await User.findAll({
             where: {
@@ -508,16 +508,16 @@ const listAllUsers = async (req, res) => {
             },
             attributes: ['id', 'username', 'profilePicture']
         });
-        
+
         // Format the results to include the actual profilePicture data
         const formattedUsers = users.map(user => ({
             id: user.id,
             username: user.username,
             profilePicture: user.profilePicture // Include the actual profile picture data
         }));
-        
+
         console.log(`Felhasználók listázása: ${formattedUsers.length} felhasználó, lekérdező: userId=${currentUserId}`);
-        
+
         res.status(200).json({ users: formattedUsers });
     } catch (error) {
         console.error("Error listing users:", error);
@@ -526,6 +526,7 @@ const listAllUsers = async (req, res) => {
 };
 
 // Felhasználók keresése meghíváshoz
+// Felhasználók keresése meghíváshoz - javított verzió életkor számítással
 const searchUsers = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -537,8 +538,8 @@ const searchUsers = async (req, res) => {
         const currentUserId = decoded.userId;
 
         // Keresési paraméterek
-        const { query, limit = 10, page = 1, excludeEvent } = req.query;
-        
+        const { query, limit = 10, page = 1, excludeEvent, minAge, maxAge } = req.query;
+
         if (!query || query.length < 2) {
             return res.status(400).json({ message: "Search query must be at least 2 characters long" });
         }
@@ -560,18 +561,18 @@ const searchUsers = async (req, res) => {
 
         // Ha van esemény ID, akkor kizárjuk azokat a felhasználókat, akik már résztvevők
         let excludedUserIds = [currentUserId]; // Mindig kizárjuk a saját felhasználót
-        
+
         if (excludeEvent) {
             // Lekérjük az esemény összes résztvevőjét
             const participants = await Résztvevő.findAll({
                 where: { eseményId: excludeEvent },
                 attributes: ['userId']
             });
-            
+
             // Hozzáadjuk a résztvevők ID-it a kizárt felhasználókhoz
             const participantIds = participants.map(p => p.userId);
             excludedUserIds = [...excludedUserIds, ...participantIds];
-            
+
             // Frissítjük a where feltételt
             whereConditions.id = { [Op.notIn]: excludedUserIds };
         }
@@ -599,25 +600,35 @@ const searchUsers = async (req, res) => {
             }
 
             // Teljes név összeállítása
-            const fullName = user.username || 
-                `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+            const fullName = user.username ||
+                `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
                 'Felhasználó';
 
             return {
                 id: user.id,
                 name: fullName,
+                username: user.username, // Hozzáadva a username mező
                 email: user.email,
-                image: user.profilePicture,
+                profilePicture: user.profilePicture, // Átnevezve image-ről profilePicture-re
                 age: age
             };
         });
 
+        // Életkor szűrés, ha meg van adva
+        let filteredUsers = usersWithAge;
+        if (minAge !== undefined && maxAge !== undefined) {
+            filteredUsers = usersWithAge.filter(user => {
+                if (user.age === null) return false; // Ha nincs életkor, kihagyjuk
+                return user.age >= parseInt(minAge) && user.age <= parseInt(maxAge);
+            });
+        }
+
         // Válasz küldése
         res.status(200).json({
-            users: usersWithAge,
-            total: users.count,
+            users: filteredUsers,
+            total: filteredUsers.length,
             page: parseInt(page),
-            totalPages: Math.ceil(users.count / limit),
+            totalPages: Math.ceil(filteredUsers.length / limit),
             limit: parseInt(limit)
         });
 
@@ -626,6 +637,7 @@ const searchUsers = async (req, res) => {
         res.status(500).json({ message: "Error searching users", error: error.message });
     }
 };
+
 
 // Add this function to the exports
 module.exports = {

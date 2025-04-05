@@ -105,5 +105,15 @@ router.get("/invitations", authenticateToken, esemenyController.getUserInvitatio
 // Add this new route to get all invitations for an event (including pending and invited)
 router.get("/events/:id/all-invitations", authenticateToken, esemenyController.getAllEventInvitations);
 
+// Új végpont a felhasználók kereséséhez egy adott eseményhez
+router.get("/events/:id/search-users", authenticateToken, esemenyController.searchUsersForEvent);
+
+// Új végpont a felhasználók kereséséhez egy adott eseményhez
+router.get("/events/:id/search-users", authenticateToken, esemenyController.searchUsersForEvent);
+
+// Új végpont az összes meghívás lekéréséhez (függőben lévő és meghívott)
+router.get("/events/:id/all-invitations", authenticateToken, esemenyController.getAllEventInvitations);
+
+
 
 module.exports = router;
