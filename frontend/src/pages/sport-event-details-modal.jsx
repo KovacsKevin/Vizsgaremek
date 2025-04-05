@@ -244,18 +244,18 @@ const getCurrentUser = () => {
 };
 
 // Location Map Modal Component
+// Location Map Modal Component
+// Location Map Modal Component
 const LocationMapModal = ({ location, onClose }) => {
-  const [mapUrl, setMapUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  useEffect(() => {
-    // Create Google Maps URL with the location
+  // Create a direct Google Maps embed URL that doesn't require an API key
+  const getMapUrl = () => {
     const encodedLocation = encodeURIComponent(location);
-    // Use the environment variable for the API key
-    setMapUrl(`https://www.google.com/maps/embed/v1/place?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&q=${encodedLocation}`);
-  }, [location]);
+    return `https://maps.google.com/maps?q=${encodedLocation}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+  };
 
   const handleIframeLoad = () => {
     setIsLoading(false);
@@ -320,14 +320,14 @@ const LocationMapModal = ({ location, onClose }) => {
             </div>
           )}
 
-          {/* Google Maps iframe */}
+          {/* Google Maps iframe - using a direct embed URL that doesn't require API key */}
           <iframe
             title="Location Map"
             width="100%"
             height="100%"
             frameBorder="0"
             style={{ border: 0 }}
-            src={mapUrl}
+            src={getMapUrl()}
             allowFullScreen
             onLoad={handleIframeLoad}
             onError={handleIframeError}
@@ -361,6 +361,8 @@ const LocationMapModal = ({ location, onClose }) => {
     </div>
   );
 };
+
+
 
 
 
