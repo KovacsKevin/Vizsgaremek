@@ -630,7 +630,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       }
 
       console.log("Sending join request for event:", currentEvent.id);
-      const response = await fetch("http://localhost:8081/api/v1/join", {
+
+      // Ha meghívás elfogadásáról van szó, akkor használjuk az accept-invitation végpontot
+      const endpoint = isInvitation ? "accept-invitation" : "join";
+
+      const response = await fetch(`http://localhost:8081/api/v1/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -667,6 +671,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       // A szerver válasza után frissítsük a résztvevők listáját
       fetchParticipants(currentEvent.id);
+
+      // Ha meghívás elfogadásáról volt szó, értesítsük a szülő komponenst
+      if (isInvitation && typeof onAcceptInvitation === 'function') {
+        onAcceptInvitation();
+      }
 
     } catch (error) {
       console.error("Hiba a csatlakozás során:", error);
@@ -1143,14 +1152,26 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       // Meghívás esetén speciális gombok
                       <div className="w-full flex gap-2">
                         <button
-                          onClick={onAcceptInvitation}
+                          onClick={() => {
+                            console.log("Accept invitation button clicked");
+                            // Csatlakozás az eseményhez a meghívás elfogadása helyett
+                            handleJoinEvent();
+                          }}
                           className="flex-1 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
                         >
                           <CheckCircle className="h-4 w-4" />
                           Csatlakozás
                         </button>
                         <button
-                          onClick={onRejectInvitation}
+                          onClick={() => {
+                            console.log("Reject invitation button clicked");
+                            // Ellenőrizzük, hogy a callback függvény létezik-e
+                            if (typeof onRejectInvitation === 'function') {
+                              onRejectInvitation();
+                            } else {
+                              console.error("onRejectInvitation is not a function", onRejectInvitation);
+                            }
+                          }}
                           className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
                         >
                           <XCircle className="h-4 w-4" />

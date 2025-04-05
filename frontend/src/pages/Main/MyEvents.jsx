@@ -431,18 +431,40 @@ const MyEvents = () => {
         navigate("/login");
         return;
       }
-
+  
       console.log("Accepting invitation for event ID:", eventId);
-
+      console.log("Selected event:", selectedEvent);
+  
+      // Ellenőrizzük, hogy az eventId megfelelő-e
+      if (!eventId) {
+        console.error("Invalid event ID:", eventId);
+        toast.error("Érvénytelen esemény azonosító");
+        return;
+      }
+  
+      const requestBody = { eseményId: eventId };
+      console.log("Request body:", requestBody);
+  
       const response = await fetch("http://localhost:8081/api/v1/accept-invitation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ eseményId: eventId })
+        body: JSON.stringify(requestBody)
       });
-
+  
+      const responseText = await response.text();
+      console.log("Response status:", response.status);
+      console.log("Response text:", responseText);
+      
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse response as JSON:", e);
+      }
+  
       if (response.ok) {
         toast.success("Meghívás elfogadva!");
         // Remove from invitations and add to participated events
@@ -452,9 +474,8 @@ const MyEvents = () => {
         // Close the modal
         closeSportEventDetailsModal();
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Hiba történt a meghívás elfogadásakor");
-        console.error("Error accepting invitation:", errorData);
+        toast.error(responseData?.message || "Hiba történt a meghívás elfogadásakor");
+        console.error("Error accepting invitation:", responseData);
       }
     } catch (error) {
       console.error("Error accepting invitation:", error);
