@@ -336,8 +336,7 @@ const LocationMapModal = ({ location, onClose }) => {
           {/* Fallback ha az iframe nem töltődik be */}
           {loadError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/90 p-6 text-center">
-              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
-              <h4 className="text-lg font-semibold mb-2">Nem sikerült betölteni a térképet</h4>
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />              <h4 className="text-lg font-semibold mb-2">Nem sikerült betölteni a térképet</h4>
               <p className="text-white/60 mb-4">A Google Maps betöltése sikertelen volt.</p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
@@ -400,6 +399,17 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   // Új állapot a meghívás modal kezeléséhez
   const [showInviteModal, setShowInviteModal] = useState(false);
 
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  // Meghívás modal megnyitása
+  const openInviteModal = () => {
+    setIsInviteModalOpen(true);
+  };
+  // Meghívás modal bezárása
+  const closeInviteModal = () => {
+    setIsInviteModalOpen(false);
+    // Frissítsük a résztvevők listáját a modal bezárása után
+    fetchParticipants(currentEvent.id);
+  };
   // Térkép modal megnyitása
   const handleOpenMapModal = () => {
     setShowMapModal(true);
@@ -705,8 +715,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setIsLeaving(true);
     setLeaveError('');
 
-    try {
-      // Get authentication token from cookie
+    try {      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -2001,28 +2010,28 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }}
       >
         <style jsx>{`
-                      @keyframes modal-appear {
-                        0% {
-                          transform: scale(0.95);
-                          opacity: 0;
-                        }
-                        100% {
-                          transform: scale(1);
-                          opacity: 1;
-                        }
+                    @keyframes modal-appear {
+                      0% {
+                        transform: scale(0.95);
+                        opacity: 0;
                       }
-                      @keyframes pulse-glow {
-                        0% {
-                          box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                        }
-                        50% {
-                          box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-                        }
-                        100% {
-                          box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                        }
+                      100% {
+                        transform: scale(1);
+                        opacity: 1;
                       }
-                    `}</style>
+                    }
+                    @keyframes pulse-glow {
+                      0% {
+                        box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                      }
+                      50% {
+                        box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+                      }
+                      100% {
+                        box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                      }
+                    }
+                  `}</style>
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -2521,6 +2530,8 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 
 // Új komponens a felhasználók meghívásához
 // Frissített komponens a felhasználók meghívásához - lista betöltésével
+// Új komponens a felhasználók meghívásához
+// Frissített komponens a felhasználók meghívásához - lista betöltésével
 const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -2531,13 +2542,58 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [currentParticipants, setCurrentParticipants] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
 
   // Összes felhasználó betöltése a komponens megjelenésekor
   useEffect(() => {
     if (isOpen) {
       loadAllUsers();
+      loadCurrentParticipants();
+      loadPendingInvitations();
     }
-  }, [isOpen]);
+  }, [isOpen, eventId]);
+
+  // Jelenlegi résztvevők betöltése
+  const loadCurrentParticipants = async () => {
+    try {
+      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentParticipants(data.participants || []);
+        console.log("Current participants loaded:", data.participants);
+      } else {
+        console.error("Error loading current participants");
+      }
+    } catch (error) {
+      console.error("Error loading current participants:", error);
+    }
+  };
+
+  // Függőben lévő meghívások betöltése
+  const loadPendingInvitations = async () => {
+    try {
+      const token = getCookie('token');
+      if (!token) return;
+
+      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/pending-participants`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPendingInvitations(data.pendingParticipants || []);
+        console.log("Pending invitations loaded:", data.pendingParticipants);
+      } else {
+        console.error("Error loading pending invitations");
+      }
+    } catch (error) {
+      console.error("Error loading pending invitations:", error);
+    }
+  };
 
   // Összes felhasználó betöltése
   const loadAllUsers = async () => {
@@ -2562,7 +2618,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 
       const data = await response.json();
       setAllUsers(data.users || []);
-      setSearchResults(data.users || []);
+
+      // Nem állítjuk be itt a searchResults-t, mert először szűrni fogjuk
     } catch (error) {
       console.error("Hiba a felhasználók betöltése során:", error);
       setErrorMessage(error.message || "Hiba a felhasználók betöltése során");
@@ -2571,29 +2628,50 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Felhasználók keresése a már betöltött adatok között
-  const searchUsers = () => {
-    if (!searchTerm.trim()) {
-      // Ha üres a keresés, minden felhasználót mutatunk
-      setSearchResults(allUsers);
-      return;
+  // Felhasználók szűrése és keresése
+  useEffect(() => {
+    if (allUsers.length > 0 && currentParticipants.length >= 0 && pendingInvitations.length >= 0) {
+      filterAvailableUsers();
     }
+  }, [allUsers, currentParticipants, pendingInvitations, searchTerm]);
 
-    const filteredUsers = allUsers.filter(user => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        user.username.toLowerCase().includes(searchLower) ||
-        (user.email && user.email.toLowerCase().includes(searchLower))
-      );
+  // Elérhető felhasználók szűrése (akik még nem résztvevők és nincs függőben lévő meghívásuk)
+  const filterAvailableUsers = () => {
+    // Jelenlegi felhasználó azonosítója
+    const currentUser = getCurrentUser();
+    const currentUserId = currentUser ? currentUser.userId : null;
+
+    // Résztvevők és meghívottak azonosítói
+    const participantIds = currentParticipants.map(p => p.id);
+    const pendingIds = pendingInvitations.map(p => p.id);
+
+    // Összesített lista azokról, akiket ki kell szűrni
+    const excludedIds = [...participantIds, ...pendingIds];
+    console.log("Excluded user IDs:", excludedIds);
+
+    // Szűrjük az összes felhasználót
+    let filteredUsers = allUsers.filter(user => {
+      // Kiszűrjük a jelenlegi felhasználót
+      if (user.id === currentUserId) return false;
+
+      // Kiszűrjük a már résztvevőket és a meghívottakat
+      if (excludedIds.includes(user.id)) return false;
+
+      // Ha van keresési kifejezés, akkor szűrünk arra is
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          user.username.toLowerCase().includes(searchLower) ||
+          (user.email && user.email.toLowerCase().includes(searchLower))
+        );
+      }
+
+      return true;
     });
 
     setSearchResults(filteredUsers);
+    console.log("Filtered available users:", filteredUsers.length);
   };
-
-  // Keresés változáskor azonnal frissítjük az eredményeket
-  useEffect(() => {
-    searchUsers();
-  }, [searchTerm]);
 
   // Felhasználó kiválasztása/eltávolítása
   const toggleUserSelection = (user) => {
@@ -2626,9 +2704,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 
       const userIds = selectedUsers.map(user => user.id);
 
-      // Itt van a probléma - a végpont neve és a küldött adatok formátuma
-      // Módosítsuk a kérést:
-
       console.log("Sending invitations for event:", eventId, "to users:", userIds);
 
       const response = await fetch(`http://localhost:8081/api/v1/invite-users`, {
@@ -2638,8 +2713,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          eseményId: eventId,  // Győződjünk meg, hogy ez a helyes kulcsnév
-          userIds: userIds     // Győződjünk meg, hogy a backend ezt a formátumot várja
+          eseményId: eventId,
+          userIds: userIds
         }),
       });
 
@@ -2650,6 +2725,12 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 
       setSuccessMessage(`Sikeresen elküldtél ${selectedUsers.length} meghívót!`);
       setSelectedUsers([]);
+
+      // Frissítsük a függőben lévő meghívások listáját
+      await loadPendingInvitations();
+
+      // Frissítsük a keresési eredményeket, hogy a most meghívott felhasználók ne jelenjenek meg
+      filterAvailableUsers();
 
       // Automatikus bezárás 3 másodperc után
       setTimeout(() => {
@@ -2721,7 +2802,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         ) : searchResults.length > 0 ? (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? `Találatok (${searchResults.length})` : `Felhasználók (${searchResults.length})`}
+              {searchTerm ? `Találatok (${searchResults.length})` : `Meghívható felhasználók (${searchResults.length})`}
             </h3>
             <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
               {searchResults.map(user => (
@@ -2764,7 +2845,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           </div>
         ) : (
           <div className="py-8 text-center text-white/60">
-            {searchTerm ? "Nincs találat a keresési feltételeknek megfelelően" : "Nem található felhasználó"}
+            {searchTerm ? "Nincs találat a keresési feltételeknek megfelelően" : "Nincs több meghívható felhasználó"}
           </div>
         )}
 
@@ -2776,12 +2857,15 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
               {selectedUsers.map(user => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-2 bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full"
+                  className="bg-blue-600/30 border border-blue-500/50 rounded-full px-3 py-1 flex items-center gap-2"
                 >
                   <span>{user.username}</span>
                   <button
-                    className="text-blue-300 hover:text-blue-100"
-                    onClick={() => toggleUserSelection(user)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleUserSelection(user);
+                    }}
+                    className="text-white/70 hover:text-white"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -2795,30 +2879,30 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
           >
-            Mégsem
+            Mégse
           </button>
           <button
             onClick={sendInvitations}
-            className={`px-4 py-2 ${isSending || selectedUsers.length === 0
-              ? "bg-blue-700/50 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-              } text-white rounded-md transition-colors flex items-center gap-2`}
-            disabled={isSending || selectedUsers.length === 0}
+            disabled={selectedUsers.length === 0 || isSending}
+            className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${selectedUsers.length === 0 || isSending
+                ? "bg-blue-600/50 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+              }`}
           >
             {isSending ? (
               <>
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Küldés...
+                <span>Küldés...</span>
               </>
             ) : (
               <>
                 <Mail className="h-4 w-4" />
-                Meghívók küldése
+                <span>Meghívók küldése</span>
               </>
             )}
           </button>
@@ -2852,6 +2936,9 @@ const SportEventDetailsModal = ({
 };
 
 export default SportEventDetailsModal;
+
+
+
 
 
 
