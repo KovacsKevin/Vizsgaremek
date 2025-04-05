@@ -102,5 +102,8 @@ router.post("/invite-users", authenticateToken, esemenyController.inviteUsersToE
 // Meghívások lekérése a bejelentkezett felhasználó számára
 router.get("/invitations", authenticateToken, esemenyController.getUserInvitations);
 
+// Add this new route to get all invitations for an event (including pending and invited)
+router.get("/events/:id/all-invitations", authenticateToken, esemenyController.getAllEventInvitations);
+
 
 module.exports = router;

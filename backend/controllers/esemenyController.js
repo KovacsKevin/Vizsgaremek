@@ -1508,24 +1508,26 @@ const getPendingParticipants = async (req, res) => {
             return res.status(404).json({ message: "Event not found!" });
         }
 
-        // Check if the user is an organizer for this event
-        const isOrganizer = await Résztvevő.findOne({
+        // Check if the user is a participant for this event
+        const isParticipant = await Résztvevő.findOne({
             where: {
                 eseményId: eseményId,
                 userId: userId,
-                szerep: 'szervező'
+                státusz: 'elfogadva'
             }
         });
 
-        if (!isOrganizer) {
-            return res.status(403).json({ message: "Only organizers can view pending participants!" });
+        if (!isParticipant) {
+            return res.status(403).json({ message: "Only participants can view pending invitations!" });
         }
 
-        // Get all pending participants for this event
+        // Get all pending participants for this event (including both 'függőben' and 'meghívott' statuses)
         const pendingParticipants = await Résztvevő.findAll({
             where: {
                 eseményId: eseményId,
-                státusz: 'függőben'
+                státusz: {
+                    [Op.in]: ['függőben', 'meghívott'] // Include both pending and invited statuses
+                }
             },
             include: [
                 {
@@ -1540,13 +1542,7 @@ const getPendingParticipants = async (req, res) => {
             // Calculate age if birthDate is available
             let age = null;
             if (participant.User.birthDate) {
-                const birthDate = new Date(participant.User.birthDate);
-                const today = new Date();
-                age = today.getFullYear() - birthDate.getFullYear();
-                const m = today.getMonth() - birthDate.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
-                }
+                age = calculateAge(participant.User.birthDate);
             }
 
             // Prepare user name from available fields
@@ -1562,6 +1558,7 @@ const getPendingParticipants = async (req, res) => {
                 bio: participant.User.bio || '',
                 age: age,
                 role: participant.szerep,
+                status: participant.státusz,
                 joinDate: participant.csatlakozásDátuma
             };
         });
@@ -1723,6 +1720,9 @@ const rejectParticipant = async (req, res) => {
 
 
 // Meghívás küldése egy felhasználónak
+// Meghívás küldése egy felhasználónak - módosított verzió, hogy bárki meghívhasson
+// Meghívás küldése egy felhasználónak - javított verzió
+// Update the inviteUserToEvent function to properly handle different statuses
 const inviteUserToEvent = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -1731,7 +1731,7 @@ const inviteUserToEvent = async (req, res) => {
         }
 
         const decoded = jwt.verify(token, "secretkey");
-        const organizerId = decoded.userId;
+        const inviterId = decoded.userId;
 
         const { eseményId, invitedUserId } = req.body;
 
@@ -1741,17 +1741,17 @@ const inviteUserToEvent = async (req, res) => {
             return res.status(404).json({ message: "Event not found!" });
         }
 
-        // Ellenőrizzük, hogy a meghívó felhasználó szervező-e
-        const isOrganizer = await Résztvevő.findOne({
+        // Ellenőrizzük, hogy a meghívó felhasználó résztvevője-e az eseménynek
+        const isParticipant = await Résztvevő.findOne({
             where: {
                 eseményId: eseményId,
-                userId: organizerId,
-                szerep: 'szervező'
+                userId: inviterId,
+                státusz: 'elfogadva' // Csak elfogadott résztvevők hívhatnak meg másokat
             }
         });
 
-        if (!isOrganizer) {
-            return res.status(403).json({ message: "Only organizers can invite users!" });
+        if (!isParticipant) {
+            return res.status(403).json({ message: "Only participants can invite users!" });
         }
 
         // Ellenőrizzük, hogy a meghívott felhasználó létezik-e
@@ -1769,18 +1769,42 @@ const inviteUserToEvent = async (req, res) => {
         });
 
         if (existingParticipant) {
-            return res.status(400).json({
-                message: "User is already a participant or has been invited to this event!",
-                status: existingParticipant.státusz
-            });
+            // Különböző státuszok kezelése
+            if (existingParticipant.státusz === 'elfogadva') {
+                return res.status(400).json({
+                    message: "User is already a participant in this event!",
+                    status: existingParticipant.státusz
+                });
+            } else if (existingParticipant.státusz === 'függőben' || existingParticipant.státusz === 'meghívott') {
+                return res.status(400).json({
+                    message: "User has already been invited to this event!",
+                    status: existingParticipant.státusz
+                });
+            } else if (existingParticipant.státusz === 'elutasítva') {
+                // Ha korábban elutasította, frissítsük a státuszt
+                await existingParticipant.update({
+                    státusz: 'függőben',
+                    csatlakozásDátuma: new Date()
+                });
+                
+                return res.status(200).json({
+                    message: "Invitation resent to previously rejected user!",
+                    invitation: {
+                        eseményId: existingParticipant.eseményId,
+                        userId: existingParticipant.userId,
+                        status: 'függőben',
+                        date: existingParticipant.csatlakozásDátuma
+                    }
+                });
+            }
         }
 
-        // Létrehozzuk a meghívást (résztvevő rekord 'meghívott' státusszal)
+        // Létrehozzuk a meghívást (résztvevő rekord 'függőben' státusszal)
         const invitation = await Résztvevő.create({
             eseményId: eseményId,
             userId: invitedUserId,
             szerep: 'játékos',
-            státusz: 'meghívott',
+            státusz: 'függőben',
             csatlakozásDátuma: new Date()
         });
 
@@ -2069,6 +2093,9 @@ const rejectInvitation = async (req, res) => {
 
 
 // Új függvény a tömeges meghívásokhoz
+// Új függvény a tömeges meghívásokhoz - módosított verzió, hogy bárki meghívhasson
+// Tömeges meghívások küldése - javított verzió
+// Update the inviteUsersToEvent function to properly handle different statuses
 const inviteUsersToEvent = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -2077,7 +2104,7 @@ const inviteUsersToEvent = async (req, res) => {
         }
 
         const decoded = jwt.verify(token, "secretkey");
-        const organizerId = decoded.userId;
+        const inviterId = decoded.userId;
 
         // Get event ID and invited user IDs from request body
         const { eseményId, userIds } = req.body;
@@ -2094,17 +2121,17 @@ const inviteUsersToEvent = async (req, res) => {
             return res.status(404).json({ message: "Event not found!" });
         }
 
-        // Check if the user is an organizer for this event
-        const isOrganizer = await Résztvevő.findOne({
+        // Check if the user is a participant for this event
+        const isParticipant = await Résztvevő.findOne({
             where: {
                 eseményId: eseményId,
-                userId: organizerId,
-                szerep: 'szervező'
+                userId: inviterId,
+                státusz: 'elfogadva' // Csak elfogadott résztvevők hívhatnak meg másokat
             }
         });
 
-        if (!isOrganizer) {
-            return res.status(403).json({ message: "Only organizers can invite users to events!" });
+        if (!isParticipant) {
+            return res.status(403).json({ message: "Only participants can invite users to events!" });
         }
 
         // Process each user invitation
@@ -2128,9 +2155,17 @@ const inviteUsersToEvent = async (req, res) => {
 
                 if (existingParticipant) {
                     if (existingParticipant.státusz === 'elfogadva') {
-                        results.push({ userId: invitedUserId, status: 'error', message: "User is already a participant" });
-                    } else if (existingParticipant.státusz === 'függőben') {
-                        results.push({ userId: invitedUserId, status: 'error', message: "User already has a pending invitation" });
+                        results.push({ 
+                            userId: invitedUserId, 
+                            status: 'error', 
+                            message: "User is already a participant in this event" 
+                        });
+                    } else if (existingParticipant.státusz === 'függőben' || existingParticipant.státusz === 'meghívott') {
+                        results.push({ 
+                            userId: invitedUserId, 
+                            status: 'error', 
+                            message: "User has already been invited to this event" 
+                        });
                     } else if (existingParticipant.státusz === 'elutasítva') {
                         // If the user previously rejected the invitation, update it to pending
                         await existingParticipant.update({
@@ -2138,7 +2173,11 @@ const inviteUsersToEvent = async (req, res) => {
                             csatlakozásDátuma: new Date()
                         });
 
-                        results.push({ userId: invitedUserId, status: 'success', message: "Invitation resent" });
+                        results.push({ 
+                            userId: invitedUserId, 
+                            status: 'success', 
+                            message: "Invitation resent to previously rejected user" 
+                        });
                     }
                     continue;
                 }
@@ -2173,6 +2212,82 @@ const inviteUsersToEvent = async (req, res) => {
     }
 };
 
+// New function to get all invitations for an event (including pending and invited)
+const getAllEventInvitations = async (req, res) => {
+    try {
+        const { id: eseményId } = req.params;
+        const userId = req.user.userId;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the user is a participant for this event
+        const isParticipant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: userId,
+                státusz: 'elfogadva'
+            }
+        });
+
+        if (!isParticipant) {
+            return res.status(403).json({ message: "Only participants can view invitations!" });
+        }
+
+        // Get all invitations for this event (any status except 'elutasítva')
+        const invitations = await Résztvevő.findAll({
+            where: {
+                eseményId: eseményId,
+                státusz: {
+                    [Op.ne]: 'elutasítva' // Not equal to 'elutasítva' (rejected)
+                }
+            },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'birthDate']
+                }
+            ]
+        });
+
+        // Format the invitation data
+        const formattedInvitations = invitations.map(invitation => {
+            // Calculate age if birthDate is available
+            let age = null;
+            if (invitation.User.birthDate) {
+                age = calculateAge(invitation.User.birthDate);
+            }
+
+            // Prepare user name from available fields
+            const name = invitation.User.username ||
+                `${invitation.User.firstName || ''} ${invitation.User.lastName || ''}`.trim() ||
+                'Felhasználó';
+
+            return {
+                id: invitation.userId,
+                name: name,
+                email: invitation.User.email,
+                image: invitation.User.profilePicture || '',
+                bio: invitation.User.bio || '',
+                age: age,
+                role: invitation.szerep,
+                status: invitation.státusz,
+                joinDate: invitation.csatlakozásDátuma
+            };
+        });
+
+        res.json({
+            invitations: formattedInvitations,
+            count: formattedInvitations.length
+        });
+    } catch (error) {
+        console.error("Error fetching invitations:", error);
+        res.status(500).json({ message: "Error fetching invitations", error: error.message });
+    }
+};
 
 
 module.exports = {
@@ -2209,7 +2324,8 @@ module.exports = {
     inviteUsersToEvent,
     getUserInvitations,
     acceptInvitation,
-    rejectInvitation
+    rejectInvitation,
+    getAllEventInvitations
 };
 
 

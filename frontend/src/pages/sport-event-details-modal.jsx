@@ -336,7 +336,8 @@ const LocationMapModal = ({ location, onClose }) => {
           {/* Fallback ha az iframe nem töltődik be */}
           {loadError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/90 p-6 text-center">
-              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />              <h4 className="text-lg font-semibold mb-2">Nem sikerült betölteni a térképet</h4>
+              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+              <h4 className="text-lg font-semibold mb-2">Nem sikerült betölteni a térképet</h4>
               <p className="text-white/60 mb-4">A Google Maps betöltése sikertelen volt.</p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`}
@@ -715,7 +716,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setIsLeaving(true);
     setLeaveError('');
 
-    try {      // Get authentication token from cookie
+    try {
+      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -1222,21 +1224,25 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           </button>
                         )}
 
-                        {/* Szerkesztés és meghívás gombok csak akkor jelennek meg, ha a felhasználó szerepe "szervező" */}
+                        {/* Meghívás gomb minden elfogadott résztvevőnek (játékosoknak és szervezőknek is) */}
+                        {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
+                          <button
+                            onClick={handleOpenInviteModal}
+                            className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                              <circle cx="9" cy="7" r="4"></circle>
+                              <line x1="19" y1="8" x2="19" y2="14"></line>
+                              <line x1="22" y1="11" x2="16" y2="11"></line>
+                            </svg>
+                            Meghívás
+                          </button>
+                        )}
+
+                        {/* Szerkesztés és törlés gombok csak a szervezőknek */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
                           <>
-                            <button
-                              onClick={handleOpenInviteModal}
-                              className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <line x1="19" y1="8" x2="19" y2="14"></line>
-                                <line x1="22" y1="11" x2="16" y2="11"></line>
-                              </svg>
-                              Meghívás
-                            </button>
                             <button
                               onClick={handleEditEvent}
                               className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
@@ -1253,6 +1259,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                             </button>
                           </>
                         )}
+
                         {/* Kilépés gomb csak akkor jelenik meg, ha a felhasználó szerepe "játékos" és elfogadott státuszú */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
                           <button
@@ -2010,28 +2017,28 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }}
       >
         <style jsx>{`
-                    @keyframes modal-appear {
-                      0% {
-                        transform: scale(0.95);
-                        opacity: 0;
+                      @keyframes modal-appear {
+                        0% {
+                          transform: scale(0.95);
+                          opacity: 0;
+                        }
+                        100% {
+                          transform: scale(1);
+                          opacity: 1;
+                        }
                       }
-                      100% {
-                        transform: scale(1);
-                        opacity: 1;
+                      @keyframes pulse-glow {
+                        0% {
+                          box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                        }
+                        50% {
+                          box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+                        }
+                        100% {
+                          box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+                        }
                       }
-                    }
-                    @keyframes pulse-glow {
-                      0% {
-                        box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                      }
-                      50% {
-                        box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-                      }
-                      100% {
-                        box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-                      }
-                    }
-                  `}</style>
+                    `}</style>
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -2530,8 +2537,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 
 // Új komponens a felhasználók meghívásához
 // Frissített komponens a felhasználók meghívásához - lista betöltésével
-// Új komponens a felhasználók meghívásához
-// Frissített komponens a felhasználók meghívásához - lista betöltésével
+// Improved InviteUsersModal component
 const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -2571,12 +2577,14 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Függőben lévő meghívások betöltése
+  // Függőben lévő meghívások betöltése - módosított verzió
   const loadPendingInvitations = async () => {
     try {
       const token = getCookie('token');
       if (!token) return;
 
+      // Módosítsuk a végpontot, hogy minden nem-elutasított meghívást visszaadjon
+      // Ez a végpont a backenden módosítást igényelhet, hogy a 'függőben' és 'meghívott' státuszú felhasználókat is visszaadja
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/pending-participants`, {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -2618,8 +2626,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 
       const data = await response.json();
       setAllUsers(data.users || []);
-
-      // Nem állítjuk be itt a searchResults-t, mert először szűrni fogjuk
     } catch (error) {
       console.error("Hiba a felhasználók betöltése során:", error);
       setErrorMessage(error.message || "Hiba a felhasználók betöltése során");
@@ -2635,18 +2641,23 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   }, [allUsers, currentParticipants, pendingInvitations, searchTerm]);
 
-  // Elérhető felhasználók szűrése (akik még nem résztvevők és nincs függőben lévő meghívásuk)
+  // Elérhető felhasználók szűrése - javított verzió
   const filterAvailableUsers = () => {
     // Jelenlegi felhasználó azonosítója
     const currentUser = getCurrentUser();
     const currentUserId = currentUser ? currentUser.userId : null;
 
-    // Résztvevők és meghívottak azonosítói
+    // Résztvevők azonosítói
     const participantIds = currentParticipants.map(p => p.id);
-    const pendingIds = pendingInvitations.map(p => p.id);
+
+    // Függőben lévő és meghívott státuszú felhasználók azonosítói
+    // Feltételezzük, hogy a pendingInvitations tartalmazza mind a 'függőben', mind a 'meghívott' státuszú felhasználókat
+    const pendingIds = pendingInvitations
+      .filter(p => p.status === 'függőben' || p.status === 'meghívott')
+      .map(p => p.id);
 
     // Összesített lista azokról, akiket ki kell szűrni
-    const excludedIds = [...participantIds, ...pendingIds];
+    const excludedIds = [...new Set([...participantIds, ...pendingIds])];
     console.log("Excluded user IDs:", excludedIds);
 
     // Szűrjük az összes felhasználót
@@ -2654,7 +2665,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       // Kiszűrjük a jelenlegi felhasználót
       if (user.id === currentUserId) return false;
 
-      // Kiszűrjük a már résztvevőket és a meghívottakat
+      // Kiszűrjük a már résztvevőket és a meghívottakat (kivéve az elutasítottakat)
       if (excludedIds.includes(user.id)) return false;
 
       // Ha van keresési kifejezés, akkor szűrünk arra is
@@ -2887,8 +2898,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             onClick={sendInvitations}
             disabled={selectedUsers.length === 0 || isSending}
             className={`px-6 py-2 rounded-lg transition-colors flex items-center gap-2 ${selectedUsers.length === 0 || isSending
-                ? "bg-blue-600/50 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              ? "bg-blue-600/50 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
               }`}
           >
             {isSending ? (
@@ -2936,6 +2947,7 @@ const SportEventDetailsModal = ({
 };
 
 export default SportEventDetailsModal;
+
 
 
 
