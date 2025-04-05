@@ -1154,8 +1154,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                         <button
                           onClick={() => {
                             console.log("Accept invitation button clicked");
-                            // Csatlakozás az eseményhez a meghívás elfogadása helyett
-                            handleJoinEvent();
+                            // Ellenőrizzük, hogy a callback függvény létezik-e
+                            if (typeof onAcceptInvitation === 'function') {
+                              onAcceptInvitation();
+                            } else {
+                              console.error("onAcceptInvitation is not a function", onAcceptInvitation);
+                            }
                           }}
                           className="flex-1 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
                         >

@@ -431,20 +431,20 @@ const MyEvents = () => {
         navigate("/login");
         return;
       }
-  
+
       console.log("Accepting invitation for event ID:", eventId);
       console.log("Selected event:", selectedEvent);
-  
+
       // Ellenőrizzük, hogy az eventId megfelelő-e
       if (!eventId) {
         console.error("Invalid event ID:", eventId);
         toast.error("Érvénytelen esemény azonosító");
         return;
       }
-  
+
       const requestBody = { eseményId: eventId };
       console.log("Request body:", requestBody);
-  
+
       const response = await fetch("http://localhost:8081/api/v1/accept-invitation", {
         method: "POST",
         headers: {
@@ -453,18 +453,18 @@ const MyEvents = () => {
         },
         body: JSON.stringify(requestBody)
       });
-  
+
       const responseText = await response.text();
       console.log("Response status:", response.status);
       console.log("Response text:", responseText);
-      
+
       let responseData;
       try {
         responseData = JSON.parse(responseText);
       } catch (e) {
         console.error("Failed to parse response as JSON:", e);
       }
-  
+
       if (response.ok) {
         toast.success("Meghívás elfogadva!");
         // Remove from invitations and add to participated events
@@ -483,6 +483,7 @@ const MyEvents = () => {
     }
   };
 
+  // Handle invitation rejection
   // Handle invitation rejection
   const handleRejectInvitation = async (eventId) => {
     try {
@@ -505,20 +506,22 @@ const MyEvents = () => {
 
       if (response.ok) {
         toast.success("Meghívás elutasítva");
-        // Remove from invitations
+
+        // Remove from invitations list
         setInvitations(prev => prev.filter(inv => getEventId(inv) !== eventId));
+
         // Close the modal
         closeSportEventDetailsModal();
       } else {
         const errorData = await response.json();
         toast.error(errorData.message || "Hiba történt a meghívás elutasításakor");
-        console.error("Error rejecting invitation:", errorData);
       }
     } catch (error) {
       console.error("Error rejecting invitation:", error);
       toast.error("Hiba történt a meghívás elutasításakor");
     }
   };
+
 
   // Get appropriate empty state message based on active filter
   const getEmptyStateMessage = () => {

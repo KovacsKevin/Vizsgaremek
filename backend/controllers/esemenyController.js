@@ -2007,43 +2007,66 @@ const acceptInvitation = async (req, res) => {
 
 
 // Meghívás elutasítása
+// Meghívás elutasítása
 const rejectInvitation = async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) {
-            return res.status(401).json({ message: "Authentication token is required!" });
+        const { eseményId } = req.body;
+        const userId = req.user.userId;
+
+        console.log("Reject invitation request body:", req.body);
+        console.log("User ID from token:", userId);
+        console.log("Event ID from request:", eseményId);
+
+        if (!eseményId) {
+            return res.status(400).json({ message: "Event ID is required!" });
         }
 
-        const decoded = jwt.verify(token, "secretkey");
-        const userId = decoded.userId;
+        // Ellenőrizzük, hogy az esemény létezik-e
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            console.log(`Event not found with ID: ${eseményId}`);
+            return res.status(404).json({ message: "Event not found!" });
+        }
 
-        const { eseményId } = req.body;
+        console.log("Event found:", esemény.dataValues);
 
-        // Ellenőrizzük, hogy létezik-e a meghívás
-        const invitation = await Résztvevő.findOne({
+        // Ellenőrizzük, hogy a felhasználónak van-e meghívása
+        // Először próbáljuk meg a státuszt is figyelembe véve
+        let invitation = await Résztvevő.findOne({
             where: {
                 eseményId: eseményId,
-                userId: userId,
-                státusz: 'meghívott'
+                userId: userId
             }
         });
 
         if (!invitation) {
+            console.log("No invitation found for this user and event");
+
+            // Ellenőrizzük, hogy van-e egyáltalán ilyen esemény és felhasználó
+            const eventExists = await Esemény.findByPk(eseményId);
+            const userExists = await User.findByPk(userId);
+
+            console.log("Event exists:", !!eventExists);
+            console.log("User exists:", !!userExists);
+
             return res.status(404).json({ message: "Invitation not found!" });
         }
 
+        console.log("Invitation found:", invitation.dataValues);
+
         // Töröljük a meghívást
         await invitation.destroy();
+        console.log("Invitation rejected and removed successfully");
 
         res.status(200).json({
-            message: "Invitation rejected successfully!",
-            eseményId: eseményId
+            message: "Invitation rejected successfully!"
         });
     } catch (error) {
         console.error("Error rejecting invitation:", error);
         res.status(500).json({ message: "Error rejecting invitation", error: error.message });
     }
 };
+
 
 // Új függvény a tömeges meghívásokhoz
 const inviteUsersToEvent = async (req, res) => {
