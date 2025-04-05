@@ -364,7 +364,7 @@ const LocationMapModal = ({ location, onClose }) => {
 
 
 
-const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
+const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitation = false, onAcceptInvitation, onRejectInvitation }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
   const [isJoining, setIsJoining] = useState(false)
@@ -1139,7 +1139,25 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived }) => {
 
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
-                    {isArchived ? (
+                    {isInvitation ? (
+                      // Meghívás esetén speciális gombok
+                      <div className="w-full flex gap-2">
+                        <button
+                          onClick={onAcceptInvitation}
+                          className="flex-1 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          Csatlakozás
+                        </button>
+                        <button
+                          onClick={onRejectInvitation}
+                          className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          Elutasítás
+                        </button>
+                      </div>
+                    ) : isArchived ? (
                       <div className="w-full px-6 py-3 bg-amber-600/30 text-amber-300 rounded-md flex items-center justify-center">
                         <Archive className="h-4 w-4 mr-2" />
                         Ez az esemény már lejárt
@@ -2583,6 +2601,11 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 
       const userIds = selectedUsers.map(user => user.id);
 
+      // Itt van a probléma - a végpont neve és a küldött adatok formátuma
+      // Módosítsuk a kérést:
+
+      console.log("Sending invitations for event:", eventId, "to users:", userIds);
+
       const response = await fetch(`http://localhost:8081/api/v1/invite-users`, {
         method: "POST",
         headers: {
@@ -2590,8 +2613,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          eventId,
-          userIds
+          eseményId: eventId,  // Győződjünk meg, hogy ez a helyes kulcsnév
+          userIds: userIds     // Győződjünk meg, hogy a backend ezt a formátumot várja
         }),
       });
 
@@ -2680,8 +2703,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
                 <div
                   key={user.id}
                   className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedUsers.some(u => u.id === user.id)
-                      ? "bg-blue-600/30 border border-blue-500/50"
-                      : "bg-slate-700/50 border border-slate-600/50 hover:bg-slate-700"
+                    ? "bg-blue-600/30 border border-blue-500/50"
+                    : "bg-slate-700/50 border border-slate-600/50 hover:bg-slate-700"
                     }`}
                   onClick={() => toggleUserSelection(user)}
                 >
@@ -2754,8 +2777,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           <button
             onClick={sendInvitations}
             className={`px-4 py-2 ${isSending || selectedUsers.length === 0
-                ? "bg-blue-700/50 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              ? "bg-blue-700/50 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
               } text-white rounded-md transition-colors flex items-center gap-2`}
             disabled={isSending || selectedUsers.length === 0}
           >
@@ -2780,14 +2803,25 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   );
 };
 
-// Create a new component for archived events
-const SportEventDetailsModal = ({ event, onClose, onParticipantUpdate, isArchived = false }) => {
+// A SportEventDetailsModal komponens definíciójának módosítása
+const SportEventDetailsModal = ({
+  event,
+  onClose,
+  onParticipantUpdate,
+  isArchived = false,
+  isInvitation = false,
+  onAcceptInvitation,
+  onRejectInvitation
+}) => {
   return (
     <EventModal
       event={event}
       onClose={onClose}
       onParticipantUpdate={onParticipantUpdate}
       isArchived={isArchived}
+      isInvitation={isInvitation}
+      onAcceptInvitation={onAcceptInvitation}
+      onRejectInvitation={onRejectInvitation}
     />
   );
 };

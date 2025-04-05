@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from './Header'
-import { Calendar, MapPin, Users, Clock, Plus, Loader, Archive } from "lucide-react"
+import { Calendar, MapPin, Users, Clock, Plus, Loader, Archive, Mail } from "lucide-react"
 import Cookies from "js-cookie"
 import EventModal from './event-modal'
 import SportEventDetailsModal from '../sport-event-details-modal'
 import { HelyszinModal } from './helyszin-modal'
+import { toast } from "react-hot-toast"
 
 const MyEvents = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ const MyEvents = () => {
   const [organizedEvents, setOrganizedEvents] = useState([])
   const [participatedEvents, setParticipatedEvents] = useState([])
   const [archivedEvents, setArchivedEvents] = useState([]) // State for archived events
-  const [invitations, setInvitations] = useState([]) // New state for invitations
+  const [invitations, setInvitations] = useState([]) // State for invitations
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState("all") // Default filter is "all"
@@ -29,6 +30,7 @@ const MyEvents = () => {
   // State for SportEventDetailsModal
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false)
+  const [isInvitationView, setIsInvitationView] = useState(false) // New state to track if viewing an invitation
 
   // Modal content
   const eventModalContent = {
@@ -151,7 +153,7 @@ const MyEvents = () => {
           if (invitationsResponse.value.ok) {
             const data = await invitationsResponse.value.json();
             console.log("Invitations data:", data);
-            setInvitations(data.events || []);
+            setInvitations(data.events || []); // Helyesen kezeli a data.events formátumot
           } else if (invitationsResponse.value.status === 404) {
             // 404 is expected if user has no invitations
             console.log("No invitations found");
@@ -202,23 +204,96 @@ const MyEvents = () => {
 
   // Helper function to get sport name
   const getSportName = (event) => {
-    // Check all possible locations for sport name
+    // For invitations, the structure is different
+    if (activeFilter === "invitations") {
+      return event.Sportok?.Nev || "Esemény";
+    }
+    // For regular events
     return event.Sportok?.Nev || event.Sport?.Nev || "Esemény";
   }
 
   // Helper function to get sport image
   const getSportImage = (event) => {
+    // For invitations, the structure is different
+    if (activeFilter === "invitations") {
+      if (event.imageUrl) {
+        return `http://localhost:8081${event.imageUrl.startsWith('/') ? event.imageUrl : `/${event.imageUrl}`}`;
+      }
+      return event.Sportok?.KepUrl || "/placeholder.svg";
+    }
+
+    // For regular events
     if (event.imageUrl) {
       return `http://localhost:8081${event.imageUrl.startsWith('/') ? event.imageUrl : `/${event.imageUrl}`}`;
     }
     return event.Sport?.KepUrl || event.Sportok?.KepUrl || "/placeholder.svg";
   }
 
+  // Helper function to get location name
+  const getLocationName = (event) => {
+    // For invitations, the structure is different
+    if (activeFilter === "invitations") {
+      return event.Helyszin?.Telepules || "Ismeretlen helyszín";
+    }
+    // For regular events
+    return event.Helyszin?.Telepules || "Ismeretlen helyszín";
+  }
+
+  // Helper function to get event start time
+  const getEventStartTime = (event) => {
+    // For invitations, the structure is different
+    if (activeFilter === "invitations") {
+      return event.kezdoIdo || new Date().toISOString();
+    }
+    // For regular events
+    return event.kezdoIdo;
+  }
+
+  // Helper function to get event end time
+  const getEventEndTime = (event) => {
+    // For invitations, the structure is different
+    if (activeFilter === "invitations") {
+      return event.zaroIdo || new Date().toISOString();
+    }
+    // For regular events
+    return event.zaroIdo;
+  }
+
   // Helper function to get participant count
   const getParticipantsCount = (event) => {
+    // For invitations, we might not have this info
+    if (activeFilter === "invitations") {
+      return event.resztvevoCount || 0;
+    }
+    // For regular events
     if (event.résztvevőkSzáma !== undefined) return event.résztvevőkSzáma;
     if (event.resztvevoCount !== undefined) return event.resztvevoCount;
     return event.resztvevok_lista?.length || 0;
+  }
+
+  // Helper function to get maximum participants
+  const getMaxParticipants = (event) => {
+    // For invitations, we might not have this info
+    if (activeFilter === "invitations") {
+      return event.maximumLetszam || 10; // Default value if not available
+    }
+    // For regular events
+    return event.maximumLetszam;
+  }
+
+  // Helper function to get event ID
+  const getEventId = (event) => {
+    console.log("Getting event ID for event:", event);
+
+    // For invitations, check all possible properties
+    if (activeFilter === "invitations") {
+      if (event.eseményId !== undefined) return event.eseményId;
+      if (event.esemenyId !== undefined) return event.esemenyId;
+      if (event.id !== undefined) return event.id;
+    }
+
+    // For regular events
+    return event.id;
   }
 
   // Modal handler functions
@@ -249,12 +324,14 @@ const MyEvents = () => {
   // Functions for SportEventDetailsModal
   const openSportEventDetailsModal = (event) => {
     setSelectedEvent(event);
+    setIsInvitationView(activeFilter === "invitations");
     setIsSportEventDetailsModalOpen(true);
   }
 
   const closeSportEventDetailsModal = () => {
     setIsSportEventDetailsModalOpen(false);
     setSelectedEvent(null);
+    setIsInvitationView(false);
   }
 
   // Handle participant updates
@@ -346,6 +423,82 @@ const MyEvents = () => {
     closeHelyszinModal();
   }
 
+  // Handle invitation acceptance
+  const handleAcceptInvitation = async (eventId) => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      console.log("Accepting invitation for event ID:", eventId);
+
+      const response = await fetch("http://localhost:8081/api/v1/accept-invitation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ eseményId: eventId })
+      });
+
+      if (response.ok) {
+        toast.success("Meghívás elfogadva!");
+        // Remove from invitations and add to participated events
+        setInvitations(prev => prev.filter(inv => getEventId(inv) !== eventId));
+        // Refresh data to update participated events
+        setRefreshData(prev => prev + 1);
+        // Close the modal
+        closeSportEventDetailsModal();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Hiba történt a meghívás elfogadásakor");
+        console.error("Error accepting invitation:", errorData);
+      }
+    } catch (error) {
+      console.error("Error accepting invitation:", error);
+      toast.error("Hiba történt a meghívás elfogadásakor");
+    }
+  };
+
+  // Handle invitation rejection
+  const handleRejectInvitation = async (eventId) => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      console.log("Rejecting invitation for event ID:", eventId);
+
+      const response = await fetch("http://localhost:8081/api/v1/reject-invitation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ eseményId: eventId })
+      });
+
+      if (response.ok) {
+        toast.success("Meghívás elutasítva");
+        // Remove from invitations
+        setInvitations(prev => prev.filter(inv => getEventId(inv) !== eventId));
+        // Close the modal
+        closeSportEventDetailsModal();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Hiba történt a meghívás elutasításakor");
+        console.error("Error rejecting invitation:", errorData);
+      }
+    } catch (error) {
+      console.error("Error rejecting invitation:", error);
+      toast.error("Hiba történt a meghívás elutasításakor");
+    }
+  };
+
   // Get appropriate empty state message based on active filter
   const getEmptyStateMessage = () => {
     switch (activeFilter) {
@@ -424,7 +577,7 @@ const MyEvents = () => {
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
               Eseményeim
             </h1>
-            {activeFilter !== "archived" && (
+            {activeFilter !== "archived" && activeFilter !== "invitations" && (
               <button
                 onClick={openEventModal}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
@@ -471,6 +624,7 @@ const MyEvents = () => {
                 : "text-slate-300 hover:bg-white/5"
                 }`}
             >
+              <Mail size={16} className="inline mr-1" />
               Meghívásaim
             </button>
             <button
@@ -504,6 +658,8 @@ const MyEvents = () => {
               <div className="w-20 h-20 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
                 {activeFilter === "archived" ? (
                   <Archive className="w-10 h-10 text-slate-400" />
+                ) : activeFilter === "invitations" ? (
+                  <Mail className="w-10 h-10 text-slate-400" />
                 ) : (
                   <Calendar className="w-10 h-10 text-slate-400" />
                 )}
@@ -525,8 +681,8 @@ const MyEvents = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredEvents().map((event) => (
                 <div
-                  key={event.id}
-                  className={`bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 ${activeFilter === "archived" ? "relative" : ""}`}
+                  key={getEventId(event)}
+                  className={`bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 ${activeFilter === "archived" || activeFilter === "invitations" ? "relative" : ""}`}
                 >
                   {activeFilter === "archived" && (
                     <div className="absolute top-2 right-2 z-10 bg-amber-600/80 text-white text-xs px-2 py-1 rounded-md">
@@ -544,7 +700,7 @@ const MyEvents = () => {
                       alt={getSportName(event)}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.error(`Kép betöltési hiba: ${event.imageUrl}`);
+                        console.error(`Kép betöltési hiba: ${activeFilter === "invitations" ? event.imageUrl : event.imageUrl}`);
                         e.target.src = `/placeholder.svg?height=300&width=400&text=Betöltési%20Hiba`;
                       }}
                     />
@@ -554,43 +710,42 @@ const MyEvents = () => {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-slate-300">
                         <MapPin size={16} className="mr-2 text-slate-400" />
-                        <span>{event.Helyszin?.Telepules || "Ismeretlen helyszín"}</span>
+                        <span>{getLocationName(event)}</span>
                       </div>
                       <div className="flex items-start text-sm text-slate-300">
                         <Clock size={16} className="mr-2 mt-1 text-slate-400 flex-shrink-0" />
                         <div className="flex flex-col">
                           <span className="font-medium text-white/80">Kezdés:</span>
-                          <span>{formatDateTime(event.kezdoIdo)}</span>
+                          <span>{formatDateTime(getEventStartTime(event))}</span>
                         </div>
                       </div>
                       <div className="flex items-start text-sm text-slate-300">
                         <Clock size={16} className="mr-2 mt-1 text-slate-400 flex-shrink-0" />
-                        <div className="flex flex-col">
-                          <span className="font-medium text-white/80">Befejezés:</span>
-                          <span>{formatDateTime(event.zaroIdo)}</span>
+                        <div className="flex flex-col">                          <span className="font-medium text-white/80">Befejezés:</span>
+                          <span>{formatDateTime(getEventEndTime(event))}</span>
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-slate-300">
                         <Users size={16} className="mr-2 text-slate-400" />
                         <span>
-                          {getParticipantsCount(event)}/{event.maximumLetszam} fő
+                          {getParticipantsCount(event)}/{getMaxParticipants(event)} fő
                         </span>
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${activeFilter === "archived"
-                          ? "bg-amber-500/20 text-amber-400"
-                          : activeFilter === "invitations"
-                            ? "bg-purple-500/20 text-purple-400"
-                            : getEventRole(event.id) === "szervező"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-blue-500/20 text-blue-400"
+                        ? "bg-amber-500/20 text-amber-400"
+                        : activeFilter === "invitations"
+                          ? "bg-purple-500/20 text-purple-400"
+                          : getEventRole(getEventId(event)) === "szervező"
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-blue-500/20 text-blue-400"
                         }`}>
                         {activeFilter === "archived"
-                          ? getEventRole(event.id) === "szervező" ? "Szervező (archív)" : "Résztvevő (archív)"
+                          ? getEventRole(getEventId(event)) === "szervező" ? "Szervező (archív)" : "Résztvevő (archív)"
                           : activeFilter === "invitations"
                             ? "Meghívott"
-                            : getEventRole(event.id) === "szervező" ? "Szervező" : "Résztvevő"
+                            : getEventRole(getEventId(event)) === "szervező" ? "Szervező" : "Résztvevő"
                         }
                       </span>
                       <button
@@ -638,9 +793,11 @@ const MyEvents = () => {
           onClose={closeSportEventDetailsModal}
           onParticipantUpdate={handleParticipantUpdate}
           isArchived={activeFilter === "archived"} // Pass isArchived flag to disable editing for archived events
+          isInvitation={isInvitationView} // Pass isInvitation flag to show special buttons
+          onAcceptInvitation={() => handleAcceptInvitation(getEventId(selectedEvent))}
+          onRejectInvitation={() => handleRejectInvitation(getEventId(selectedEvent))}
         />
       )}
-
 
       {/* Itt kellene implementálni a SportModal komponenst is, ha szükséges */}
       {/* <SportModal
@@ -659,4 +816,5 @@ const MyEvents = () => {
 }
 
 export default MyEvents
+
 

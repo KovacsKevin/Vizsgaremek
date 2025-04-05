@@ -525,6 +525,108 @@ const listAllUsers = async (req, res) => {
     }
 };
 
+// Felhasználók keresése meghíváshoz
+const searchUsers = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const currentUserId = decoded.userId;
+
+        // Keresési paraméterek
+        const { query, limit = 10, page = 1, excludeEvent } = req.query;
+        
+        if (!query || query.length < 2) {
+            return res.status(400).json({ message: "Search query must be at least 2 characters long" });
+        }
+
+        // Számítsuk ki az offset-et a lapozáshoz
+        const offset = (page - 1) * limit;
+
+        // Alap keresési feltételek
+        const whereConditions = {
+            [Op.or]: [
+                { username: { [Op.like]: `%${query}%` } },
+                { firstName: { [Op.like]: `%${query}%` } },
+                { lastName: { [Op.like]: `%${query}%` } },
+                { email: { [Op.like]: `%${query}%` } }
+            ],
+            // Ne jelenítse meg a saját felhasználót
+            id: { [Op.ne]: currentUserId }
+        };
+
+        // Ha van esemény ID, akkor kizárjuk azokat a felhasználókat, akik már résztvevők
+        let excludedUserIds = [currentUserId]; // Mindig kizárjuk a saját felhasználót
+        
+        if (excludeEvent) {
+            // Lekérjük az esemény összes résztvevőjét
+            const participants = await Résztvevő.findAll({
+                where: { eseményId: excludeEvent },
+                attributes: ['userId']
+            });
+            
+            // Hozzáadjuk a résztvevők ID-it a kizárt felhasználókhoz
+            const participantIds = participants.map(p => p.userId);
+            excludedUserIds = [...excludedUserIds, ...participantIds];
+            
+            // Frissítjük a where feltételt
+            whereConditions.id = { [Op.notIn]: excludedUserIds };
+        }
+
+        // Felhasználók keresése
+        const users = await User.findAndCountAll({
+            where: whereConditions,
+            attributes: ['id', 'username', 'firstName', 'lastName', 'email', 'profilePicture', 'birthDate'],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [['username', 'ASC']]
+        });
+
+        // Életkor kiszámítása minden felhasználóhoz
+        const usersWithAge = users.rows.map(user => {
+            let age = null;
+            if (user.birthDate) {
+                const birthDate = new Date(user.birthDate);
+                const today = new Date();
+                age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+            }
+
+            // Teljes név összeállítása
+            const fullName = user.username || 
+                `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+                'Felhasználó';
+
+            return {
+                id: user.id,
+                name: fullName,
+                email: user.email,
+                image: user.profilePicture,
+                age: age
+            };
+        });
+
+        // Válasz küldése
+        res.status(200).json({
+            users: usersWithAge,
+            total: users.count,
+            page: parseInt(page),
+            totalPages: Math.ceil(users.count / limit),
+            limit: parseInt(limit)
+        });
+
+    } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).json({ message: "Error searching users", error: error.message });
+    }
+};
+
 // Add this function to the exports
 module.exports = {
     createUser,
@@ -536,5 +638,6 @@ module.exports = {
     getUserSettings,
     saveUserSettings,
     getUserStats,
-    listAllUsers  // Add the new function to exports
+    listAllUsers,
+    searchUsers  // Add the new function to exports
 };

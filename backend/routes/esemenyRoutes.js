@@ -84,8 +84,23 @@ router.post("/reject-participant", authenticateToken, esemenyController.rejectPa
 router.get('/archived-events', authenticateToken, esemenyController.getArchivedEvents);
 
 
+// Meghívás küldése egy felhasználónak
+router.post("/invite-user", authenticateToken, esemenyController.inviteUserToEvent);
 
+// Meghívások lekérése egy felhasználó számára
+router.get("/invitations", authenticateToken, esemenyController.getUserInvitations);
 
+// Meghívás elfogadása
+router.post("/accept-invitation", authenticateToken, esemenyController.acceptInvitation);
+
+// Meghívás elutasítása
+router.post("/reject-invitation", authenticateToken, esemenyController.rejectInvitation);
+
+// Meghívás küldése egy felhasználónak
+router.post("/invite-users", authenticateToken, esemenyController.inviteUsersToEvent);
+
+// Meghívások lekérése a bejelentkezett felhasználó számára
+router.get("/invitations", authenticateToken, esemenyController.getUserInvitations);
 
 
 module.exports = router;

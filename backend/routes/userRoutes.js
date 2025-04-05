@@ -42,4 +42,6 @@ router.get("/login", authenticateToken, (req, res) => {
 
 router.get("/list",authenticateToken,userController.listAllUsers)
 
+router.get("/search-users", authenticateToken, userController.searchUsers);
+
 module.exports = router;
