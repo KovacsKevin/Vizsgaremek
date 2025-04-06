@@ -3138,141 +3138,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         )}
 
         {/* Action buttons */}
-        <div className="p-4 border-t border-slate-700 bg-slate-800/80">
-          {/* Different button sets based on user role and event status */}
-          {!isArchived && !isInvitation && !isPending ? (
-            <div className="flex justify-between">
-              {/* Left side buttons */}
-              <div className="flex space-x-2">
-                {isOrganizer && (
-                  <>
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span>Szerkesztés</span>
-                    </button>
-                    <button
-                      onClick={() => setShowConfirmDelete(true)}
-                      className="flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
-                    >
-                      <Trash className="h-4 w-4" />
-                      <span>Törlés</span>
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Right side buttons */}
-              <div>
-                {isParticipant ? (
-                  <button
-                    onClick={() => setShowConfirmLeave(true)}
-                    className="flex items-center gap-1 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors"
-                    disabled={loading}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>{loading ? "Folyamatban..." : "Lejelentkezés"}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleJoinEvent}
-                    className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-                    disabled={loading}
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    <span>{loading ? "Folyamatban..." : "Jelentkezés"}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : isArchived ? (
-            <div className="text-center text-slate-400">
-              Ez az esemény már lezárult, nem módosítható.
-            </div>
-          ) : null}
-
-          {/* Confirmation dialogs */}
-          {showConfirmLeave && (
-            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-md">
-              <p className="text-white mb-3">Biztosan le szeretnél jelentkezni erről az eseményről?</p>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => setShowConfirmLeave(false)}
-                  className="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors"
-                >
-                  Mégsem
-                </button>
-                <button
-                  onClick={handleLeaveEvent}
-                  className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors"
-                  disabled={loading}
-                >
-                  {loading ? "Folyamatban..." : "Lejelentkezés"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {showConfirmDelete && (
-            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-md">
-              <p className="text-white mb-3">Biztosan törölni szeretnéd ezt az eseményt? Ez a művelet nem visszavonható!</p>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => setShowConfirmDelete(false)}
-                  className="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded-md transition-colors"
-                >
-                  Mégsem
-                </button>
-                <button
-                  onClick={handleDeleteEvent}
-                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
-                  disabled={loading}
-                >
-                  {loading ? "Folyamatban..." : "Törlés"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Special buttons for invitations */}
-          {isInvitation && (
-            <div className="flex justify-between mt-4">
-              <button
-                onClick={() => onRejectInvitation(event.id)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
-              >
-                Elutasítás
-              </button>
-              <button
-                onClick={() => onAcceptInvitation(event.id)}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-              >
-                Elfogadás
-              </button>
-            </div>
-          )}
-
-          {/* Special buttons for pending events */}
-          {isPending && (
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={() => onCancelPendingRequest(event.id)}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                Jelentkezés visszavonása
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Meghívó küldés gombok */}
-        <div className="flex justify-end gap-3 p-4">
+        <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
@@ -3329,10 +3195,8 @@ const SportEventDetailsModal = ({
       onParticipantUpdate={onParticipantUpdate}
       isArchived={isArchived}
       isInvitation={isInvitation}
-      isPending={isPending} // Adjuk tovább az isPending prop-ot
       onAcceptInvitation={onAcceptInvitation}
       onRejectInvitation={onRejectInvitation}
-      onCancelPendingRequest={onCancelPendingRequest} // Adjuk tovább az onCancelPendingRequest prop-ot
     />
   );
 };
