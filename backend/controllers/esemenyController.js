@@ -1746,7 +1746,7 @@ const inviteUserToEvent = async (req, res) => {
                     státusz: 'függőben',
                     csatlakozásDátuma: new Date()
                 });
-                
+
                 return res.status(200).json({
                     message: "Invitation resent to previously rejected user!",
                     invitation: {
@@ -1815,6 +1815,28 @@ const getUserInvitations = async (req, res) => {
             return res.status(404).json({ message: "Nincsenek meghívásaid." });
         }
 
+        // Esemény ID-k összegyűjtése a résztvevők számának lekérdezéséhez
+        const eventIds = pendingInvitations.map(invitation => invitation.Esemény.id);
+
+        // Résztvevők számának lekérdezése minden eseményhez
+        const participantCounts = await Résztvevő.findAll({
+            attributes: [
+                'eseményId',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+            ],
+            where: {
+                eseményId: { [Op.in]: eventIds },
+                státusz: 'elfogadva' // Csak az elfogadott résztvevőket számoljuk
+            },
+            group: ['eseményId']
+        });
+
+        // Résztvevők számának map-elése esemény ID-k szerint
+        const countMap = {};
+        participantCounts.forEach(item => {
+            countMap[item.eseményId] = parseInt(item.getDataValue('count'));
+        });
+
         // Átalakítjuk a meghívásokat a frontend által várt formátumra
         const events = pendingInvitations.map(invitation => {
             const event = invitation.Esemény;
@@ -1831,7 +1853,9 @@ const getUserInvitations = async (req, res) => {
                 Sportok: event.Sportok,
                 // Hozzáadjuk a résztvevői adatokat is
                 resztvevoStatus: invitation.státusz,
-                resztvevoSzerep: invitation.szerep
+                resztvevoSzerep: invitation.szerep,
+                // Hozzáadjuk a résztvevők számát
+                resztvevoCount: countMap[event.id] || 0
             };
         });
 
@@ -1841,6 +1865,7 @@ const getUserInvitations = async (req, res) => {
         res.status(500).json({ message: "Szerver hiba", error: error.message });
     }
 };
+
 
 
 // Meghívás elfogadása
@@ -2123,16 +2148,16 @@ const inviteUsersToEvent = async (req, res) => {
 
                 if (existingParticipant) {
                     if (existingParticipant.státusz === 'elfogadva') {
-                        results.push({ 
-                            userId: invitedUserId, 
-                            status: 'error', 
-                            message: "User is already a participant in this event" 
+                        results.push({
+                            userId: invitedUserId,
+                            status: 'error',
+                            message: "User is already a participant in this event"
                         });
                     } else if (existingParticipant.státusz === 'függőben' || existingParticipant.státusz === 'meghívott') {
-                        results.push({ 
-                            userId: invitedUserId, 
-                            status: 'error', 
-                            message: "User has already been invited to this event" 
+                        results.push({
+                            userId: invitedUserId,
+                            status: 'error',
+                            message: "User has already been invited to this event"
                         });
                     } else if (existingParticipant.státusz === 'elutasítva') {
                         // If the user previously rejected the invitation, update it to meghívott
@@ -2141,10 +2166,10 @@ const inviteUsersToEvent = async (req, res) => {
                             csatlakozásDátuma: new Date()
                         });
 
-                        results.push({ 
-                            userId: invitedUserId, 
-                            status: 'success', 
-                            message: "Invitation resent to previously rejected user" 
+                        results.push({
+                            userId: invitedUserId,
+                            status: 'success',
+                            message: "Invitation resent to previously rejected user"
                         });
                     }
                     continue;
@@ -2319,10 +2344,10 @@ const searchUsersForEvent = async (req, res) => {
             where: { eseményId: eseményId },
             attributes: ['userId']
         });
-        
+
         const participantIds = participants.map(p => p.userId);
         const excludedUserIds = [...new Set([...participantIds, currentUserId])];
-        
+
         whereConditions.id = { [Op.notIn]: excludedUserIds };
 
         // Felhasználók keresése
@@ -2351,8 +2376,8 @@ const searchUsersForEvent = async (req, res) => {
             }
 
             // Teljes név összeállítása
-            const fullName = user.username || 
-                `${user.firstName || ''} ${user.lastName || ''}`.trim() || 
+            const fullName = user.username ||
+                `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
                 'Felhasználó';
 
             return {
@@ -2423,6 +2448,121 @@ const checkParticipation = async (req, res) => {
     }
 };
 
+// Függőben lévő események lekérése a bejelentkezett felhasználó számára
+const getPendingEvents = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        // Lekérjük a felhasználó függőben lévő eseményeit (függőben státuszú résztvevői bejegyzések)
+        const pendingEvents = await Résztvevő.findAll({
+            where: {
+                userId: userId,
+                státusz: 'függőben'  // Csak a függőben lévő eseményeket kérjük le
+            },
+            include: [
+                {
+                    model: Esemény,
+                    include: [
+                        {
+                            model: Helyszin,
+                            attributes: ['Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo', 'Parkolas', 'Leiras', 'Berles']
+                        },
+                        {
+                            model: Sportok,
+                            attributes: ['Id', 'Nev', 'KepUrl']
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (pendingEvents.length === 0) {
+            return res.status(404).json({ message: "Nincsenek függőben lévő eseményeid." });
+        }
+
+        // Esemény ID-k összegyűjtése a résztvevők számának lekérdezéséhez
+        const eventIds = pendingEvents.map(pending => pending.Esemény.id);
+        
+        // Résztvevők számának lekérdezése minden eseményhez
+        const participantCounts = await Résztvevő.findAll({
+            attributes: [
+                'eseményId',
+                [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+            ],
+            where: {
+                eseményId: { [Op.in]: eventIds },
+                státusz: 'elfogadva' // Csak az elfogadott résztvevőket számoljuk
+            },
+            group: ['eseményId']
+        });
+        
+        // Résztvevők számának map-elése esemény ID-k szerint
+        const countMap = {};
+        participantCounts.forEach(item => {
+            countMap[item.eseményId] = parseInt(item.getDataValue('count'));
+        });
+
+        // Átalakítjuk a függőben lévő eseményeket a frontend által várt formátumra
+        const events = pendingEvents.map(pending => {
+            const event = pending.Esemény;
+            return {
+                id: event.id,
+                kezdoIdo: event.kezdoIdo,
+                zaroIdo: event.zaroIdo,
+                szint: event.szint,
+                minimumEletkor: event.minimumEletkor,
+                maximumEletkor: event.maximumEletkor,
+                maximumLetszam: event.maximumLetszam,
+                imageUrl: event.imageUrl,
+                Helyszin: event.Helyszin,
+                Sportok: event.Sportok,
+                // Hozzáadjuk a résztvevői adatokat is
+                resztvevoStatus: pending.státusz,
+                resztvevoSzerep: pending.szerep,
+                // Hozzáadjuk a résztvevők számát
+                resztvevoCount: countMap[event.id] || 0
+            };
+        });
+
+        res.status(200).json({ events });
+    } catch (error) {
+        console.error("Hiba a függőben lévő események lekérésekor:", error);
+        res.status(500).json({ message: "Szerver hiba", error: error.message });
+    }
+};
+
+// Függőben lévő kérelem visszavonása
+const cancelPendingRequest = async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const { eseményId } = req.body;
+
+        if (!eseményId) {
+            return res.status(400).json({ message: "Hiányzó esemény azonosító" });
+        }
+
+        // Ellenőrizzük, hogy létezik-e a függőben lévő kérelem
+        const pendingRequest = await Résztvevő.findOne({
+            where: {
+                userId: userId,
+                eseményId: eseményId,
+                státusz: 'függőben'
+            }
+        });
+
+        if (!pendingRequest) {
+            return res.status(404).json({ message: "Nem található függőben lévő kérelem ehhez az eseményhez" });
+        }
+
+        // Töröljük a függőben lévő kérelmet
+        await pendingRequest.destroy();
+
+        res.status(200).json({ message: "Jelentkezés sikeresen visszavonva" });
+    } catch (error) {
+        console.error("Hiba a függőben lévő kérelem visszavonásakor:", error);
+        res.status(500).json({ message: "Szerver hiba", error: error.message });
+    }
+};
 
 
 module.exports = {
@@ -2461,7 +2601,9 @@ module.exports = {
     acceptInvitation,
     rejectInvitation,
     getAllEventInvitations,
-    searchUsersForEvent
+    searchUsersForEvent,
+    getPendingEvents,
+    cancelPendingRequest
 };
 
 

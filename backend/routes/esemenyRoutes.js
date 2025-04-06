@@ -114,6 +114,11 @@ router.get("/events/:id/search-users", authenticateToken, esemenyController.sear
 // Új végpont az összes meghívás lekéréséhez (függőben lévő és meghívott)
 router.get("/events/:id/all-invitations", authenticateToken, esemenyController.getAllEventInvitations);
 
+// Függőben lévő események lekérése
+router.get('/pending-events', authenticateToken, esemenyController.getPendingEvents);
+
+// Függőben lévő kérelem visszavonása
+router.post('/cancel-pending-request', authenticateToken, esemenyController.cancelPendingRequest);
 
 
 module.exports = router;
