@@ -362,10 +362,6 @@ const LocationMapModal = ({ location, onClose }) => {
   );
 };
 
-
-
-
-
 const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitation = false, onAcceptInvitation, onRejectInvitation }) => {
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState(null)
@@ -390,7 +386,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   const [deleteError, setDeleteError] = useState('')
   // Új állapotok a függőben lévő résztvevők kezeléséhez
   const [pendingParticipants, setPendingParticipants] = useState([])
-  const [userStatus, setUserStatus] = useState(null) // 'elfogadva', 'elutasítva', 'függőben'
+  const [userStatus, setUserStatus] = useState(null) // 'elfogadva', 'elutasítva', 'függőben', 'meghívott'
   const [isApproving, setIsApproving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
   const [approveRejectError, setApproveRejectError] = useState('')
@@ -526,45 +522,43 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   }, [participants, currentEvent.id]);
 
-// Check if the current user is already a participant
-const checkParticipation = async (eventId, user) => {
-  if (!user || !eventId) return;
+  // Check if the current user is already a participant
+  const checkParticipation = async (eventId, user) => {
+    if (!user || !eventId) return;
 
-  try {
-    // Get authentication token from cookie
-    const token = getCookie('token');
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
 
-    if (!token) {
-      return; // User is not logged in
-    }
-
-    const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`
+      if (!token) {
+        return; // User is not logged in
       }
-    });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log("Participation check result:", data);
-      setIsParticipant(data.isParticipant || false);
-      setUserStatus(data.status || null);
+      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
 
-      // If the user is a participant, make sure they're in the participants list
-      if (data.isParticipant && currentUser && !participants.some(p => p.id === currentUser.userId)) {
-        // Refresh the participants list
-        fetchParticipants(eventId);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Participation check result:", data);
+        setIsParticipant(data.isParticipant || false);
+        setUserStatus(data.status || null);
+
+        // If the user is a participant, make sure they're in the participants list
+        if (data.isParticipant && currentUser && !participants.some(p => p.id === currentUser.userId)) {
+          // Refresh the participants list
+          fetchParticipants(eventId);
+        }
       }
+    } catch (error) {
+      console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
+      // Even if there's an error, try to fetch participants to ensure UI is up to date
+      fetchParticipants(eventId);
     }
-  } catch (error) {
-    console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
-    // Even if there's an error, try to fetch participants to ensure UI is up to date
-    fetchParticipants(eventId);
-  }
-};
-
-
+  };
 
   // Format date to Hungarian format
   const formatDate = (dateString) => {
@@ -711,8 +705,150 @@ const checkParticipation = async (eventId, user) => {
     }
   };
 
+  // Handle invitation acceptance
+  const handleAcceptInvitation = async () => {
+    if (!currentEvent.id) {
+      setJoinError("Esemény azonosító hiányzik");
+      return;
+    }
 
+    setIsJoining(true);
+    setJoinError('');
 
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
+
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a meghívás elfogadásához");
+      }
+
+      console.log("Accepting invitation for event:", currentEvent.id);
+
+      const response = await fetch(`http://localhost:8081/api/v1/accept-invitation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eseményId: currentEvent.id
+        }),
+      });
+
+      // Try to parse the response JSON
+      let responseData = {};
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.error("Failed to parse response JSON:", e);
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData.message || "Sikertelen meghívás elfogadás");
+      }
+
+      console.log("Invitation acceptance successful:", responseData);
+
+      // Update UI state
+      setIsParticipant(true);
+      setUserStatus('elfogadva');
+
+      // A szerver válasza után frissítsük a résztvevők listáját
+      fetchParticipants(currentEvent.id);
+
+      // Értesítsük a szülő komponenst
+      if (onParticipantUpdate && currentUser) {
+        onParticipantUpdate(currentEvent.id, true, {
+          userId: currentUser.userId,
+          role: 'játékos',
+          status: 'elfogadva',
+          updateParticipantCount: true
+        });
+      }
+
+      // Ha meghívás elfogadásáról volt szó, értesítsük a szülő komponenst
+      if (typeof onAcceptInvitation === 'function') {
+        onAcceptInvitation();
+      }
+
+    } catch (error) {
+      console.error("Hiba a meghívás elfogadása során:", error);
+      setJoinError(error.message || "Sikertelen meghívás elfogadás. Kérjük, próbáld újra később.");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  // Handle invitation rejection
+  const handleRejectInvitation = async () => {
+    if (!currentEvent.id) {
+      setJoinError("Esemény azonosító hiányzik");
+      return;
+    }
+
+    setIsJoining(true);
+    setJoinError('');
+
+    try {
+      // Get authentication token from cookie
+      const token = getCookie('token');
+
+      if (!token) {
+        throw new Error("Bejelentkezés szükséges a meghívás elutasításához");
+      }
+
+      console.log("Rejecting invitation for event:", currentEvent.id);
+
+      const response = await fetch(`http://localhost:8081/api/v1/reject-invitation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          eseményId: currentEvent.id
+        }),
+      });
+
+      // Try to parse the response JSON
+      let responseData = {};
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        console.error("Failed to parse response JSON:", e);
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData.message || "Sikertelen meghívás elutasítás");
+      }
+
+      console.log("Invitation rejection successful:", responseData);
+
+      // Update UI state
+      setIsParticipant(false);
+      setUserStatus('elutasítva');
+
+      // Értesítsük a szülő komponenst
+      if (onParticipantUpdate && currentUser) {
+        onParticipantUpdate(currentEvent.id, false, {
+          userId: currentUser.userId,
+          status: 'elutasítva'
+        });
+      }
+
+      // Ha meghívás elutasításáról volt szó, értesítsük a szülő komponenst
+      if (typeof onRejectInvitation === 'function') {
+        onRejectInvitation();
+      }
+
+    } catch (error) {
+      console.error("Hiba a meghívás elutasítása során:", error);
+      setJoinError(error.message || "Sikertelen meghívás elutasítás. Kérjük, próbáld újra később.");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   // Kilépés kezelése
   const handleLeaveEvent = async () => {
@@ -1058,7 +1194,7 @@ const checkParticipation = async (eventId, user) => {
     <>
       {/* Main Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
+      <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -1171,31 +1307,29 @@ const checkParticipation = async (eventId, user) => {
                       // Meghívás esetén speciális gombok
                       <div className="w-full flex gap-2">
                         <button
-                          onClick={() => {
-                            console.log("Accept invitation button clicked");
-                            // Ellenőrizzük, hogy a callback függvény létezik-e
-                            if (typeof onAcceptInvitation === 'function') {
-                              onAcceptInvitation();
-                            } else {
-                              console.error("onAcceptInvitation is not a function", onAcceptInvitation);
-                            }
-                          }}
-                          className="flex-1 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          onClick={handleAcceptInvitation}
+                          className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                          disabled={isJoining}
                         >
-                          <CheckCircle className="h-4 w-4" />
-                          Elfogadás
+                          {isJoining ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Elfogadás...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4" />
+                              Elfogadás
+                            </>
+                          )}
                         </button>
                         <button
-                          onClick={() => {
-                            console.log("Reject invitation button clicked");
-                            // Ellenőrizzük, hogy a callback függvény létezik-e
-                            if (typeof onRejectInvitation === 'function') {
-                              onRejectInvitation();
-                            } else {
-                              console.error("onRejectInvitation is not a function", onRejectInvitation);
-                            }
-                          }}
-                          className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          onClick={handleRejectInvitation}
+                          className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                          disabled={isJoining}
                         >
                           <XCircle className="h-4 w-4" />
                           Elutasítás
@@ -1224,12 +1358,36 @@ const checkParticipation = async (eventId, user) => {
                             Elutasítva
                           </button>
                         ) : userStatus === 'meghívott' ? (
-                          <button
-                            className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded-md cursor-not-allowed"
-                            disabled
-                          >
-                            Meghívást kaptál
-                          </button>
+                          <div className="w-full flex gap-2">
+                            <button
+                              onClick={handleAcceptInvitation}
+                              className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                              disabled={isJoining}
+                            >
+                              {isJoining ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Elfogadás...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4" />
+                                  Elfogadás
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={handleRejectInvitation}
+                              className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                              disabled={isJoining}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Elutasítás
+                            </button>
+                          </div>
                         ) : (
                           <button
                             className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
@@ -1238,7 +1396,6 @@ const checkParticipation = async (eventId, user) => {
                             Csatlakozva
                           </button>
                         )}
-
 
                         {/* Meghívás gomb minden elfogadott résztvevőnek (játékosoknak és szervezőknek is) */}
                         {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
@@ -1275,7 +1432,6 @@ const checkParticipation = async (eventId, user) => {
                             </button>
                           </>
                         )}
-
                         {/* Kilépés gomb csak akkor jelenik meg, ha a felhasználó szerepe "játékos" és elfogadott státuszú */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
                           <button
@@ -1653,6 +1809,10 @@ const checkParticipation = async (eventId, user) => {
     </>
   );
 };
+
+   
+
+
 
 // Új komponens az esemény szerkesztéséhez
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
