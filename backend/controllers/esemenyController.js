@@ -674,43 +674,6 @@ const getEsemenyMinimal = async (req, res) => {
     }
 };
 
-// Add this function before the module.exports
-const checkParticipation = async (req, res) => {
-    try {
-        const { id: eseményId } = req.params;
-        const token = req.headers.authorization?.split(" ")[1];
-
-        if (!token) {
-            return res.status(401).json({ message: "Authentication token is required!" });
-        }
-
-        const decoded = jwt.verify(token, "secretkey");
-        const userId = decoded.userId;
-
-        // Check if the event exists
-        const esemény = await Esemény.findByPk(eseményId);
-        if (!esemény) {
-            return res.status(404).json({ message: "Event not found!" });
-        }
-
-        // Check if the user is a participant
-        const participant = await Résztvevő.findOne({
-            where: {
-                eseményId: eseményId,
-                userId: userId
-            }
-        });
-
-        res.json({
-            isParticipant: !!participant,
-            status: participant ? participant.státusz : '',
-            role: participant ? participant.szerep : ''
-        });
-    } catch (error) {
-        console.error("Error checking participation:", error);
-        res.status(500).json({ message: "Error checking participation status", error: error.message });
-    }
-};
 
 // Add this function as well
 const getEventParticipants = async (req, res) => {
@@ -1494,8 +1457,6 @@ const getEsemenyekBySportNevAndAge = async (req, res) => {
     }
 };
 
-// Add these functions to esemenyController.js
-
 // Get pending participants for an event (only for organizers)
 const getPendingParticipants = async (req, res) => {
     try {
@@ -1521,13 +1482,11 @@ const getPendingParticipants = async (req, res) => {
             return res.status(403).json({ message: "Only participants can view pending invitations!" });
         }
 
-        // Get all pending participants for this event (including both 'függőben' and 'meghívott' statuses)
+        // Get all pending participants for this event (only 'függőben' status)
         const pendingParticipants = await Résztvevő.findAll({
             where: {
                 eseményId: eseményId,
-                státusz: {
-                    [Op.in]: ['függőben', 'meghívott'] // Include both pending and invited statuses
-                }
+                státusz: 'függőben' // Only include 'függőben' status, not 'meghívott'
             },
             include: [
                 {
@@ -1572,6 +1531,7 @@ const getPendingParticipants = async (req, res) => {
         res.status(500).json({ message: "Error fetching pending participants", error: error.message });
     }
 };
+
 
 // Approve a participant's request
 const approveParticipant = async (req, res) => {
@@ -1828,11 +1788,11 @@ const getUserInvitations = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-        // Lekérjük a felhasználó meghívásait (függőben lévő résztvevői bejegyzések)
+        // Lekérjük a felhasználó meghívásait (meghívott státuszú résztvevői bejegyzések)
         const pendingInvitations = await Résztvevő.findAll({
             where: {
                 userId: userId,
-                státusz: 'függőben'
+                státusz: 'meghívott'  // Changed from 'függőben' to 'meghívott'
             },
             include: [
                 {
@@ -1882,7 +1842,7 @@ const getUserInvitations = async (req, res) => {
     }
 };
 
-// Meghívás elfogadása
+
 // Meghívás elfogadása
 const acceptInvitation = async (req, res) => {
     try {
@@ -1912,13 +1872,13 @@ const acceptInvitation = async (req, res) => {
             where: {
                 eseményId: eseményId,
                 userId: userId,
-                státusz: 'függőben'
+                státusz: 'meghívott' // Changed from 'függőben' to 'meghívott'
             }
         });
 
         // Ha nem találtuk meg, próbáljuk meg státusz nélkül
         if (!invitation) {
-            console.log("No pending invitation found, checking for any participation");
+            console.log("No invitation found, checking for any participation");
             invitation = await Résztvevő.findOne({
                 where: {
                     eseményId: eseményId,
@@ -1957,7 +1917,6 @@ const acceptInvitation = async (req, res) => {
             console.log("Any participants for this event:", anyParticipants.length);
 
             // Ha nincs meghívás, akkor hozzunk létre egy új résztvevőt függőben státusszal
-            // Ez lényegében ugyanaz, mint a joinEsemeny függvény, csak itt nem ellenőrizzük, hogy a felhasználó szervező-e
             const newParticipant = await Résztvevő.create({
                 eseményId,
                 userId,
@@ -1996,6 +1955,17 @@ const acceptInvitation = async (req, res) => {
             return res.status(400).json({ message: "Event is already full!" });
         }
 
+        // Ha a felhasználó meghívott státuszban van, akkor változtassuk függőben státuszra
+        if (invitation.státusz === 'meghívott') {
+            await invitation.update({ státusz: 'függőben' });
+            console.log("Invitation status changed from 'meghívott' to 'függőben'");
+
+            return res.status(200).json({
+                message: "Csatlakozási kérelem elküldve",
+                status: 'függőben'
+            });
+        }
+
         // Meghívás elfogadása - csak akkor állítjuk elfogadottra, ha a felhasználó a szervező
         // Egyébként függőben marad, amíg a szervező el nem fogadja
         const isOrganizer = await Résztvevő.findOne({
@@ -2028,6 +1998,7 @@ const acceptInvitation = async (req, res) => {
         res.status(500).json({ message: "Error accepting invitation", error: error.message });
     }
 };
+
 
 
 // Meghívás elutasítása
@@ -2091,9 +2062,6 @@ const rejectInvitation = async (req, res) => {
     }
 };
 
-
-// Új függvény a tömeges meghívásokhoz
-// Új függvény a tömeges meghívásokhoz - módosított verzió, hogy bárki meghívhasson
 // Tömeges meghívások küldése - javított verzió
 // Update the inviteUsersToEvent function to properly handle different statuses
 const inviteUsersToEvent = async (req, res) => {
@@ -2107,9 +2075,9 @@ const inviteUsersToEvent = async (req, res) => {
         const inviterId = decoded.userId;
 
         // Get event ID and invited user IDs from request body
-        const { eseményId, userIds } = req.body;
+        const { eseményId, userIds, status } = req.body;
 
-        console.log("Received invitation request:", { eseményId, userIds });
+        console.log("Received invitation request:", { eseményId, userIds, status });
 
         if (!eseményId || !userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return res.status(400).json({ message: "Event ID and at least one user ID are required!" });
@@ -2167,9 +2135,9 @@ const inviteUsersToEvent = async (req, res) => {
                             message: "User has already been invited to this event" 
                         });
                     } else if (existingParticipant.státusz === 'elutasítva') {
-                        // If the user previously rejected the invitation, update it to pending
+                        // If the user previously rejected the invitation, update it to meghívott
                         await existingParticipant.update({
-                            státusz: 'függőben',
+                            státusz: 'meghívott', // Changed from 'függőben' to 'meghívott'
                             csatlakozásDátuma: new Date()
                         });
 
@@ -2182,12 +2150,12 @@ const inviteUsersToEvent = async (req, res) => {
                     continue;
                 }
 
-                // Create a new participant with pending status
+                // Create a new participant with meghívott status
                 await Résztvevő.create({
                     eseményId: eseményId,
                     userId: invitedUserId,
                     szerep: 'játékos',
-                    státusz: 'függőben',
+                    státusz: 'meghívott', // Changed from 'függőben' to 'meghívott'
                     csatlakozásDátuma: new Date()
                 });
 
@@ -2211,6 +2179,8 @@ const inviteUsersToEvent = async (req, res) => {
         res.status(500).json({ message: "Error inviting users to event", error: error.message });
     }
 };
+
+
 
 // New function to get all invitations for an event (including pending and invited)
 const getAllEventInvitations = async (req, res) => {
@@ -2413,6 +2383,43 @@ const searchUsersForEvent = async (req, res) => {
     } catch (error) {
         console.error("Error searching users for event:", error);
         res.status(500).json({ message: "Error searching users for event", error: error.message });
+    }
+};
+
+const checkParticipation = async (req, res) => {
+    try {
+        const { id: eseményId } = req.params;
+        const token = req.headers.authorization?.split(" ")[1];
+
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+
+        // Check if the event exists
+        const esemény = await Esemény.findByPk(eseményId);
+        if (!esemény) {
+            return res.status(404).json({ message: "Event not found!" });
+        }
+
+        // Check if the user is a participant
+        const participant = await Résztvevő.findOne({
+            where: {
+                eseményId: eseményId,
+                userId: userId
+            }
+        });
+
+        res.json({
+            isParticipant: !!participant,
+            status: participant ? participant.státusz : '',
+            role: participant ? participant.szerep : ''
+        });
+    } catch (error) {
+        console.error("Error checking participation:", error);
+        res.status(500).json({ message: "Error checking participation status", error: error.message });
     }
 };
 

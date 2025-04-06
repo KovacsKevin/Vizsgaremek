@@ -36,7 +36,7 @@ const Résztvevő = sequelize.define("Résztvevő", {
         defaultValue: DataTypes.NOW
     },
     státusz: {
-        type: DataTypes.ENUM('elfogadva', 'elutasítva', 'függőben'),
+        type: DataTypes.ENUM('elfogadva', 'elutasítva', 'függőben', 'meghívott'),
         allowNull: false,
         defaultValue: 'függőben'  // Changed from 'elfogadva' to 'függőben'
     },

@@ -370,44 +370,45 @@ const SportMateFinder = () => {
     setIsSportOnly(false);
   };
 
-  // Módosított függvény a felhasználó csatlakozási állapotának és szerepének ellenőrzésére
-  const checkParticipationForEvents = async (events) => {
-    const token = getAuthToken();
-    if (!token || !events.length) return;
+// Módosított függvény a felhasználó csatlakozási állapotának és szerepének ellenőrzésére
+const checkParticipationForEvents = async (events) => {
+  const token = getAuthToken();
+  if (!token || !events.length) return;
 
-    const user = getCurrentUser();
-    if (!user) return;
+  const user = getCurrentUser();
+  if (!user) return;
 
-    // Minden eseményhez külön-külön ellenőrizzük a csatlakozási állapotot és szerepet
-    const joinedEventDetails = [];
+  // Minden eseményhez külön-külön ellenőrizzük a csatlakozási állapotot és szerepet
+  const joinedEventDetails = [];
 
-    await Promise.all(events.map(async (event) => {
-      try {
-        const response = await fetch(`http://localhost:8081/api/v1/events/${event.id}/check-participation`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.isParticipant) {
-            // Itt a szervertől kapott szerepet és státuszt használjuk
-            joinedEventDetails.push({
-              id: event.id,
-              role: data.role, // A szervertől kapott szerep
-              status: data.status // A szervertől kapott státusz (elfogadva, elutasítva, függőben)
-            });
-          }
+  await Promise.all(events.map(async (event) => {
+    try {
+      const response = await fetch(`http://localhost:8081/api/v1/events/${event.id}/check-participation`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`
         }
-      } catch (error) {
-        console.error(`Hiba az esemény (${event.id}) csatlakozási állapotának ellenőrzésekor:`, error);
-      }
-    }));
+      });
 
-    setJoinedEvents(joinedEventDetails);
-  };
+      if (response.ok) {
+        const data = await response.json();
+        if (data.isParticipant) {
+          // Itt a szervertől kapott szerepet és státuszt használjuk
+          joinedEventDetails.push({
+            id: event.id,
+            role: data.role, // A szervertől kapott szerep
+            status: data.status // A szervertől kapott státusz (elfogadva, elutasítva, függőben)
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Hiba az esemény (${event.id}) csatlakozási állapotának ellenőrzésekor:`, error);
+    }
+  }));
+
+  setJoinedEvents(joinedEventDetails);
+};
+
 
   // Fetch events from API - módosított verzió a rugalmas kereséshez
   useEffect(() => {
@@ -886,12 +887,12 @@ const SportMateFinder = () => {
                               <button
                                 onClick={() => openEventModal(event)}
                                 className={`px-4 py-1.5 ${getUserEventRole(event.id) === "szervező"
-                                    ? "bg-purple-600 hover:bg-purple-700"
-                                    : getUserEventStatus(event.id) === "elfogadva"
-                                      ? "bg-green-600 hover:bg-green-700"
-                                      : getUserEventStatus(event.id) === "függőben"
-                                        ? "bg-yellow-600 hover:bg-yellow-700"
-                                        : "bg-red-600 hover:bg-red-700"
+                                  ? "bg-purple-600 hover:bg-purple-700"
+                                  : getUserEventStatus(event.id) === "elfogadva"
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : getUserEventStatus(event.id) === "függőben"
+                                      ? "bg-yellow-600 hover:bg-yellow-700"
+                                      : "bg-red-600 hover:bg-red-700"
                                   } text-white rounded-md transition-colors`}
                               >
                                 {getUserEventRole(event.id) === "szervező"
@@ -900,7 +901,9 @@ const SportMateFinder = () => {
                                     ? "Csatlakozva résztvevőként"
                                     : getUserEventStatus(event.id) === "függőben"
                                       ? "Jóváhagyásra vár"
-                                      : "Elutasítva"}
+                                      : getUserEventStatus(event.id) === "meghívott"
+                                        ? "Meghívást kaptál"
+                                        : "Elutasítva"}
                               </button>
                             ) : (
                               <button

@@ -526,43 +526,45 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   }, [participants, currentEvent.id]);
 
-  // Check if the current user is already a participant
-  const checkParticipation = async (eventId, user) => {
-    if (!user || !eventId) return;
+// Check if the current user is already a participant
+const checkParticipation = async (eventId, user) => {
+  if (!user || !eventId) return;
 
-    try {
-      // Get authentication token from cookie
-      const token = getCookie('token');
+  try {
+    // Get authentication token from cookie
+    const token = getCookie('token');
 
-      if (!token) {
-        return; // User is not logged in
-      }
-
-      const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Participation check result:", data);
-        setIsParticipant(data.isParticipant || false);
-        setUserStatus(data.status || null);
-
-        // If the user is a participant, make sure they're in the participants list
-        if (data.isParticipant && currentUser && !participants.some(p => p.id === currentUser.userId)) {
-          // Refresh the participants list
-          fetchParticipants(eventId);
-        }
-      }
-    } catch (error) {
-      console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
-      // Even if there's an error, try to fetch participants to ensure UI is up to date
-      fetchParticipants(eventId);
+    if (!token) {
+      return; // User is not logged in
     }
-  };
+
+    const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Participation check result:", data);
+      setIsParticipant(data.isParticipant || false);
+      setUserStatus(data.status || null);
+
+      // If the user is a participant, make sure they're in the participants list
+      if (data.isParticipant && currentUser && !participants.some(p => p.id === currentUser.userId)) {
+        // Refresh the participants list
+        fetchParticipants(eventId);
+      }
+    }
+  } catch (error) {
+    console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
+    // Even if there's an error, try to fetch participants to ensure UI is up to date
+    fetchParticipants(eventId);
+  }
+};
+
+
 
   // Format date to Hungarian format
   const formatDate = (dateString) => {
@@ -619,19 +621,22 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setIsJoining(true);
     setJoinError('');
 
-    // Azonnal frissítsük a UI-t, hogy mutassa a "Kérelem elküldve" állapotot
-    setIsParticipant(true);
-    setUserStatus('függőben');
+    // Ha meghívásról van szó, ne változtassuk meg a státuszt előre
+    if (!isInvitation) {
+      // Csak akkor állítsuk be a függőben státuszt, ha nem meghívásról van szó
+      setIsParticipant(true);
+      setUserStatus('függőben');
 
-    // Azonnal értesítsük a szülő komponenst a státusz változásáról,
-    // de NE frissítsük a résztvevők számát
-    if (onParticipantUpdate && currentUser) {
-      onParticipantUpdate(currentEvent.id, true, {
-        userId: currentUser.userId,
-        role: 'játékos',
-        status: 'függőben',
-        updateParticipantCount: false // Új flag a résztvevők számának frissítéséhez
-      });
+      // Azonnal értesítsük a szülő komponenst a státusz változásáról,
+      // de NE frissítsük a résztvevők számát
+      if (onParticipantUpdate && currentUser) {
+        onParticipantUpdate(currentEvent.id, true, {
+          userId: currentUser.userId,
+          role: 'játékos',
+          status: 'függőben',
+          updateParticipantCount: false // Új flag a résztvevők számának frissítéséhez
+        });
+      }
     }
 
     try {
@@ -705,6 +710,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setIsJoining(false);
     }
   };
+
 
 
 
@@ -1177,7 +1183,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           className="flex-1 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
                         >
                           <CheckCircle className="h-4 w-4" />
-                          Csatlakozás
+                          Elfogadás
                         </button>
                         <button
                           onClick={() => {
@@ -1217,6 +1223,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           >
                             Elutasítva
                           </button>
+                        ) : userStatus === 'meghívott' ? (
+                          <button
+                            className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded-md cursor-not-allowed"
+                            disabled
+                          >
+                            Meghívást kaptál
+                          </button>
                         ) : (
                           <button
                             className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
@@ -1225,6 +1238,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                             Csatlakozva
                           </button>
                         )}
+
 
                         {/* Meghívás gomb minden elfogadott résztvevőnek (játékosoknak és szervezőknek is) */}
                         {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
@@ -2774,7 +2788,8 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         },
         body: JSON.stringify({
           eseményId: eventId,
-          userIds: userIds
+          userIds: userIds,
+          status: 'meghívott' // Explicitly set the status to 'meghívott'
         }),
       });
 

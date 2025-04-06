@@ -88,7 +88,7 @@ router.get('/archived-events', authenticateToken, esemenyController.getArchivedE
 router.post("/invite-user", authenticateToken, esemenyController.inviteUserToEvent);
 
 // Meghívások lekérése egy felhasználó számára
-router.get("/invitations", authenticateToken, esemenyController.getUserInvitations);
+//router.get("/invitations", authenticateToken, esemenyController.getUserInvitations);
 
 // Meghívás elfogadása
 router.post("/accept-invitation", authenticateToken, esemenyController.acceptInvitation);
