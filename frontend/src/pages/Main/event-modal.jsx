@@ -496,13 +496,29 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   }
 
   // Handler for opening the location modal
+  // In the EventModal component, modify the handleCreateLocation function:
+
   const handleCreateLocation = (e) => {
-    e.preventDefault()
-    // Close the event modal temporarily
-    onClose()
-    // Open the location modal
-    openHelyszinModal()
-  }
+    e.preventDefault();
+    // Open the location modal without closing the event modal
+    openHelyszinModal({
+      onLocationCreated: (newLocation) => {
+        // Fetch locations again to update the dropdown
+        fetchLocations();
+        // Set the newly created location as the selected one
+        setFormData(prev => ({
+          ...prev,
+          helyszinId: newLocation.Id.toString()
+        }));
+        // Clear any error for helyszinId field
+        setFieldErrors(prev => ({
+          ...prev,
+          helyszinId: ""
+        }));
+      }
+    });
+  };
+
 
   // Handler for opening the sport modal
   const handleCreateSport = (e) => {
@@ -908,8 +924,8 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
           <button
             type="submit"
             className={`text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg ${submitting
-                ? "bg-purple-700/50 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
+              ? "bg-purple-700/50 cursor-not-allowed"
+              : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
               }`}
             disabled={submitting}
             style={{

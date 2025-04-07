@@ -186,7 +186,7 @@ const getMyOwnHelyszin = async (req, res) => {
         });
 
         if (helyszin.length === 0) {
-            return res.status(404).json({ message: "No locations found for this user!" });
+            return res.status(404).json({ message: "Előszőr hozzon létre egy helyszínt a +-gomb segítségével!" });
         }
 
         res.json({ locations: helyszin });

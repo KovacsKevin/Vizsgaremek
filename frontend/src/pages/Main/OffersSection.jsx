@@ -8,7 +8,10 @@ import { Calendar, ArrowRight } from "lucide-react"
 
 export function OffersSection() {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
-  const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
+  const [helyszinModalConfig, setHelyszinModalConfig] = useState({
+    isOpen: false,
+    onLocationCreated: null
+  });
   const [modalContent, setModalContent] = useState({ title: "", description: "" })
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [locations, setLocations] = useState([])
@@ -84,13 +87,23 @@ export function OffersSection() {
     setIsEventModalOpen(true)
   }
 
-  const openHelyszinModal = () => {
+  const openHelyszinModal = (config = {}) => {
     setModalContent({
       title: "Helyszín létrehozása",
       description: "Add meg a helyszín adatait",
-    })
-    setIsHelyszinModalOpen(true)
-  }
+    });
+    setHelyszinModalConfig({
+      isOpen: true,
+      onLocationCreated: config.onLocationCreated || null
+    });
+  };
+
+  const closeHelyszinModal = () => {
+    setHelyszinModalConfig({
+      isOpen: false,
+      onLocationCreated: null
+    });
+  };
 
   const handleEventCreation = () => {
     // JWT token ellenőrzése
@@ -227,16 +240,17 @@ export function OffersSection() {
         modalContent={modalContent}
         locations={locations}
         openHelyszinModal={openHelyszinModal}
-        openSportModal={() => {}} // Placeholder for sport modal
+        openSportModal={() => { }} // Placeholder for sport modal
       />
 
       {/* Location Modal for creating locations */}
       <HelyszinModal
-        isOpen={isHelyszinModalOpen}
-        onClose={() => setIsHelyszinModalOpen(false)}
+        isOpen={helyszinModalConfig.isOpen}
+        onClose={closeHelyszinModal}
         modalContent={modalContent}
-        onSuccess={handleLocationSuccess}
+        onSuccess={helyszinModalConfig.onLocationCreated || handleLocationSuccess}
       />
+
     </section>
   )
 }

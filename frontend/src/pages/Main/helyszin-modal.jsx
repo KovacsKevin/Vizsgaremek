@@ -134,7 +134,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
       }
 
       // Success handling
-      setSuccess("Helyszín sikeresen létrehozva!")
+      setSuccess("Helyszín sikeresen létrehozva!");
 
       // Reset form
       setFormData({
@@ -147,17 +147,17 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         Parkolas: "",
         Leiras: "",
         Berles: false,
-      })
+      });
 
       // If an onSuccess callback was provided, call it with the new location data
       if (onSuccess && typeof onSuccess === "function") {
-        onSuccess(data.helyszin)
+        onSuccess(data.helyszin);
       }
 
       // Close the modal after 2 seconds
       setTimeout(() => {
-        onClose()
-      }, 2000)
+        onClose();
+      }, 2000);
     } catch (error) {
       console.error("Error creating location:", error)
       setError("Hiba történt a szerver kommunikáció során: " + error.message)
@@ -330,16 +330,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 <div className="flex items-center space-x-4">
                   <div
                     onClick={() => handleBooleanSelect("Fedett", false)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      formData.Fedett === false
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Fedett === false
                         ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
                         : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                        formData.Fedett === false ? "bg-red-500" : "bg-slate-700"
-                      }`}
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Fedett === false ? "bg-red-500" : "bg-slate-700"
+                        }`}
                     >
                       {formData.Fedett === false && (
                         <svg
@@ -362,16 +360,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   </div>
                   <div
                     onClick={() => handleBooleanSelect("Fedett", true)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      formData.Fedett === true
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Fedett === true
                         ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
                         : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                        formData.Fedett === true ? "bg-white" : "bg-slate-700"
-                      }`}
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Fedett === true ? "bg-white" : "bg-slate-700"
+                        }`}
                     >
                       {formData.Fedett === true && (
                         <svg
@@ -396,16 +392,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 <div className="flex items-center space-x-4">
                   <div
                     onClick={() => handleBooleanSelect("Oltozo", false)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      formData.Oltozo === false
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Oltozo === false
                         ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
                         : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                        formData.Oltozo === false ? "bg-red-500" : "bg-slate-700"
-                      }`}
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Oltozo === false ? "bg-red-500" : "bg-slate-700"
+                        }`}
                     >
                       {formData.Oltozo === false && (
                         <svg
@@ -428,16 +422,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   </div>
                   <div
                     onClick={() => handleBooleanSelect("Oltozo", true)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      formData.Oltozo === true
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Oltozo === true
                         ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
                         : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                        formData.Oltozo === true ? "bg-white" : "bg-slate-700"
-                      }`}
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Oltozo === true ? "bg-white" : "bg-slate-700"
+                        }`}
                     >
                       {formData.Oltozo === true && (
                         <svg
@@ -492,16 +484,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 <div className="flex items-center space-x-4">
                   <div
                     onClick={() => handleBooleanSelect("Berles", false)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      formData.Berles === false
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Berles === false
                         ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
                         : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                        formData.Berles === false ? "bg-red-500" : "bg-slate-700"
-                      }`}
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Berles === false ? "bg-red-500" : "bg-slate-700"
+                        }`}
                     >
                       {formData.Berles === false && (
                         <svg
@@ -524,16 +514,14 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   </div>
                   <div
                     onClick={() => handleBooleanSelect("Berles", true)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                      formData.Berles === true
+                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Berles === true
                         ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
                         : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${
-                        formData.Berles === true ? "bg-white" : "bg-slate-700"
-                      }`}
+                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Berles === true ? "bg-white" : "bg-slate-700"
+                        }`}
                     >
                       {formData.Berles === true && (
                         <svg
@@ -557,11 +545,10 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full font-medium py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300 ${
-                    isSubmitting
+                  className={`w-full font-medium py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300 ${isSubmitting
                       ? "bg-purple-700/50 text-white/70 cursor-not-allowed"
                       : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-700/20 hover:shadow-purple-700/40"
-                  }`}
+                    }`}
                   style={{
                     animation: isSubmitting ? "none" : "pulse-glow 2s infinite",
                   }}

@@ -82,7 +82,7 @@ const PopularDestinations = ({ Image, Link }) => {
               Legfrisebb sportesemények
             </h2>
             <p className="text-gray-400 max-w-2xl">
-              Fedezd fel a környékeden zajló legfrissebb sporteseményeket és csatlakozz a közösséghez
+              Fedezd fel legfrissebb sporteseményeinket és csatlakozz a közösséghez
             </p>
           </div>
         </div>
