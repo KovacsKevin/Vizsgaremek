@@ -34,8 +34,12 @@ const Helyszin = sequelize.define("Helyszin", {
         allowNull: false,
         validate: {
             isInt: true,
-            min: 1000,  // Assuming 4-digit postal codes
-            max: 9999
+            min: 1000,  // Ensures 4-digit postal codes
+            max: 9999,  // Ensures 4-digit postal codes
+            len: {
+                args: [4, 4],
+                msg: "Az irányítószám pontosan 4 számjegyből kell álljon"
+            }
         }
     },
     Fedett: {

@@ -12,7 +12,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     Oltozo: false, // Default to false (No)
     Parkolas: "",
     Leiras: "",
-    Berles: false, // Default to false (No)
+    // Removed Berles field
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -52,9 +52,9 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     if (!formData.Iranyitoszam.trim()) errors.Iranyitoszam = "Irányítószám kötelező"
     if (!formData.Parkolas) errors.Parkolas = "Parkolási lehetőség kötelező"
 
-    // Validate irányítószám is numeric
-    if (formData.Iranyitoszam && !/^\d+$/.test(formData.Iranyitoszam)) {
-      errors.Iranyitoszam = "Az irányítószám csak számokat tartalmazhat"
+    // Validate irányítószám is numeric and exactly 4 digits
+    if (formData.Iranyitoszam && !/^\d{4}$/.test(formData.Iranyitoszam)) {
+      errors.Iranyitoszam = "Az irányítószám pontosan 4 számjegyből kell álljon"
     }
 
     setFormErrors(errors)
@@ -89,10 +89,11 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         ...formData,
         Fedett: Boolean(formData.Fedett),
         Oltozo: Boolean(formData.Oltozo),
-        Berles: Boolean(formData.Berles),
         Iranyitoszam: formData.Iranyitoszam.toString(),
         // Ensure Leiras is at least an empty string
         Leiras: formData.Leiras || "",
+        // Set default value for Berles since we removed it from the form
+        Berles: false
       }
 
       console.log("Sending request to:", "http://localhost:8081/api/v1/createHelyszin")
@@ -146,7 +147,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         Oltozo: false,
         Parkolas: "",
         Leiras: "",
-        Berles: false,
+        // Removed Berles
       });
 
       // If an onSuccess callback was provided, call it with the new location data
@@ -170,8 +171,9 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 transition-all duration-300">
+      
       <div
-        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50"
+        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50 scrollbar-hide"
         style={{
           animation: "modal-appear 0.3s ease-out forwards",
           transform: "scale(0.95)",
@@ -179,28 +181,40 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         }}
       >
         <style jsx>{`
-          @keyframes modal-appear {
-            0% {
-              transform: scale(0.95);
-              opacity: 0;
-            }
-            100% {
-              transform: scale(1);
-              opacity: 1;
-            }
-          }
-          @keyframes pulse-glow {
-            0% {
-              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-            }
-            50% {
-              box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
-            }
-            100% {
-              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-            }
-          }
-        `}</style>
+    @keyframes modal-appear {
+      0% {
+        transform: scale(0.95);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    @keyframes pulse-glow {
+      0% {
+        box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+      }
+      100% {
+        box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+      }
+    }
+    
+    /* Hide scrollbar but keep functionality */
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* For IE, Edge and Firefox */
+    .scrollbar-hide {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+  `}</style>
+
 
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -281,21 +295,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Nev && <p className="text-red-400 text-xs mt-1">{formErrors.Nev}</p>}
               </div>
 
-              {/* Cím */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Cím*</label>
-                <input
-                  type="text"
-                  name="Cim"
-                  value={formData.Cim}
-                  onChange={handleChange}
-                  className={`w-full bg-slate-800/80 border ${formErrors.Cim ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
-                  placeholder="Pl. Árpád út 10."
-                />
-                {formErrors.Cim && <p className="text-red-400 text-xs mt-1">{formErrors.Cim}</p>}
-              </div>
-
-              {/* Település */}
+              {/* Település - Moved up before Cím */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Település*</label>
                 <input
@@ -309,6 +309,20 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Telepules && <p className="text-red-400 text-xs mt-1">{formErrors.Telepules}</p>}
               </div>
 
+              {/* Cím - Moved down after Település */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Cím*</label>
+                <input
+                  type="text"
+                  name="Cim"
+                  value={formData.Cim}
+                  onChange={handleChange}
+                  className={`w-full bg-slate-800/80 border ${formErrors.Cim ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
+                  placeholder="Pl. Árpád út 10."
+                />
+                {formErrors.Cim && <p className="text-red-400 text-xs mt-1">{formErrors.Cim}</p>}
+              </div>
+
               {/* Irányítószám */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Irányítószám*</label>
@@ -320,6 +334,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                   className={`w-full bg-slate-800/80 border ${formErrors.Iranyitoszam ? "border-red-500" : "border-slate-600/50"} rounded-xl py-3 px-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all duration-300 hover:border-purple-500/30`}
                   placeholder="Pl. 1051"
                   inputMode="numeric"
+                  maxLength="4"
                 />
                 {formErrors.Iranyitoszam && <p className="text-red-400 text-xs mt-1">{formErrors.Iranyitoszam}</p>}
               </div>
@@ -478,67 +493,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 ></textarea>
               </div>
 
-              {/* Bérlés - X és pipa egymás mellett */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Bérlési lehetőség</label>
-                <div className="flex items-center space-x-4">
-                  <div
-                    onClick={() => handleBooleanSelect("Berles", false)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Berles === false
-                        ? "bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-lg"
-                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                      }`}
-                  >
-                    <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Berles === false ? "bg-red-500" : "bg-slate-700"
-                        }`}
-                    >
-                      {formData.Berles === false && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="3"
-                            d="M6 18L18 6M6 6l12 12"
-                          ></path>
-                        </svg>
-                      )}
-                    </span>
-                    Nem
-                  </div>
-                  <div
-                    onClick={() => handleBooleanSelect("Berles", true)}
-                    className={`cursor-pointer px-4 py-2 rounded-lg flex items-center justify-center transition-all duration-300 ${formData.Berles === true
-                        ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg"
-                        : "bg-slate-800/50 text-gray-400 border border-slate-700"
-                      }`}
-                  >
-                    <span
-                      className={`w-4 h-4 rounded-full mr-2 flex items-center justify-center ${formData.Berles === true ? "bg-white" : "bg-slate-700"
-                        }`}
-                    >
-                      {formData.Berles === true && (
-                        <svg
-                          className="w-3 h-3 text-green-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                      )}
-                    </span>
-                    Igen
-                  </div>
-                </div>
-              </div>
+              {/* Bérlési lehetőség section removed */}
 
               {/* Submit gomb */}
               <div className="pt-4">
