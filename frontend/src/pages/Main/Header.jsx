@@ -397,6 +397,7 @@ const Header = ({ activeTab, setActiveTab }) => {
   }
 
   // Handle file upload for profile picture
+  // Handle file upload for profile picture
   const handleProfilePicUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -410,9 +411,14 @@ const Header = ({ activeTab, setActiveTab }) => {
         setProfilePicture(compressedImage);
 
         // Mentés adatbázisba
-        saveUserSettings({
+        const success = await saveUserSettings({
           profilePicture: compressedImage,
         });
+
+        if (success) {
+          // Oldal frissítése a változtatások megjelenítéséhez
+          window.location.reload();
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -439,6 +445,7 @@ const Header = ({ activeTab, setActiveTab }) => {
   }
 
   // Reset profile picture to default
+  // Reset profile picture to default
   const resetProfilePicture = async (e) => {
     if (e) {
       e.preventDefault();
@@ -463,6 +470,9 @@ const Header = ({ activeTab, setActiveTab }) => {
 
       if (response.ok) {
         console.log("Profilkép sikeresen visszaállítva az alapértelmezettre");
+
+        // Oldal frissítése a változtatások megjelenítéséhez
+        window.location.reload();
       } else {
         console.error("Hiba a profilkép visszaállításakor");
       }
