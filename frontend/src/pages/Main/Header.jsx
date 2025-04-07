@@ -16,7 +16,11 @@ import {
   Upload,
   Menu,
   X,
-  RefreshCw
+  RefreshCw,
+  Volleyball,
+  Zap,
+  Phone,
+  House  
 } from "lucide-react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import Cookies from "js-cookie"
@@ -105,10 +109,10 @@ const Header = ({ activeTab, setActiveTab }) => {
 
   // Navigációs elemek módosítása
   const navigationItems = [
-    { id: "home", icon: Hotel, label: "Főoldal", path: "/homepage" },
-    { id: "create", icon: Plane, label: "Esemény létrehozása", path: "/homepage#create-event" },
-    { id: "latest", icon: Car, label: "Legfrissebb sportesemények", path: "/homepage#latest-events" },
-    { id: "contact", icon: Map, label: "Elérhetőségek", path: "/homepage#contact-section" }, // Updated to target the footer
+    { id: "home", icon: House, label: "Főoldal", path: "/homepage" },
+    { id: "create", icon: Volleyball, label: "Esemény létrehozása", path: "/homepage#create-event" },
+    { id: "latest", icon: Zap, label: "Legfrissebb sportesemények", path: "/homepage#latest-events" },
+    { id: "contact", icon: Phone, label: "Elérhetőségek", path: "/homepage#contact-section" }, // Updated to target the footer
     { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
   ];
 
@@ -687,16 +691,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
                 {/* Notification Bell */}
-                <div className="relative hidden md:block">
-                  <button className="relative p-2 rounded-full bg-slate-700/50 hover:bg-slate-600/50 transition-all duration-300 text-slate-300 hover:text-white">
-                    <Bell className="h-5 w-5" />
-                    {notificationCount > 0 && (
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-full transform -translate-y-1/3 translate-x-1/3">
-                        {notificationCount}
-                      </span>
-                    )}
-                  </button>
-                </div>
+               
 
                 {/* User Profile */}
                 <div className="relative">
