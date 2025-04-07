@@ -7,8 +7,6 @@ import {
 } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
-
-// Új komponens: Felhasználói profil modal
 const UserProfileModal = ({ userId, onClose }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +45,6 @@ const UserProfileModal = ({ userId, onClose }) => {
     }
   }, [userId]);
 
-  // Felhasználói inicálék megjelenítése
   const getUserInitials = () => {
     if (!user || !user.username) return "";
     return user.username
@@ -102,7 +99,6 @@ const UserProfileModal = ({ userId, onClose }) => {
 
         <div className="flex flex-col items-center text-center">
           <Image
-            //src={user.profilePicture || "/placeholder.svg"}
             alt={user.username}
             className="w-24 h-24 rounded-full object-cover mb-4"
           />
@@ -114,7 +110,6 @@ const UserProfileModal = ({ userId, onClose }) => {
           </p>
 
           <div className="w-full space-y-4 mt-2">
-            {/* Bemutatkozás */}
             {user.bio && (
               <div className="bg-white/5 p-4 rounded-lg">
                 <h4 className="font-medium mb-2 flex items-center gap-2">
@@ -126,7 +121,6 @@ const UserProfileModal = ({ userId, onClose }) => {
               </div>
             )}
 
-            {/* Elérhetőségek */}
             <div className="bg-white/5 p-4 rounded-lg">
               <h4 className="font-medium mb-2">Elérhetőségek</h4>
               {user.email && (
@@ -149,20 +143,16 @@ const UserProfileModal = ({ userId, onClose }) => {
   );
 };
 
-// Javított Image komponens hibakezeléssel
 const Image = ({ src, alt, className }) => {
   const [error, setError] = useState(false);
 
   const formatImageUrl = (url) => {
     if (!url || error) return "https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=";
 
-    // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
     if (url.startsWith('http://localhost:8081')) return url;
 
-    // Ha Base64 kódolt kép, akkor közvetlenül visszaadjuk
     if (url.startsWith('data:image/')) return url;
 
-    // Egyébként hozzáadjuk a szerver URL-t
     return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
   };
 
@@ -179,7 +169,6 @@ const Image = ({ src, alt, className }) => {
   );
 };
 
-// Helper function to get cookie by name
 const getCookie = (name) => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -187,14 +176,11 @@ const getCookie = (name) => {
   return null;
 };
 
-// Helper to get current user from token
 const getCurrentUser = () => {
   try {
     const token = getCookie('token');
     if (!token) return null;
 
-    // Parse the JWT token to get user information
-    // Note: In production, you should use a proper JWT library
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
@@ -208,15 +194,11 @@ const getCurrentUser = () => {
   }
 };
 
-// Location Map Modal Component
-// Location Map Modal Component
-// Location Map Modal Component
 const LocationMapModal = ({ location, onClose }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Create a direct Google Maps embed URL that doesn't require an API key
   const getMapUrl = () => {
     const encodedLocation = encodeURIComponent(location);
     return `https://maps.google.com/maps?q=${encodedLocation}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
@@ -243,7 +225,6 @@ const LocationMapModal = ({ location, onClose }) => {
           : "w-full max-w-4xl h-[80vh]"
           }`}
       >
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
@@ -252,7 +233,6 @@ const LocationMapModal = ({ location, onClose }) => {
           <X className="h-5 w-5" />
         </button>
 
-        {/* Fullscreen toggle button */}
         <button
           onClick={toggleFullscreen}
           className="absolute top-4 right-16 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
@@ -285,7 +265,6 @@ const LocationMapModal = ({ location, onClose }) => {
             </div>
           )}
 
-          {/* Google Maps iframe - using a direct embed URL that doesn't require API key */}
           <iframe
             title="Location Map"
             width="100%"
@@ -298,7 +277,6 @@ const LocationMapModal = ({ location, onClose }) => {
             onError={handleIframeError}
           ></iframe>
 
-          {/* Fallback ha az iframe nem töltődik be */}
           {loadError && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/90 p-6 text-center">
               <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
@@ -317,7 +295,6 @@ const LocationMapModal = ({ location, onClose }) => {
           )}
         </div>
 
-        {/* Információs szöveg a térkép alatt */}
         <div className="mt-3 text-center text-white/50 text-sm">
           <p>A térkép nagyításához és mozgatásához használd az egeret vagy az érintőképernyőt.</p>
           <p>A teljes képernyős nézethez kattints a <span className="text-white">□</span> ikonra.</p>
@@ -335,70 +312,54 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   const [isParticipant, setIsParticipant] = useState(false)
   const [participants, setParticipants] = useState(event.resztvevok_lista || [])
   const [currentUser, setCurrentUser] = useState(null)
-  // Új állapot a kilépés folyamatának követésére
   const [isLeaving, setIsLeaving] = useState(false)
   const [leaveError, setLeaveError] = useState('')
-  // Új állapot a résztvevő eltávolításának követésére
   const [isRemovingParticipant, setIsRemovingParticipant] = useState(false)
   const [removeParticipantError, setRemoveParticipantError] = useState('')
-  // Új állapot a szerkesztő modal kezeléséhez
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  // Aktuális esemény adatok tárolása
   const [currentEvent, setCurrentEvent] = useState(event)
-  // Törlés megerősítés modal állapota
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
-  // Új állapotok a függőben lévő résztvevők kezeléséhez
   const [pendingParticipants, setPendingParticipants] = useState([])
   const [userStatus, setUserStatus] = useState(null) // 'elfogadva', 'elutasítva', 'függőben', 'meghívott'
   const [isApproving, setIsApproving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
   const [approveRejectError, setApproveRejectError] = useState('')
-  // Új állapot a felhasználói profil megtekintéséhez
   const [showUserProfile, setShowUserProfile] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState(null)
-  // Új állapot a térkép modal kezeléséhez
   const [showMapModal, setShowMapModal] = useState(false);
-  // Új állapot a meghívás modal kezeléséhez
   const [showInviteModal, setShowInviteModal] = useState(false);
-  // Új állapotok a kérelem visszavonásához
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState('');
 
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  // Meghívás modal megnyitása
   const openInviteModal = () => {
     setIsInviteModalOpen(true);
   };
-  // Meghívás modal bezárása
+
   const closeInviteModal = () => {
     setIsInviteModalOpen(false);
-    // Frissítsük a résztvevők listáját a modal bezárása után
     fetchParticipants(currentEvent.id);
   };
-  // Térkép modal megnyitása
+
   const handleOpenMapModal = () => {
     setShowMapModal(true);
   };
 
-  // Térkép modal bezárása
   const handleCloseMapModal = () => {
     setShowMapModal(false);
   };
 
-  // Meghívás modal megnyitása
   const handleOpenInviteModal = () => {
     setShowInviteModal(true);
   };
 
-  // Meghívás modal bezárása
   const handleCloseInviteModal = () => {
     setShowInviteModal(false);
   };
 
-  // Function to fetch the latest participants
   const fetchParticipants = async (eventId) => {
     if (!eventId) return;
 
@@ -411,12 +372,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         console.log("Participants data:", data);
         const newParticipants = data.participants || [];
 
-        // Only update if the count has actually changed
         if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
           setParticipants(newParticipants);
 
-          // Only update the parent component if the callback exists
-          // and only when the participant count actually changes
           if (onParticipantUpdate) {
             onParticipantUpdate(eventId, true, {
               userId: 'count-update',
@@ -432,20 +390,16 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Felhasználói profil megnyitása
   const handleOpenUserProfile = (userId) => {
     setSelectedUserId(userId);
     setShowUserProfile(true);
   };
 
-  // Felhasználói profil bezárása
   const handleCloseUserProfile = () => {
     setShowUserProfile(false);
     setSelectedUserId(null);
   };
 
-
-  // Függőben lévő résztvevők lekérése
   const fetchPendingParticipants = async (eventId) => {
     if (!eventId) return;
 
@@ -468,7 +422,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Add this to useEffect to fetch participants when the modal opens
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
@@ -483,7 +436,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   }, [currentEvent.id]);
 
-  // Amikor a résztvevők listája frissül, ellenőrizzük, hogy a felhasználó szervező-e
   useEffect(() => {
     const user = getCurrentUser();
     if (user && currentEvent.id && participants.some(p => p.id === user.userId && p.role === 'szervező')) {
@@ -491,16 +443,14 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   }, [participants, currentEvent.id]);
 
-  // Check if the current user is already a participant
   const checkParticipation = async (eventId, user) => {
     if (!user || !eventId) return;
 
     try {
-      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
-        return; // User is not logged in
+        return; 
       }
 
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
@@ -516,20 +466,16 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         setIsParticipant(data.isParticipant || false);
         setUserStatus(data.status || null);
 
-        // If the user is a participant, make sure they're in the participants list
         if (data.isParticipant && currentUser && !participants.some(p => p.id === currentUser.userId)) {
-          // Refresh the participants list
           fetchParticipants(eventId);
         }
       }
     } catch (error) {
       console.error("Hiba a résztvevői státusz ellenőrzésekor:", error);
-      // Even if there's an error, try to fetch participants to ensure UI is up to date
       fetchParticipants(eventId);
     }
   };
 
-  // Format date to Hungarian format
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("hu-HU", {
@@ -540,7 +486,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     })
   }
 
-  // Format time from date
   const formatTime = (dateString) => {
     try {
       const date = new Date(dateString)
@@ -553,7 +498,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   }
 
-  // Format full date and time (matching the format in MyEvents.jsx)
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("hu-HU", {
@@ -567,43 +511,35 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     });
   };
 
-  // Handle join event functionality
   const handleJoinEvent = async () => {
     if (!currentEvent.id) {
       setJoinError("Esemény azonosító hiányzik");
       return;
     }
 
-    // Check if event is at capacity before making the API call
     if (participants.length >= currentEvent.maximumLetszam) {
       setJoinError("Az esemény betelt, nem lehet több résztvevő");
       return;
     }
 
-    // Azonnal állítsuk be a függőben állapotot, még a kérés elküldése előtt
     setIsJoining(true);
     setJoinError('');
 
-    // Ha meghívásról van szó, ne változtassuk meg a státuszt előre
     if (!isInvitation) {
-      // Csak akkor állítsuk be a függőben státuszt, ha nem meghívásról van szó
       setIsParticipant(true);
       setUserStatus('függőben');
 
-      // Azonnal értesítsük a szülő komponenst a státusz változásáról,
-      // de NE frissítsük a résztvevők számát
       if (onParticipantUpdate && currentUser) {
         onParticipantUpdate(currentEvent.id, true, {
           userId: currentUser.userId,
           role: 'játékos',
           status: 'függőben',
-          updateParticipantCount: false // Új flag a résztvevők számának frissítéséhez
+          updateParticipantCount: false
         });
       }
     }
 
     try {
-      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -612,7 +548,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       console.log("Sending join request for event:", currentEvent.id);
 
-      // Ha meghívás elfogadásáról van szó, akkor használjuk az accept-invitation végpontot
       const endpoint = isInvitation ? "accept-invitation" : "join";
 
       const response = await fetch(`http://localhost:8081/api/v1/${endpoint}`, {
@@ -626,7 +561,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }),
       });
 
-      // Try to parse the response JSON
       let responseData = {};
       try {
         responseData = await response.json();
@@ -635,53 +569,44 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       }
 
       if (!response.ok) {
-        // If the error is that the user is already a participant, treat it as success
         if (responseData.message && responseData.message.includes("already a participant")) {
           console.log("User is already a participant, updating UI accordingly");
-          // Refresh participants list
           fetchParticipants(currentEvent.id);
           return;
         }
 
-        // Ne állítsuk vissza az állapotot és ne jelenítsünk meg hibaüzenetet
         console.error("Server error during join:", responseData.message);
         return;
       }
 
       console.log("Join successful:", responseData);
 
-      // A szerver válasza után frissítsük a résztvevők listáját
       fetchParticipants(currentEvent.id);
 
-      // Ha meghívás elfogadásáról volt szó, értesítsük a szülő komponenst
       if (isInvitation && typeof onAcceptInvitation === 'function') {
         onAcceptInvitation();
       }
 
     } catch (error) {
       console.error("Hiba a csatlakozás során:", error);
-      // Ne jelenítsük meg a hibaüzenetet a felhasználónak
 
-      // Even if there's an error, check if the user might have joined successfully
       if (currentEvent.id && currentUser) {
         setTimeout(() => {
           checkParticipation(currentEvent.id, currentUser);
           fetchParticipants(currentEvent.id);
-        }, 1000); // Add a small delay to allow the server to process the join
+        }, 1000); 
       }
     } finally {
       setIsJoining(false);
     }
   };
 
-  // Kérelem visszavonása függvény
   const handleCancelRequest = async () => {
     if (isCancelling) return;
     
     setIsCancelling(true);
     setCancelError(null);
     
-    // Log to verify the event ID is being retrieved properly
     const pendingEventId = sessionStorage.getItem('pendingEventId');
     console.log("Attempting to cancel event with ID:", pendingEventId);
     
@@ -714,9 +639,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         throw new Error(errorData.message || 'Hiba történt a kérelem visszavonása közben');
       }
   
-      // If request is successful, refresh the page
       console.log("Request successful, refreshing the page...");
-      window.location.reload(); // This will reload the page
+      window.location.reload(); 
   
     } catch (error) {
       console.error('Hiba a kérelem visszavonásakor:', error);
@@ -726,7 +650,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Handle invitation acceptance
   const handleAcceptInvitation = async () => {
     if (!currentEvent.id) {
       setJoinError("Esemény azonosító hiányzik");
@@ -737,7 +660,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setJoinError('');
 
     try {
-      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -757,7 +679,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }),
       });
 
-      // Try to parse the response JSON
       let responseData = {};
       try {
         responseData = await response.json();
@@ -771,14 +692,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       console.log("Invitation acceptance successful:", responseData);
 
-      // Update UI state
       setIsParticipant(true);
       setUserStatus('elfogadva');
 
-      // A szerver válasza után frissítsük a résztvevők listáját
       fetchParticipants(currentEvent.id);
 
-      // Értesítsük a szülő komponenst
       if (onParticipantUpdate && currentUser) {
         onParticipantUpdate(currentEvent.id, true, {
           userId: currentUser.userId,
@@ -788,7 +706,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         });
       }
 
-      // Ha meghívás elfogadásáról volt szó, értesítsük a szülő komponenst
       if (typeof onAcceptInvitation === 'function') {
         onAcceptInvitation();
       }
@@ -801,7 +718,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Handle invitation rejection
   const handleRejectInvitation = async () => {
     if (!currentEvent.id) {
       setJoinError("Esemény azonosító hiányzik");
@@ -812,7 +728,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setJoinError('');
 
     try {
-      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -832,7 +747,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }),
       });
 
-      // Try to parse the response JSON
       let responseData = {};
       try {
         responseData = await response.json();
@@ -846,11 +760,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       console.log("Invitation rejection successful:", responseData);
 
-      // Update UI state
       setIsParticipant(false);
       setUserStatus('elutasítva');
 
-      // Értesítsük a szülő komponenst
       if (onParticipantUpdate && currentUser) {
         onParticipantUpdate(currentEvent.id, false, {
           userId: currentUser.userId,
@@ -858,7 +770,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         });
       }
 
-      // Ha meghívás elutasításáról volt szó, értesítsük a szülő komponenst
       if (typeof onRejectInvitation === 'function') {
         onRejectInvitation();
       }
@@ -871,7 +782,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Kilépés kezelése
   const handleLeaveEvent = async () => {
     if (!currentEvent.id) {
       setLeaveError("Esemény azonosító hiányzik");
@@ -882,7 +792,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setLeaveError('');
 
     try {
-      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -901,7 +810,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }),
       });
 
-      // Try to parse the response JSON
       let responseData = {};
       try {
         responseData = await response.json();
@@ -915,16 +823,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       console.log("Leave successful:", responseData);
 
-      // Update participation status
       setIsParticipant(false);
       setUserStatus(null);
 
-      // Remove the user from the participants list
       if (currentUser) {
         const updatedParticipants = participants.filter(p => p.id !== currentUser.userId);
         setParticipants(updatedParticipants);
 
-        // Call parent update function if provided
         if (onParticipantUpdate) {
           onParticipantUpdate(currentEvent.id, false, { userId: currentUser.userId });
         }
@@ -938,7 +843,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Új függvény a résztvevő eltávolításához (szervező által)
   const handleRemoveParticipant = async (participantId) => {
     if (!currentEvent.id || !participantId) {
       setRemoveParticipantError("Hiányzó adatok");
@@ -949,7 +853,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setRemoveParticipantError('');
 
     try {
-      // Get authentication token from cookie
       const token = getCookie('token');
 
       if (!token) {
@@ -969,7 +872,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }),
       });
 
-      // Try to parse the response JSON
       let responseData = {};
       try {
         responseData = await response.json();
@@ -983,11 +885,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       console.log("Participant removal successful:", responseData);
 
-      // Frissítjük a résztvevők listáját
       const updatedParticipants = participants.filter(p => p.id !== participantId);
       setParticipants(updatedParticipants);
 
-      // Call parent update function if provided
       if (onParticipantUpdate) {
         onParticipantUpdate(currentEvent.id, false, { userId: participantId });
       }
@@ -1000,7 +900,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Függőben lévő résztvevő jóváhagyása
   const handleApproveParticipant = async (participantId) => {
     setIsApproving(true);
     setApproveRejectError('');
@@ -1028,12 +927,10 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         throw new Error(data.message || "Sikertelen jóváhagyás");
       }
 
-      // Frissítsük a résztvevők listáját
       await fetchParticipants(currentEvent.id);
-      // Frissítsük a függőben lévő résztvevők listáját
+
       await fetchPendingParticipants(currentEvent.id);
 
-      // Notify parent component about the status change
       if (onParticipantUpdate) {
         onParticipantUpdate(currentEvent.id, true, {
           userId: participantId,
@@ -1049,7 +946,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Függőben lévő résztvevő elutasítása
   const handleRejectParticipant = async (participantId) => {
     setIsRejecting(true);
     setApproveRejectError('');
@@ -1077,10 +973,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         throw new Error(data.message || "Sikertelen elutasítás");
       }
 
-      // Frissítsük a függőben lévő résztvevők listáját
       await fetchPendingParticipants(currentEvent.id);
 
-      // Notify parent component about the status change
       if (onParticipantUpdate) {
         onParticipantUpdate(currentEvent.id, false, {
           userId: participantId,
@@ -1096,31 +990,24 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Módosított esemény szerkesztés kezelése
   const handleEditEvent = () => {
     setIsEditModalOpen(true);
   };
 
-  // Szerkesztő modal bezárása
   const closeEditModal = () => {
     setIsEditModalOpen(false);
   };
 
-  // Esemény frissítése sikeres szerkesztés után
   const handleEventUpdate = (updatedEvent) => {
     console.log("Event updated, new data:", updatedEvent);
 
-    // Frissítsük a komponens állapotát az új esemény adatokkal
     setCurrentEvent({
       ...updatedEvent,
-      // Biztosítsuk, hogy a resztvevok_lista megmaradjon
       resztvevok_lista: participants
     });
 
-    // Bezárjuk a szerkesztő modalt
     closeEditModal();
 
-    // Értesítjük a szülő komponenst a frissítésről, ha van callback
     if (onParticipantUpdate) {
       onParticipantUpdate(updatedEvent.id, true, {
         userId: 'event-updated',
@@ -1132,18 +1019,15 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Esemény törlés kezelése
   const handleDeleteClick = () => {
     setShowDeleteConfirmation(true);
   };
 
-  // Törlés megerősítés bezárása
   const cancelDelete = () => {
     setShowDeleteConfirmation(false);
     setDeleteError('');
   };
 
-  // Törlés megerősítése és végrehajtása
   const confirmDelete = async () => {
     setIsDeleting(true);
     setDeleteError('');
@@ -1170,7 +1054,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
       console.log("Event deletion successful");
 
-      // Notify parent component about the deletion
       if (onParticipantUpdate) {
         onParticipantUpdate(currentEvent.id, false, {
           userId: 'event-deleted',
@@ -1178,10 +1061,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         });
       }
 
-      // Close the modal
       onClose();
 
-      // Add page refresh after a short delay to allow the modal to close smoothly
       setTimeout(() => {
         window.location.reload();
       }, 300);
@@ -1194,18 +1075,15 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     }
   };
 
-  // Segédfüggvény annak ellenőrzésére, hogy a felhasználó szervező-e
   const isUserOrganizer = () => {
     return currentUser && participants.some(p => p.id === currentUser.userId && p.role === 'szervező');
   };
 
-  // Résztvevő kiválasztása profil megtekintéshez
   const handleParticipantClick = (participant) => {
     setSelectedParticipant(participant);
     setShowProfileModal(true);
   };
 
-  // Profil modal bezárása
   const closeProfileModal = () => {
     setShowProfileModal(false);
     setSelectedParticipant(null);
@@ -1213,10 +1091,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
   return (
     <>
-      {/* Main Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
         <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
-          {/* Close Button */}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
@@ -1225,7 +1101,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           </button>
 
           <div className="flex flex-col md:flex-row">
-            {/* Event Details (Left Side) */}
             <div className="w-full md:w-3/5 p-6 border-b md:border-b-0 md:border-r border-white/20">
               <div className="relative h-64 mb-6 rounded-lg overflow-hidden">
                 <Image
@@ -1248,7 +1123,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   </span>
                 </div>
 
-                {/* Térkép megtekintése gomb */}
                 <div className="flex items-center gap-2 text-white/80 mt-1">
                   <Map className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <button
@@ -1275,7 +1149,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   </div>
                 </div>
 
-                {/* Participant count display */}
                 <div className="flex items-center gap-2 text-white/80">
                   <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
                   <span>
@@ -1289,14 +1162,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                 <div className="flex flex-wrap gap-2 mb-6">
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm">{currentEvent.szint || "Ismeretlen szint"}</span>
 
-                  {/* Fedett facility */}
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
                     <Home className="h-4 w-4" /> Fedett
                     {currentEvent.Helyszin?.Fedett === true ? (
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
                       <XCircle className="h-4 w-4 text-red-500" />)}
-                  </span>                  {/* Öltöző facility */}
+                  </span>                 
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
                     <DoorOpen className="h-4 w-4" /> Öltöző
                     {currentEvent.Helyszin?.Oltozo === true ? (
@@ -1306,13 +1178,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                     )}
                   </span>
 
-                  {/* Parkolás facility - módosítva, hogy a felhasználó által megadott értéket jelenítse meg */}
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
                     <Car className="h-4 w-4" /> Parkolás: {currentEvent.Helyszin?.Parkolas || "Nincs adat"}
                   </span>
                 </div>
 
-                {/* Helyszín leírása - új rész */}
                 {currentEvent.Helyszin?.Leiras && (
                   <div className="mt-4 p-4 bg-white/5 rounded-lg mb-6">
                     <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
@@ -1325,7 +1195,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div className="w-full sm:w-auto flex gap-2">
                     {isInvitation ? (
-                      // Meghívás esetén speciális gombok
                       <div className="w-full flex gap-2">
                         <button
                           onClick={handleAcceptInvitation}
@@ -1363,7 +1232,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       </div>
                     ) : isParticipant ? (
                       <>
-                        {/* Felhasználó státuszának megjelenítése */}
                         {userStatus === 'függőben' ? (
                           <div className="w-full flex gap-2">
                             <button
@@ -1427,7 +1295,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           </button>
                         )}
 
-                        {/* Meghívás gomb minden elfogadott résztvevőnek (játékosoknak és szervezőknek is) */}
                         {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
                           <button
                             onClick={handleOpenInviteModal}
@@ -1443,7 +1310,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           </button>
                         )}
 
-                        {/* Szerkesztés és törlés gombok csak a szervezőknek */}
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
                           <>
                             <button
@@ -1462,7 +1328,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                             </button>
                           </>
                         )}
-                        {/* Kilépés gomb csak akkor jelenik meg, ha a felhasználó szerepe "játékos" és elfogadott státuszú */}
+
                         {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
                           <button
                             onClick={handleLeaveEvent}
@@ -1502,7 +1368,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
               </div>
             </div>
 
-            {/* Participants (Right Side) */}
             <div className="w-full md:w-2/5 p-6">
               <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
 
@@ -1516,7 +1381,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                 </span>
               </div>
 
-              {/* Függőben lévő résztvevők szekció - csak szervezőknek jelenik meg */}
               {isUserOrganizer() && pendingParticipants.length > 0 && (
                 <div className="mb-6">
                   <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">
@@ -1549,7 +1413,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           </div>
                         </div>
 
-                        {/* Jóváhagyás és elutasítás gombok */}
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleApproveParticipant(participant.id)}
@@ -1580,7 +1443,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                 </div>
               )}
 
-              {/* Szervező szekció */}
               <div className="mb-6">
                 <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Szervező</h4>
                 <div className="space-y-4">
@@ -1623,7 +1485,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                 </div>
               </div>
 
-              {/* Játékosok szekció - módosítva a kuka ikonnal */}
               <div>
                 <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Játékosok</h4>
                 <div className="space-y-4">
@@ -1660,7 +1521,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                             </div>
                           </div>
 
-                          {/* Kuka ikon - csak a szervező látja és csak más játékosoknál, és nem archivált eseménynél */}
                           {!isArchived && currentUser &&
                             participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
                             participant.id !== currentUser.userId && (
@@ -1688,7 +1548,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         </div>
       </div>
 
-      {/* Profile Modal */}
       {showProfileModal && selectedParticipant && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
           <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
@@ -1701,7 +1560,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
             <div className="flex flex-col items-center text-center">
               <Image
-               // src={selectedParticipant.profilePicture || selectedParticipant.image || "/placeholder.svg"}
                 alt={selectedParticipant.name}
                 className="w-24 h-24 rounded-full object-cover mb-4"
               />
@@ -1715,7 +1573,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
               </p>
 
               <div className="w-full space-y-4 mt-2">
-                {/* Bemutatkozás */}
                 <div className="bg-white/5 p-4 rounded-lg">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
                     <User className="h-4 w-4" /> Bemutatkozás
@@ -1725,7 +1582,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   </p>
                 </div>
 
-                {/* Elérhetőségek */}
                 <div className="bg-white/5 p-4 rounded-lg">
                   <h4 className="font-medium mb-2">Elérhetőségek</h4>
                   {selectedParticipant.email && (
@@ -1751,7 +1607,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         </div>
       )}
 
-      {/* Edit Modal */}
       {isEditModalOpen && (
         <EventEditModal
           isOpen={isEditModalOpen}
@@ -1761,7 +1616,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         />
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80">
           <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
@@ -1815,12 +1669,10 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         </div>
       )}
 
-      {/* User Profile Modal */}
       {showUserProfile && selectedUserId && (
         <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
       )}
 
-      {/* Map Modal */}
       {showMapModal && (
         <LocationMapModal
           location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
@@ -1828,7 +1680,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         />
       )}
 
-      {/* Invite Users Modal */}
       {showInviteModal && (
         <InviteUsersModal
           isOpen={showInviteModal}
@@ -1842,7 +1693,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
 
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
-  // Biztonságos esemény objektum létrehozása, hogy elkerüljük az undefined hibákat
   const safeEvent = event || {};
 
   const [formData, setFormData] = useState({
@@ -1855,7 +1705,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     maximumEletkor: safeEvent.maximumEletkor || "",
     maximumLetszam: safeEvent.maximumLetszam || "",
     leiras: safeEvent.leiras || "",
-    // Helyszín adatok
     helyszinNev: safeEvent.Helyszin?.Nev || "",
     helyszinCim: safeEvent.Helyszin?.Cim || "",
     helyszinTelepules: safeEvent.Helyszin?.Telepules || "",
@@ -1878,14 +1727,12 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   const [loadingSports, setLoadingSports] = useState(false);
   const [editingLocation, setEditingLocation] = useState(false);
 
-  // Parkolás opciók
   const parkolasOptions = [
     { value: "ingyenes", label: "Ingyenes" },
     { value: "fizetős", label: "Fizetős" },
     { value: "nincs", label: "Nincs" }
   ];
 
-  // Fetch locations and sports when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchLocations(); fetchSports();
@@ -1965,7 +1812,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
 
-    // Checkbox esetén a checked értéket használjuk, egyébként a value-t
     const newValue = type === 'checkbox' ? checked : value;
 
     console.log(`Field ${id} changed to:`, type === 'checkbox' ? checked : value);
@@ -1980,23 +1826,19 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
-      // Create URL for preview
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
     }
   };
 
-  // Helyszín szerkesztés mód bekapcsolása
   const startLocationEditing = () => {
     setEditingLocation(true);
   };
 
-  // Helyszín szerkesztés mód kikapcsolása
   const cancelLocationEditing = () => {
     setEditingLocation(false);
   };
 
-  // Helyszín mentése (meglévő helyszín frissítése)
   const saveLocation = async () => {
     try {
       const token = getCookie('token');
@@ -2006,29 +1848,26 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         return null;
       }
 
-      // Ellenőrizzük az irányítószám formátumát és konvertáljuk számmá
       const iranyitoszam = parseInt(formData.helyszinIranyitoszam);
       if (isNaN(iranyitoszam) || iranyitoszam < 1000 || iranyitoszam > 9999) {
         setErrorMessage("Az irányítószám 1000 és 9999 közötti szám kell legyen.");
         return null;
       }
 
-      // Helyszín adatok összeállítása - explicit konverzióval a boolean értékekre
       const locationData = {
         Nev: formData.helyszinNev,
         Cim: formData.helyszinCim,
         Telepules: formData.helyszinTelepules,
         Iranyitoszam: iranyitoszam,
-        Fedett: formData.helyszinFedett === true, // Explicit boolean conversion
-        Oltozo: formData.helyszinOltozo === true, // Explicit boolean conversion
+        Fedett: formData.helyszinFedett === true, 
+        Oltozo: formData.helyszinOltozo === true,
         Parkolas: formData.helyszinParkolas || "nincs",
-        Berles: formData.helyszinBerles === true, // Explicit boolean conversion
+        Berles: formData.helyszinBerles === true, 
         Leiras: formData.helyszinLeiras || ""
       };
 
       console.log("Sending location update with data:", locationData);
 
-      // Ellenőrizzük, hogy a Parkolas érték megfelelő-e
       if (!["ingyenes", "fizetős", "nincs"].includes(locationData.Parkolas)) {
         locationData.Parkolas = "nincs";
       }
@@ -2052,10 +1891,8 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       const responseData = await response.json();
       console.log("Location updated successfully:", responseData);
 
-      // Frissítsük a helyszínek listáját
       await fetchLocations();
 
-      // Frissítsük a formData-t a válaszban kapott adatokkal, ha van
       if (responseData.updatedLocation) {
         setFormData(prev => ({
           ...prev,
@@ -2071,7 +1908,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }));
       }
 
-      // Kikapcsoljuk a szerkesztés módot
       setEditingLocation(false);
 
       return formData.helyszinId;
@@ -2097,7 +1933,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         return;
       }
 
-      // Ha helyszín szerkesztés módban vagyunk, először mentsük el a helyszínt
       let finalHelyszinId = formData.helyszinId;
       if (editingLocation) {
         const savedLocationId = await saveLocation();
@@ -2107,10 +1942,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         finalHelyszinId = savedLocationId;
       }
 
-      // Create a FormData object to send the form data and image file
       const formDataToSend = new FormData();
-
-      // Add event fields to the FormData
       formDataToSend.append("helyszinId", finalHelyszinId);
       formDataToSend.append("sportId", formData.sportId);
       formDataToSend.append("kezdoIdo", formData.kezdoIdo);
@@ -2122,12 +1954,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       formDataToSend.append("leiras", formData.leiras);
       formDataToSend.append("autoApprove", formData.autoApprove);
 
-      // Add the image file if it exists
       if (imageFile) {
         formDataToSend.append("imageFile", imageFile);
       }
 
-      // Add the event ID for update
       formDataToSend.append("id", safeEvent.id);
 
       console.log("Sending event update with data:", Object.fromEntries(formDataToSend));
@@ -2136,7 +1966,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          // Don't set Content-Type header when using FormData
         },
         body: formDataToSend,
       });
@@ -2150,9 +1979,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       console.log("Event updated successfully:", data);
       setSuccess(true);
 
-      // Call onSuccess callback with updated event data
       if (onSuccess) {
-        // Merge the updated data with the original event data
         const updatedEvent = {
           ...safeEvent,
           id: safeEvent.id,
@@ -2166,7 +1993,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           maximumLetszam: formData.maximumLetszam,
           leiras: formData.leiras,
           autoApprove: formData.autoApprove,
-          // Update nested objects if needed
           Helyszin: {
             Id: finalHelyszinId,
             Nev: formData.helyszinNev,
@@ -2179,10 +2005,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             Berles: Boolean(formData.helyszinBerles),
             Leiras: formData.helyszinLeiras || ""
           },
-          imageUrl: data.esemeny?.imageUrl || safeEvent.imageUrl // Use new image URL if provided
+          imageUrl: data.esemeny?.imageUrl || safeEvent.imageUrl
         };
 
-        // If the sport changed, we should update that object too
         if (formData.sportId !== safeEvent.sportId) {
           const newSport = sports.find(sport => sport.Id.toString() === formData.sportId.toString());
           if (newSport) {
@@ -2194,7 +2019,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         onSuccess(updatedEvent);
       }
 
-      // Close modal after 2 seconds on success
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -2258,7 +2082,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             </button>
           </div>
 
-          {/* Success message */}
           {success && (
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-300 p-4 rounded-xl mb-6 flex items-center">
               <div className="mr-3 flex-shrink-0 bg-green-500/20 rounded-full p-2">
@@ -2276,7 +2099,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             </div>
           )}
 
-          {/* Error message */}
           {errorMessage && (
             <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 flex items-center">
               <div className="mr-3 flex-shrink-0 bg-red-500/20 rounded-full p-2">
@@ -2300,7 +2122,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           )}
 
           <form onSubmit={handleSubmit}>
-            {/* Tabs for Event and Location editing */}
             <div className="mb-6">
               <div className="flex border-b border-slate-700">
                 <button
@@ -2327,9 +2148,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             </div>
 
             {!editingLocation ? (
-              // Esemény adatok szerkesztése
               <div className="grid gap-6 mb-6 md:grid-cols-2">
-                {/* Sport selector */}
                 <div>
                   <label htmlFor="sportId" className="block mb-2 text-sm font-medium text-gray-300">
                     Sport
@@ -2467,7 +2286,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   />
                 </div>
 
-                {/* Esemény leírása */}
                 <div className="md:col-span-2">
                   <label htmlFor="leiras" className="block mb-2 text-sm font-medium text-gray-300">
                     Esemény leírása
@@ -2482,7 +2300,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   ></textarea>
                 </div>
 
-                {/* Image Upload */}
                 <div className="md:col-span-2">
                   <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
                     Kép feltöltése (opcionális)
@@ -2536,7 +2353,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                 </div>
               </div>
             ) : (
-              // Helyszín adatok szerkesztése
               <div className="grid gap-6 mb-6 md:grid-cols-2">
                 <div>
                   <label htmlFor="helyszinNev" className="block mb-2 text-sm font-medium text-gray-300">
@@ -2651,7 +2467,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   </div>
                 </div>
 
-                {/* Helyszín leírás mező */}
                 <div className="md:col-span-2">
                   <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
                     Helyszín leírása
@@ -2751,11 +2566,9 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [eventDetails, setEventDetails] = useState(null);
   const [ageRange, setAgeRange] = useState({ min: 0, max: 100 });
-  // Add this state for tracking the cancellation process
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(null);
 
-  // Összes felhasználó betöltése a komponens megjelenésekor
   useEffect(() => {
     if (isOpen) {
       loadEventDetails();
@@ -2764,7 +2577,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   }, [isOpen, eventId]);
 
-  // Esemény részleteinek betöltése
   const loadEventDetails = async () => {
     try {
       const token = getCookie('token');
@@ -2792,7 +2604,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Jelenlegi résztvevők betöltése
   const loadCurrentParticipants = async () => {
     try {
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
@@ -2809,7 +2620,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Függőben lévő meghívások betöltése
   const loadPendingInvitations = async () => {
     try {
       const token = getCookie('token');
@@ -2833,7 +2643,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Felhasználók keresése az új végpont használatával
   const searchUsers = async () => {
     if (!searchTerm || searchTerm.length < 2) {
       setSearchResults([]);
@@ -2849,7 +2658,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         throw new Error("Bejelentkezés szükséges a felhasználók kereséséhez");
       }
 
-      // Az új végpont használata, amely már tartalmazza az életkor szűrést
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/search-users?query=${encodeURIComponent(searchTerm)}`, {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -2864,7 +2672,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       const data = await response.json();
       setSearchResults(data.users || []);
 
-      // Frissítsük az életkor tartományt, ha a válasz tartalmazza
       if (data.ageRange) {
         setAgeRange(data.ageRange);
       }
@@ -2879,7 +2686,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Felhasználók betöltése az esemény korhatárai alapján
   const loadUsersForEvent = async () => {
     setIsLoading(true);
     setErrorMessage('');
@@ -2890,7 +2696,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         throw new Error("Bejelentkezés szükséges a felhasználók betöltéséhez");
       }
 
-      // Az új végpont használata, amely már tartalmazza az életkor szűrést
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/search-users`, {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -2905,7 +2710,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       const data = await response.json();
       setSearchResults(data.users || []);
 
-      // Frissítsük az életkor tartományt, ha a válasz tartalmazza
       if (data.ageRange) {
         setAgeRange(data.ageRange);
       }
@@ -2919,7 +2723,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Keresés indítása, ha a keresési kifejezés változik
   useEffect(() => {
     if (searchTerm && searchTerm.length >= 2) {
       const delayDebounceFn = setTimeout(() => {
@@ -2927,12 +2730,10 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       }, 500);
       return () => clearTimeout(delayDebounceFn);
     } else if (searchTerm === '') {
-      // Ha a keresési mező üres, akkor töltsük be az összes elérhető felhasználót
       loadUsersForEvent();
     }
   }, [searchTerm, eventId]);
 
-  // Felhasználó kiválasztása/eltávolítása
   const toggleUserSelection = (user) => {
     setSelectedUsers(prev => {
       const isSelected = prev.some(u => u.id === user.id);
@@ -2944,7 +2745,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     });
   };
 
-  // Meghívók küldése
   const sendInvitations = async () => {
     if (selectedUsers.length === 0) {
       setErrorMessage("Válassz ki legalább egy felhasználót a meghíváshoz");
@@ -2974,7 +2774,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         body: JSON.stringify({
           eseményId: eventId,
           userIds: userIds,
-          status: 'meghívott' // Explicitly set the status to 'meghívott'
+          status: 'meghívott' 
         }),
       });
 
@@ -2986,17 +2786,14 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       setSuccessMessage(`Sikeresen elküldtél ${selectedUsers.length} meghívót!`);
       setSelectedUsers([]);
 
-      // Frissítsük a függőben lévő meghívások listáját
       await loadPendingInvitations();
 
-      // Frissítsük a keresési eredményeket
       if (searchTerm && searchTerm.length >= 2) {
         searchUsers();
       } else {
         loadUsersForEvent();
       }
 
-      // Automatikus bezárás 3 másodperc után
       setTimeout(() => {
         onClose();
       }, 3000);
@@ -3008,7 +2805,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     }
   };
 
-  // Komponens első betöltésekor töltsük be az elérhető felhasználókat
   useEffect(() => {
     if (isOpen && eventId) {
       loadUsersForEvent();
@@ -3030,26 +2826,22 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           </button>
         </div>
 
-        {/* Success message */}
         {successMessage && (
           <div className="bg-green-500/20 border border-green-500/30 text-green-300 p-4 rounded-lg mb-4">
             {successMessage}
           </div>
         )}
 
-        {/* Error message */}
         {errorMessage && (
           <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-lg mb-4">
             {errorMessage}
           </div>
         )}
 
-        {/* Életkor szűrő információ */}
         <div className="mb-4 bg-blue-500/20 border border-blue-500/30 text-blue-300 p-3 rounded-lg text-sm">
           <p>Csak {ageRange.min}-{ageRange.max} év közötti felhasználók jelennek meg.</p>
         </div>
 
-        {/* Search input */}
         <div className="mb-4">
           <div className="relative">
             <input
@@ -3074,7 +2866,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           </div>
         </div>
 
-        {/* User list with loading state */}
         {isLoading ? (
           <div className="flex justify-center items-center py-10">
             <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -3100,7 +2891,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
                   <div className="flex-shrink-0">
                     {user.profilePicture ? (
                       <Image
-                        //src={user.profilePicture}
                         alt={user.name || user.username}
                         width={40}
                         height={40}
@@ -3135,7 +2925,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           </div>
         )}
 
-        {/* Selected users */}
         {selectedUsers.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Kiválasztott felhasználók ({selectedUsers.length})</h3>
@@ -3162,7 +2951,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
@@ -3200,18 +2988,17 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 };
 
 
-
-// A SportEventDetailsModal komponens definíciójának módosítása
 const SportEventDetailsModal = ({
   event,
   onClose,
   onParticipantUpdate,
   isArchived = false,
   isInvitation = false,
-  isPending = false, // Új prop a függőben lévő események jelzéséhez
+  isPending = false,
   onAcceptInvitation,
   onRejectInvitation,
-  onCancelPendingRequest // Új prop a függőben lévő kérelem visszavonásához
+  onCancelPendingRequest 
+  
 }) => {
   return (
     <EventModal
