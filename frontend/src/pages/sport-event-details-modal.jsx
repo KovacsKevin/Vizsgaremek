@@ -682,7 +682,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setCancelError(null);
     
     // Log to verify the event ID is being retrieved properly
-    const pendingEventId = 1;
+    const pendingEventId = sessionStorage.getItem('pendingEventId');
     console.log("Attempting to cancel event with ID:", pendingEventId);
     
     if (!pendingEventId) {
