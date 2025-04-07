@@ -15,10 +15,41 @@ import {
   ImageIcon,
   Upload,
   Menu,
-  X
+  X,
+  RefreshCw
 } from "lucide-react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import Cookies from "js-cookie"
+
+// Javított Image komponens hibakezeléssel
+const ImageWithFallback = ({ src, alt, className, defaultSrc }) => {
+  const [error, setError] = useState(false);
+
+  const formatImageUrl = (url) => {
+    if (!url || error) return defaultSrc;
+    // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
+    if (url.startsWith('http://localhost:8081')) return url;
+    // Ha Base64 kódolt kép, akkor közvetlenül visszaadjuk
+    if (url.startsWith('data:image/')) return url;
+    // Ha külső URL (https://), akkor közvetlenül visszaadjuk
+    if (url.startsWith('https://')) return url;
+    // Egyébként hozzáadjuk a szerver URL-t
+    return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
+  };
+
+  return (
+    <img
+      src={formatImageUrl(src)}
+      alt={alt || ''}
+      className={className || ''}
+      onError={(e) => {
+        console.error(`Kép betöltési hiba: ${src && src.substring(0, 100)}...`);
+        setError(true);
+        e.target.src = defaultSrc;
+      }}
+    />
+  );
+};
 
 const Header = ({ activeTab, setActiveTab }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -36,7 +67,10 @@ const Header = ({ activeTab, setActiveTab }) => {
   // Mobilnézet kezeléséhez
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  // Add these new state variables after the existing state declarations
+  // Default profilkép URL - ezt használjuk alapértelmezettként
+  const [defaultProfilePicture, setDefaultProfilePicture] = useState("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=")
+
+  // Egyéni profilkép - ha null, akkor a default-ot használjuk
   const [profilePicture, setProfilePicture] = useState(null)
   const profilePicInputRef = useRef(null)
 
@@ -78,9 +112,19 @@ const Header = ({ activeTab, setActiveTab }) => {
     { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
   ];
 
+  // Helper function to get profile picture source
+  const getProfilePicSrc = () => {
+    if (profilePicture) {
+      return profilePicture;
+    }
+    return defaultProfilePicture;
+  }
 
   // Inicializálás a komponens betöltésekor - javított verzió
   useEffect(() => {
+    // Először betöltjük az alapértelmezett képeket a szerverről
+    fetchDefaultImages();
+
     // Token ellenőrzése
     const token = Cookies.get("token")
     if (token) {
@@ -99,6 +143,29 @@ const Header = ({ activeTab, setActiveTab }) => {
       setProfilePicture(null)
     }
   }, []) // Csak egyszer fusson le a komponens betöltésekor
+
+  // Alapértelmezett képek betöltése a szerverről
+  const fetchDefaultImages = async () => {
+    try {
+      // Fallback értékek beállítása
+      setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
+
+      // Próbáljuk meg betölteni az alapértelmezett képeket a szerverről
+      const response = await fetch("http://localhost:8081/api/v1/defaults");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.defaultProfilePicture) {
+          setDefaultProfilePicture(data.defaultProfilePicture);
+        }
+      } else {
+        console.log("Alapértelmezett képek betöltése sikertelen, fallback értékek használata");
+      }
+    } catch (error) {
+      console.error("Hiba az alapértelmezett képek betöltésekor:", error);
+      // Fallback értékek beállítása
+      setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
+    }
+  }
 
   // Egyszerűsített verifyToken függvény
   const verifyToken = async (token) => {
@@ -172,18 +239,14 @@ const Header = ({ activeTab, setActiveTab }) => {
       const token = Cookies.get("token")
       if (!token || !userId) {
         console.error("Nincs token vagy userId a beállítások mentéséhez")
-        return
+        return false;
       }
 
-      console.log("Beállítások mentése:", {
-        profileBackground: settings.profileBackground,
-        hasCustomBackground: !!settings.customBackground,
-        hasProfilePicture: !!settings.profilePicture
-      })
+      console.log("Beállítások mentése:", settings);
 
       // Adatbázisba mentjük a felhasználó beállításait
-      const response = await fetch(`http://localhost:8081/api/v1/users/${userId}/settings`, {
-        method: "POST",
+      const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -192,13 +255,15 @@ const Header = ({ activeTab, setActiveTab }) => {
       })
 
       if (response.ok) {
-        const data = await response.json()
-        console.log("Beállítások sikeresen mentve:", data)
+        console.log("Beállítások sikeresen mentve");
+        return true;
       } else {
         console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text())
+        return false;
       }
     } catch (error) {
       console.error("Hiba a beállítások mentésekor:", error)
+      return false;
     }
   }
 
@@ -365,6 +430,25 @@ const Header = ({ activeTab, setActiveTab }) => {
 
     // Majd mentjük az adatbázisba
     try {
+      await saveUserSettings({
+        profileBackground: bg
+      });
+    } catch (error) {
+      console.error("Hiba a háttér beállítás mentésekor:", error);
+    }
+  }
+
+  // Reset profile picture to default
+  const resetProfilePicture = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation(); // Megakadályozza, hogy a kattintás a szülőelemre is eljusson
+    }
+
+    setProfilePicture(null);
+
+    // Save to database
+    try {
       const token = Cookies.get("token");
       const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
         method: "PUT",
@@ -373,21 +457,19 @@ const Header = ({ activeTab, setActiveTab }) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          profileBackground: bg
+          profilePicture: null
         })
       });
 
       if (response.ok) {
-        console.log("Háttér beállítás sikeresen mentve");
+        console.log("Profilkép sikeresen visszaállítva az alapértelmezettre");
       } else {
-        console.error("Hiba a háttér beállítás mentésekor");
+        console.error("Hiba a profilkép visszaállításakor");
       }
     } catch (error) {
       console.error("Hiba:", error);
     }
   }
-
-
 
   // Navigáció kezelése - kiegészítve a Legfrissebb sportesemények görgetésével
   const handleNavigation = (id, path) => {
@@ -582,10 +664,6 @@ const Header = ({ activeTab, setActiveTab }) => {
     setIsMobileMenuOpen(false);
   }
 
-
-
-
-
   return (
     <header className="backdrop-blur-md bg-gradient-to-r from-slate-900/90 to-slate-800/90 border-b border-slate-700/50 sticky top-0 z-50 shadow-lg">
       <div className="container mx-auto px-4 py-4">
@@ -636,13 +714,19 @@ const Header = ({ activeTab, setActiveTab }) => {
                     {/* Avatar megjelenítése */}
                     <span className="font-bold text-white text-sm group-hover:scale-110 transition-transform duration-300">
                       {profilePicture ? (
-                        <img
-                          src={profilePicture || "/placeholder.svg"}
+                        <ImageWithFallback
+                          src={profilePicture}
                           alt={userName}
                           className="w-full h-full object-cover rounded-lg"
+                          defaultSrc={defaultProfilePicture}
                         />
                       ) : (
-                        getUserInitials()
+                        <ImageWithFallback
+                          src={defaultProfilePicture}
+                          alt={userName}
+                          className="w-full h-full object-cover rounded-lg"
+                          defaultSrc={defaultProfilePicture}
+                        />
                       )}
                     </span>
                     {isProfileOpen && (
@@ -671,7 +755,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                             } relative overflow-hidden`}
                           style={{
                             backgroundImage:
-                              selectedBackground === "custom"
+                              selectedBackground === "custom" && customBackground
                                 ? `url(${customBackground})`
                                 : backgrounds[selectedBackground].pattern,
                             backgroundSize: selectedBackground === "custom" ? "cover" : "30px 30px",
@@ -720,18 +804,38 @@ const Header = ({ activeTab, setActiveTab }) => {
                             >
                               <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
                                 {profilePicture ? (
-                                  <img
-                                    src={profilePicture || "/placeholder.svg"}
+                                  <ImageWithFallback
+                                    src={profilePicture}
                                     alt={userName}
                                     className="w-full h-full object-cover"
+                                    defaultSrc={defaultProfilePicture}
                                   />
                                 ) : (
-                                  <span className="font-bold text-white text-3xl">{getUserInitials()}</span>
+                                  <ImageWithFallback
+                                    src={defaultProfilePicture}
+                                    alt={userName}
+                                    className="w-full h-full object-cover"
+                                    defaultSrc={defaultProfilePicture}
+                                  />
                                 )}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
                                   <Upload className="h-6 w-6 text-white" />
                                 </div>
                               </div>
+
+                              {/* Reset gomb - csak akkor jelenik meg, ha egyéni profilkép van beállítva */}
+                              {profilePicture && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Megakadályozza, hogy a kattintás a szülőelemre is eljusson
+                                    resetProfilePicture(e);
+                                  }}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                  title="Alapértelmezett profilkép visszaállítása"
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                </button>
+                              )}
                             </div>
                             <div className="font-bold text-white text-2xl text-center px-4 py-1 bg-black/30 rounded-full backdrop-blur-sm">
                               {userName}
@@ -763,20 +867,19 @@ const Header = ({ activeTab, setActiveTab }) => {
                                       ? `linear-gradient(to right, ${bg === "gradient1" ? "#3b82f6, #9333ea" : bg === "gradient2" ? "#059669, #0d9488" : "#ea580c, #d97706"})`
                                       : "#0f172a",
                                   }}
-                                >
-                                  {selectedBackground === bg && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                                >                                  {selectedBackground === bg && <div className="w-2 h-2 rounded-full bg-white"></div>}
                                 </button>
                               ))}
                             <button
                               onClick={handleCustomBackgroundClick}
-                              className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedBackground === "custom"
+                              className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedBackground === "custom" && customBackground
                                 ? "ring-2 ring-white bg-slate-600"
                                 : "bg-slate-700 hover:bg-slate-600"
                                 } text-slate-300 transition-colors`}
                               title="Egyéni háttér"
                             >
                               <ImageIcon className="w-3 h-3" />
-                              {selectedBackground === "custom" && (
+                              {selectedBackground === "custom" && customBackground && (
                                 <div className="absolute w-2 h-2 rounded-full bg-white"></div>
                               )}
                             </button>
