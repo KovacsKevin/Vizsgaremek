@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const Esemény = require("../models/esemenyModel");
+const Résztvevő = require("../models/resztvevoModel");
 const { Op } = require("sequelize");
 
 

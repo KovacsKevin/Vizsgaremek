@@ -1,8 +1,38 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-import { User, Mail, Phone, Calendar, Edit, Save, Trash2, AlertTriangle, X, Upload, FileText } from "lucide-react";
+import { User, Mail, Phone, Calendar, Edit, Save, Trash2, AlertTriangle, X, Upload, FileText, RefreshCw } from "lucide-react";
 import Header from "../Main/Header"; // Import the Header component
+
+// Import the ImageWithFallback component from Header.jsx
+const ImageWithFallback = ({ src, alt, className, defaultSrc }) => {
+    const [error, setError] = useState(false);
+
+    const formatImageUrl = (url) => {
+        if (!url || error) return defaultSrc;
+        // If src is already a full URL (starting with http://localhost:8081), don't modify it
+        if (url.startsWith('http://localhost:8081')) return url;
+        // If it's a Base64 encoded image, return it directly
+        if (url.startsWith('data:image/')) return url;
+        // If it's an external URL (https://), return it directly
+        if (url.startsWith('https://')) return url;
+        // Otherwise, add the server URL
+        return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
+    };
+
+    return (
+        <img
+            src={formatImageUrl(src)}
+            alt={alt || ''}
+            className={className || ''}
+            onError={(e) => {
+                console.error(`Kép betöltési hiba: ${src && src.substring(0, 100)}...`);
+                setError(true);
+                e.target.src = defaultSrc;
+            }}
+        />
+    );
+};
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -22,6 +52,11 @@ const Profile = () => {
         birthDate: "",
         bio: "", // Új mező a bemutatkozáshoz
     });
+
+    // Default profile picture URL - this is used as default
+    const [defaultProfilePicture, setDefaultProfilePicture] = useState("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
+
+    // Custom profile picture - if null, we use the default
     const [profilePicture, setProfilePicture] = useState(null);
     const profilePicInputRef = useRef(null);
 
@@ -31,8 +66,42 @@ const Profile = () => {
         participatedEvents: 0
     });
 
+    // Helper function to get profile picture source
+    const getProfilePicSrc = () => {
+        if (profilePicture) {
+            return profilePicture;
+        }
+        return defaultProfilePicture;
+    };
+
+    // Fetch default images from server
+    const fetchDefaultImages = async () => {
+        try {
+            // Set fallback values
+            setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
+
+            // Try to load default images from server
+            const response = await fetch("http://localhost:8081/api/v1/defaults");
+            if (response.ok) {
+                const data = await response.json();
+                if (data.defaultProfilePicture) {
+                    setDefaultProfilePicture(data.defaultProfilePicture);
+                }
+            } else {
+                console.log("Alapértelmezett képek betöltése sikertelen, fallback értékek használata");
+            }
+        } catch (error) {
+            console.error("Hiba az alapértelmezett képek betöltésekor:", error);
+            // Set fallback values
+            setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
+        }
+    };
+
     // Felhasználói adatok betöltése
     useEffect(() => {
+        // First load default images
+        fetchDefaultImages();
+
         const fetchUserData = async () => {
             try {
                 const token = Cookies.get("token");
@@ -123,7 +192,7 @@ const Profile = () => {
         });
     };
 
-    // Kép tömörítése feltöltés előtt
+    // Add image compression before upload - same as in Header.jsx
     const compressImage = (imageDataUrl, maxWidth = 400) => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -133,7 +202,7 @@ const Profile = () => {
                 let width = img.width;
                 let height = img.height;
 
-                // Új méretek kiszámítása
+                // Calculate new dimensions
                 if (width > maxWidth) {
                     height = Math.round((height * maxWidth) / width);
                     width = maxWidth;
@@ -145,30 +214,122 @@ const Profile = () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Tömörített kép adatainak lekérése
+                // Get compressed image data (adjust quality as needed)
                 resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
         });
     };
 
-    // Profilkép feltöltés kezelése
+    // Handle file upload for profile picture - updated to match Header.jsx logic and refresh page
     const handleProfilePicUpload = async (event) => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = async (e) => {
-                const imageDataUrl = e.target.result;
-                const compressedImage = await compressImage(imageDataUrl);
-                setProfilePicture(compressedImage);
+                try {
+                    const imageDataUrl = e.target.result;
+
+                    // Compress the image before setting and saving
+                    const compressedImage = await compressImage(imageDataUrl, 400); // Smaller for profile pics
+
+                    // Update local state
+                    setProfilePicture(compressedImage);
+
+                    // Save to database immediately
+                    const token = Cookies.get("token");
+                    if (!token || !user) return;
+
+                    const success = await saveUserSettings({
+                        profilePicture: compressedImage
+                    });
+
+                    if (success) {
+                        console.log("Profilkép sikeresen frissítve");
+
+                        // Refresh the page to show the updated profile picture everywhere
+                        window.location.reload();
+                    } else {
+                        throw new Error("Nem sikerült menteni a profilképet");
+                    }
+                } catch (error) {
+                    console.error("Hiba a profilkép feltöltésekor:", error);
+                    alert("Hiba történt a profilkép feltöltésekor. Kérjük, próbáld újra.");
+                }
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // Profilkép feltöltés gomb kezelése
+
+    // Save user settings - helper function for all settings updates
+    const saveUserSettings = async (settings) => {
+        try {
+            const token = Cookies.get("token");
+            if (!token || !user) {
+                console.error("Nincs token vagy user ID a beállítások mentéséhez");
+                return false;
+            }
+
+            console.log("Beállítások mentése:", settings);
+
+            // Save settings to database
+            const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(settings)
+            });
+
+            if (response.ok) {
+                console.log("Beállítások sikeresen mentve");
+                return true;
+            } else {
+                console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text());
+                return false;
+            }
+        } catch (error) {
+            console.error("Hiba a beállítások mentésekor:", error);
+            return false;
+        }
+    };
+
+    // Trigger profile picture file input click
     const handleProfilePicClick = () => {
         profilePicInputRef.current.click();
     };
+
+    // Reset profile picture to default - updated to match Header.jsx logic and refresh page
+    const resetProfilePicture = async (e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent click from reaching parent
+        }
+
+        // Update local state
+        setProfilePicture(null);
+
+        // Save to database
+        try {
+            const success = await saveUserSettings({
+                profilePicture: null
+            });
+
+            if (success) {
+                console.log("Profilkép sikeresen visszaállítva az alapértelmezettre");
+
+                // Refresh the page to show the updated profile picture everywhere
+                window.location.reload();
+            } else {
+                throw new Error("Nem sikerült visszaállítani a profilképet");
+            }
+        } catch (error) {
+            console.error("Hiba:", error);
+            alert("Hiba történt a profilkép visszaállításakor. Kérjük, próbáld újra.");
+        }
+    };
+
 
     // Felhasználói adatok mentése
     const handleSaveProfile = async () => {
@@ -233,8 +394,7 @@ const Profile = () => {
 
             // API hívás a felhasználó törléséhez
             const response = await fetch(`http://localhost:8081/api/v1/deleteUser/${user.id}`, {
-                method: "DELETE",
-                headers: {
+                method: "DELETE", headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
@@ -312,25 +472,36 @@ const Profile = () => {
                         {/* Profil fejléc */}
                         <div className="bg-gradient-to-r from-blue-600/30 to-purple-600/30 p-8 relative">
                             <div className="flex flex-col md:flex-row items-center gap-6">
-                                {/* Profilkép */}
+                                {/* Profilkép - Updated to use ImageWithFallback */}
                                 <div
                                     className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 relative group cursor-pointer"
                                     onClick={handleProfilePicClick}
                                 >
                                     <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
-                                        {profilePicture ? (
-                                            <img
-                                                src={profilePicture}
-                                                alt={user?.username}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <span className="font-bold text-white text-4xl">{getUserInitials()}</span>
-                                        )}
+                                        <ImageWithFallback
+                                            src={getProfilePicSrc()}
+                                            alt={user?.username}
+                                            className="w-full h-full object-cover"
+                                            defaultSrc={defaultProfilePicture}
+                                        />
                                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
                                             <Upload className="h-8 w-8 text-white" />
                                         </div>
                                     </div>
+
+                                    {/* Reset button - only appears if custom profile picture is set */}
+                                    {profilePicture && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Prevent click from reaching parent
+                                                resetProfilePicture(e);
+                                            }}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                            title="Alapértelmezett profilkép visszaállítása"
+                                        >
+                                            <RefreshCw className="h-4 w-4" />
+                                        </button>
+                                    )}
                                 </div>
                                 <input
                                     type="file"
@@ -547,8 +718,7 @@ const Profile = () => {
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Felhasználónév</label>
                                     {isEditing ? (
                                         <input
-                                            type="text"
-                                            name="username"
+                                            type="text" name="username"
                                             value={formData.username}
                                             onChange={handleInputChange}
                                             className="bg-slate-700 text-white px-4 py-3 rounded-lg w-full"
@@ -651,4 +821,5 @@ const Profile = () => {
 };
 
 export default Profile;
+
 
