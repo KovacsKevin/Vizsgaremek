@@ -102,7 +102,7 @@ const UserProfileModal = ({ userId, onClose }) => {
 
         <div className="flex flex-col items-center text-center">
           <Image
-            src={user.profilePicture || "/placeholder.svg"}
+            //src={user.profilePicture || "/placeholder.svg"}
             alt={user.username}
             className="w-24 h-24 rounded-full object-cover mb-4"
           />
@@ -154,7 +154,7 @@ const Image = ({ src, alt, className }) => {
   const [error, setError] = useState(false);
 
   const formatImageUrl = (url) => {
-    if (!url || error) return "https://via.placeholder.com/300x200?text=No+Image";
+    if (!url || error) return "https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=";
 
     // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
     if (url.startsWith('http://localhost:8081')) return url;
@@ -174,44 +174,9 @@ const Image = ({ src, alt, className }) => {
       onError={(e) => {
         console.error(`Kép betöltési hiba: ${src && src.substring(0, 100)}...`);
         setError(true);
-        e.target.src = "https://via.placeholder.com/300x200?text=Betöltési+Hiba";
       }}
     />
   );
-};
-
-// Javított kép tömörítő függvény
-const compressImage = (imageDataUrl, maxWidth = 400, quality = 0.7) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = imageDataUrl;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-
-      // Új méretek kiszámítása
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // Tömörített kép adatainak lekérése, alacsonyabb minőséggel
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-
-    // Hiba kezelés hozzáadása
-    img.onerror = () => {
-      console.error("Kép betöltési hiba történt");
-      resolve(null); // Null visszaadása hiba esetén
-    };
-  });
 };
 
 // Helper function to get cookie by name
@@ -712,40 +677,50 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   // Kérelem visszavonása függvény
   const handleCancelRequest = async () => {
     if (isCancelling) return;
-
+    
     setIsCancelling(true);
     setCancelError(null);
-
+    
+    // Log to verify the event ID is being retrieved properly
+    const pendingEventId = 1;
+    console.log("Attempting to cancel event with ID:", pendingEventId);
+    
+    if (!pendingEventId) {
+      console.error("No event ID found to cancel");
+      setCancelError("Nem található esemény azonosító");
+      setIsCancelling(false);
+      return;
+    }
+  
     try {
-      const response = await fetch("http://localhost:8081/api/esemeny/cancel-pending-request", {
+      const token = getCookie('token');
+  
+      console.log("Sending cancel request to server...");
+      const response = await fetch("http://localhost:8081/api/v1/cancel-pending-request", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.token}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          eseményId: currentEvent.id
+          eseményId: pendingEventId
         })
       });
-
+      
+      console.log("Response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Hiba történt a kérelem visszavonása közben');
       }
-
-      // Sikeres visszavonás esetén frissítjük az UI-t
-      setUserStatus('');
-      setIsParticipant(false);
-
-      // Opcionális: sikeres üzenet megjelenítése
-      toast.success('Jelentkezés sikeresen visszavonva');
-
-      // Opcionális: oldal újratöltése vagy résztvevők listájának frissítése
-      router.reload();
+  
+      // If request is successful, refresh the page
+      console.log("Request successful, refreshing the page...");
+      window.location.reload(); // This will reload the page
+  
     } catch (error) {
       console.error('Hiba a kérelem visszavonásakor:', error);
-      setCancelError(error.message);
-      toast.error(error.message);
+      setCancelError(error.message || 'Ismeretlen hiba történt');
     } finally {
       setIsCancelling(false);
     }
@@ -1392,7 +1367,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                         {userStatus === 'függőben' ? (
                           <div className="w-full flex gap-2">
                             <button
-                              className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
+                              className="flex-1  px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
                               disabled
                             >
                               Kérelem elküldve
@@ -1726,7 +1701,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
             <div className="flex flex-col items-center text-center">
               <Image
-                src={selectedParticipant.profilePicture || selectedParticipant.image || "/placeholder.svg"}
+               // src={selectedParticipant.profilePicture || selectedParticipant.image || "/placeholder.svg"}
                 alt={selectedParticipant.name}
                 className="w-24 h-24 rounded-full object-cover mb-4"
               />
@@ -1865,7 +1840,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   );
 };
 
-// Új komponens az esemény szerkesztéséhez
+
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   // Biztonságos esemény objektum létrehozása, hogy elkerüljük az undefined hibákat
   const safeEvent = event || {};
@@ -2762,11 +2737,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   );
 };
 
-// Új komponens a felhasználók meghívásához
-// Frissített komponens a felhasználók meghívásához - lista betöltésével
-// Improved InviteUsersModal component
-// Improved InviteUsersModal component
-// Improved InviteUsersModal component
+
 const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -3129,7 +3100,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
                   <div className="flex-shrink-0">
                     {user.profilePicture ? (
                       <Image
-                        src={user.profilePicture}
+                        //src={user.profilePicture}
                         alt={user.name || user.username}
                         width={40}
                         height={40}

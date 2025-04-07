@@ -124,7 +124,22 @@ const createUser = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await User.create({ email, password: hashedPassword, username, phone, firstName, lastName, birthDate });
+
+        // Default profile picture URL
+        const defaultProfilePicture = "https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=";
+
+        // Creating new user with profile picture
+        const newUser = await User.create({
+            email,
+            password: hashedPassword,
+            username,
+            phone,
+            firstName,
+            lastName,
+            birthDate,
+            profilePicture: defaultProfilePicture // Add default profile picture here
+        });
+
         res.status(201).json({ message: "User created successfully!", user: newUser });
     } catch (error) {
         // Sequelize validációs hibák kezelése

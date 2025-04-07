@@ -60,6 +60,9 @@ const MyEvents = () => {
     });
   };
 
+
+
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -71,8 +74,6 @@ const MyEvents = () => {
 
         setLoading(true)
         setError(null)
-
-        // Fetch all types of events in parallel, including invitations and pending events
         const [organizedResponse, participatedResponse, archivedResponse, invitationsResponse, pendingResponse] = await Promise.allSettled([
           fetch("http://localhost:8081/api/v1/organized-events", {
             headers: { Authorization: `Bearer ${token}` }
@@ -88,6 +89,7 @@ const MyEvents = () => {
           }),
           fetch("http://localhost:8081/api/v1/pending-events", { // Új végpont a függőben lévő eseményekhez
             headers: { Authorization: `Bearer ${token}` }
+            
           })
         ]);
 
@@ -177,8 +179,10 @@ const MyEvents = () => {
         if (pendingResponse.status === 'fulfilled') {
           if (pendingResponse.value.ok) {
             const data = await pendingResponse.value.json();
-            console.log("Pending events data:", data);
+            const pendingEventId = data.events?.[0]?.id;
+            console.log("Event ID:", pendingEventId);
             setPendingEvents(data.events || []);
+            sessionStorage.setItem('pendingEventId', pendingEventId);
           } else if (pendingResponse.value.status === 404) {
             // 404 is expected if user has no pending events
             console.log("No pending events found");
