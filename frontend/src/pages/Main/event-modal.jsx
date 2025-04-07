@@ -55,6 +55,12 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   const [sports, setSports] = useState([])
   const [loadingSports, setLoadingSports] = useState(false)
 
+  // New state variables for searchable inputs
+  const [locationSearchTerm, setLocationSearchTerm] = useState("");
+  const [sportSearchTerm, setSportSearchTerm] = useState("");
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [showSportSuggestions, setShowSportSuggestions] = useState(false);
+
   // Fetch locations and sports when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -94,8 +100,43 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       setErrorMessage("")
       setImageError(false)
       setSuccess(false)
+
+      // Reset search terms
+      setLocationSearchTerm("");
+      setSportSearchTerm("");
     }
   }, [isOpen])
+
+  // Effect to update search terms when locations or sports are loaded
+  useEffect(() => {
+    if (formData.helyszinId) {
+      const selectedLocation = locations.find(loc => loc.Id.toString() === formData.helyszinId.toString());
+      if (selectedLocation) {
+        setLocationSearchTerm(`${selectedLocation.Telepules} - ${selectedLocation.Nev}`);
+      }
+    }
+
+    if (formData.sportId) {
+      const selectedSport = sports.find(sport => sport.Id.toString() === formData.sportId.toString());
+      if (selectedSport) {
+        setSportSearchTerm(selectedSport.Nev);
+      }
+    }
+  }, [locations, sports, formData.helyszinId, formData.sportId]);
+
+  // Effect to close suggestion dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowLocationSuggestions(false);
+      setShowSportSuggestions(false);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   const fetchLocations = async () => {
     setLoadingLocations(true)
@@ -168,6 +209,75 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       setLoadingSports(false)
     }
   }
+
+  // Functions for searchable inputs
+  const handleLocationSearch = (e) => {
+    setLocationSearchTerm(e.target.value);
+    setShowLocationSuggestions(true);
+
+    // Clear the selected location if the search field is emptied
+    if (e.target.value === "") {
+      setFormData(prev => ({
+        ...prev,
+        helyszinId: ""
+      }));
+    }
+  };
+
+  const handleSportSearch = (e) => {
+    setSportSearchTerm(e.target.value);
+    setShowSportSuggestions(true);
+
+    // Clear the selected sport if the search field is emptied
+    if (e.target.value === "") {
+      setFormData(prev => ({
+        ...prev,
+        sportId: ""
+      }));
+    }
+  };
+
+  const selectLocation = (locationId) => {
+    setFormData(prev => ({
+      ...prev,
+      helyszinId: locationId
+    }));
+
+    // Find the selected location to display in the input
+    const selectedLocation = locations.find(loc => loc.Id.toString() === locationId.toString());
+    if (selectedLocation) {
+      setLocationSearchTerm(`${selectedLocation.Telepules} - ${selectedLocation.Nev}`);
+    }
+
+    setShowLocationSuggestions(false);
+
+    // Clear any error for helyszinId field
+    setFieldErrors(prev => ({
+      ...prev,
+      helyszinId: ""
+    }));
+  };
+
+  const selectSport = (sportId) => {
+    setFormData(prev => ({
+      ...prev,
+      sportId: sportId
+    }));
+
+    // Find the selected sport to display in the input
+    const selectedSport = sports.find(sport => sport.Id.toString() === sportId.toString());
+    if (selectedSport) {
+      setSportSearchTerm(selectedSport.Nev);
+    }
+
+    setShowSportSuggestions(false);
+
+    // Clear any error for sportId field
+    setFieldErrors(prev => ({
+      ...prev,
+      sportId: ""
+    }));
+  };
 
   // Validate field when it changes
   const validateField = (name, value) => {
@@ -482,6 +592,8 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       })
       setImageFile(null)
       setImagePreview("")
+      setLocationSearchTerm("")
+      setSportSearchTerm("")
 
       // Close modal after 2 seconds on success
       setTimeout(() => {
@@ -496,10 +608,8 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   }
 
   // Handler for opening the location modal
-  // In the EventModal component, modify the handleCreateLocation function:
-
   const handleCreateLocation = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     // Open the location modal without closing the event modal
     openHelyszinModal({
       onLocationCreated: (newLocation) => {
@@ -510,6 +620,8 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
           ...prev,
           helyszinId: newLocation.Id.toString()
         }));
+        // Update the search term with the new location
+        setLocationSearchTerm(`${newLocation.Telepules} - ${newLocation.Nev}`);
         // Clear any error for helyszinId field
         setFieldErrors(prev => ({
           ...prev,
@@ -517,8 +629,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         }));
       }
     });
-  };
-
+  }
 
   // Handler for opening the sport modal
   const handleCreateSport = (e) => {
@@ -534,7 +645,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all duration-300">
       <div
-        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-[600px] w-full p-6 shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50 max-h-[90vh] overflow-y-auto"
+        className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl max-w-[600px] w-full p-6 shadow-[0_0_50px_rgba(0,0,0,0.3)] border border-slate-700/50 max-h-[90vh] overflow-y-auto scrollbar-hide"
         style={{
           animation: "modal-appear 0.3s ease-out forwards",
           transform: "scale(0.95)",
@@ -542,28 +653,39 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         }}
       >
         <style jsx>{`
-          @keyframes modal-appear {
-            0% {
-              transform: scale(0.95);
-              opacity: 0;
+            @keyframes modal-appear {
+              0% {
+                transform: scale(0.95);
+                opacity: 0;
+              }
+              100% {
+                transform: scale(1);
+                opacity: 1;
+              }
             }
-            100% {
-              transform: scale(1);
-              opacity: 1;
+            @keyframes pulse-glow {
+              0% {
+                box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+              }
+              50% {
+                box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+              }
+              100% {
+                box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+              }
             }
-          }
-          @keyframes pulse-glow {
-            0% {
-              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
+            
+            /* Hide scrollbar but keep functionality */
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
             }
-            50% {
-              box-shadow: 0 0 15px 5px rgba(147, 51, 234, 0.5);
+            
+            /* For IE, Edge and Firefox */
+            .scrollbar-hide {
+              -ms-overflow-style: none;  /* IE and Edge */
+              scrollbar-width: none;  /* Firefox */
             }
-            100% {
-              box-shadow: 0 0 5px 0px rgba(147, 51, 234, 0.5);
-            }
-          }
-        `}</style>
+          `}</style>
 
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -631,27 +753,53 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6 mb-6 md:grid-cols-2">
-            {/* Location selector - now with dynamic data */}
+            {/* Location selector - now with searchable input */}
             <div>
               <label htmlFor="helyszinId" className="block mb-2 text-sm font-medium text-gray-300">
                 Helyszín
               </label>
-              <div className="flex gap-2">
-                <select
-                  id="helyszinId"
-                  className={`bg-slate-800/80 border ${fieldErrors.helyszinId ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
-                  value={formData.helyszinId}
-                  onChange={handleChange}
-                  required
-                  disabled={loadingLocations}
-                >
-                  <option value="">Válassz helyszínt</option>
-                  {locations.map((location) => (
-                    <option key={location.Id} value={location.Id}>
-                      {location.Nev} - {location.Telepules}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex gap-2 relative">
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    id="locationSearch"
+                    className={`bg-slate-800/80 border ${fieldErrors.helyszinId ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
+                    value={locationSearchTerm}
+                    onChange={handleLocationSearch}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowLocationSuggestions(true);
+                    }}
+                    placeholder="Keresés település vagy helyszín név alapján..."
+                    disabled={loadingLocations}
+                  />
+                  {showLocationSuggestions && (
+                    <div className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-auto scrollbar-hide">
+                      {locations.length === 0 ? (
+                        <div className="p-3 text-gray-400 text-sm">Előszőr hozzon létre egy helyszínt a +-gomb segítségével!</div>
+                      ) : (
+                        locations
+                          .filter(location =>
+                            `${location.Telepules} - ${location.Nev}`.toLowerCase().includes(locationSearchTerm.toLowerCase()) ||
+                            locationSearchTerm === ""
+                          )
+                          .slice(0, 5) // Limit to 5 suggestions
+                          .map(location => (
+                            <div
+                              key={location.Id}
+                              className="p-3 hover:bg-slate-700 cursor-pointer text-gray-200 text-sm transition-colors duration-150"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                selectLocation(location.Id.toString());
+                              }}
+                            >
+                              {location.Telepules} - {location.Nev}
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleCreateLocation}
                   className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm rounded-xl px-3 transition duration-300 shadow-lg shadow-purple-700/20 hover:shadow-purple-700/40 flex items-center justify-center"
@@ -691,26 +839,52 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               )}
             </div>
 
-            {/* Sport selector - now with dynamic data (removed + button) */}
+            {/* Sport selector - now with searchable input */}
             <div>
               <label htmlFor="sportId" className="block mb-2 text-sm font-medium text-gray-300">
                 Sport
               </label>
-              <select
-                id="sportId"
-                className={`bg-slate-800/80 border ${fieldErrors.sportId ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
-                value={formData.sportId}
-                onChange={handleChange}
-                required
-                disabled={loadingSports}
-              >
-                <option value="">Válassz sportot</option>
-                {sports.map((sport) => (
-                  <option key={sport.Id} value={sport.Id}>
-                    {sport.Nev}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="sportSearch"
+                  className={`bg-slate-800/80 border ${fieldErrors.sportId ? "border-red-500" : "border-slate-600/50 hover:border-purple-500/50"} text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300`}
+                  value={sportSearchTerm}
+                  onChange={handleSportSearch}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSportSuggestions(true);
+                  }}
+                  placeholder="Keresés sport név alapján..."
+                  disabled={loadingSports}
+                />
+                {showSportSuggestions && (
+                  <div className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-auto scrollbar-hide">
+                    {sports.length === 0 ? (
+                      <div className="p-3 text-gray-400 text-sm">Nincs találat.</div>
+                    ) : (
+                      sports
+                        .filter(sport =>
+                          sport.Nev.toLowerCase().includes(sportSearchTerm.toLowerCase()) ||
+                          sportSearchTerm === ""
+                        )
+                        .slice(0, 5) // Limit to 5 suggestions
+                        .map(sport => (
+                          <div
+                            key={sport.Id}
+                            className="p-3 hover:bg-slate-700 cursor-pointer text-gray-200 text-sm transition-colors duration-150"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectSport(sport.Id.toString());
+                            }}
+                          >
+                            {sport.Nev}
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
               {loadingSports && (
                 <p className="text-purple-400 text-xs mt-2 flex items-center">
                   <svg
@@ -960,5 +1134,6 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 }
 
 export default EventModal
+
 
 
