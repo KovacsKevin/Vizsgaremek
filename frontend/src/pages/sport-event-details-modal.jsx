@@ -397,6 +397,10 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   const [showMapModal, setShowMapModal] = useState(false);
   // Új állapot a meghívás modal kezeléséhez
   const [showInviteModal, setShowInviteModal] = useState(false);
+  // Új állapotok a kérelem visszavonásához
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+
 
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   // Meghívás modal megnyitása
@@ -702,6 +706,48 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       }
     } finally {
       setIsJoining(false);
+    }
+  };
+
+  // Kérelem visszavonása függvény
+  const handleCancelRequest = async () => {
+    if (isCancelling) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      const response = await fetch("http://localhost:8081/api/esemeny/cancel-pending-request", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.token}`
+        },
+        body: JSON.stringify({
+          eseményId: currentEvent.id
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Hiba történt a kérelem visszavonása közben');
+      }
+
+      // Sikeres visszavonás esetén frissítjük az UI-t
+      setUserStatus('');
+      setIsParticipant(false);
+
+      // Opcionális: sikeres üzenet megjelenítése
+      toast.success('Jelentkezés sikeresen visszavonva');
+
+      // Opcionális: oldal újratöltése vagy résztvevők listájának frissítése
+      router.reload();
+    } catch (error) {
+      console.error('Hiba a kérelem visszavonásakor:', error);
+      setCancelError(error.message);
+      toast.error(error.message);
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -1344,12 +1390,21 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       <>
                         {/* Felhasználó státuszának megjelenítése */}
                         {userStatus === 'függőben' ? (
-                          <button
-                            className="w-full sm:w-auto px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
-                            disabled
-                          >
-                            Kérelem elküldve
-                          </button>
+                          <div className="w-full flex gap-2">
+                            <button
+                              className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
+                              disabled
+                            >
+                              Kérelem elküldve
+                            </button>
+                            <button
+                              onClick={handleCancelRequest}
+                              className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Kérelem visszavonása
+                            </button>
+                          </div>
                         ) : userStatus === 'elutasítva' ? (
                           <button
                             className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-md cursor-not-allowed"
@@ -1809,10 +1864,6 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     </>
   );
 };
-
-
-
-
 
 // Új komponens az esemény szerkesztéséhez
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
@@ -2729,6 +2780,9 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [eventDetails, setEventDetails] = useState(null);
   const [ageRange, setAgeRange] = useState({ min: 0, max: 100 });
+  // Add this state for tracking the cancellation process
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
 
   // Összes felhasználó betöltése a komponens megjelenésekor
   useEffect(() => {

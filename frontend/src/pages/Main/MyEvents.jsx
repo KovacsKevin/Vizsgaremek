@@ -565,7 +565,7 @@ const MyEvents = () => {
 
       console.log("Canceling pending request for event ID:", eventId);
 
-      const response = await fetch("http://localhost:8081/api/v1/cancel-pending-request", {
+      const response = await fetch("http://localhost:8081/api/esemeny/cancel-pending-request", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
