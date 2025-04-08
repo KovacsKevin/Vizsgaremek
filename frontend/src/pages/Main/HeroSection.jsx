@@ -139,7 +139,7 @@ const HeroSection = ({ Image }) => {
                 animation: "text-shimmer 4s linear infinite",
               }}
             >
-              Találd meg a kedvenc
+              Játsszad a kedvenc
             </span>
             <br />
             <span className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">

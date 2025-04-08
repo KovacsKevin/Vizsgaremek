@@ -20,7 +20,7 @@ import {
   Volleyball,
   Zap,
   Phone,
-  House  
+  House
 } from "lucide-react"
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import Cookies from "js-cookie"
@@ -682,7 +682,14 @@ const Header = ({ activeTab, setActiveTab }) => {
     <header className="backdrop-blur-md bg-gradient-to-r from-slate-900/90 to-slate-800/90 border-b border-slate-700/50 sticky top-0 z-50 shadow-lg">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+          <div
+            className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
+            onClick={() => {
+              navigate('/homepage');
+              window.scrollTo(0, 0);
+              setActiveTab('home');
+            }}
+          >
             Sporthaver
           </div>
 
@@ -691,7 +698,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
                 {/* Notification Bell */}
-               
+
 
                 {/* User Profile */}
                 <div className="relative">
