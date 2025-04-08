@@ -63,79 +63,76 @@ const SearchForm = () => {
 
   // Listen for input changes from external sources (like PopularDestination.jsx)
   useEffect(() => {
-    const locationInput = document.getElementById('destination');
-    const sportInput = document.getElementById('sport');
+    const locationInput = document.getElementById("destination")
+    const sportInput = document.getElementById("sport")
 
     if (locationInput && sportInput) {
       // Create a MutationObserver to watch for value changes
       const locationObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
-            setSearchTerm(locationInput.value);
+          if (mutation.type === "attributes" && mutation.attributeName === "value") {
+            setSearchTerm(locationInput.value)
           }
-        });
-      });
+        })
+      })
 
       const sportObserver = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
-          if (mutation.type === 'attributes' && mutation.attributeName === 'value') {
-            setSportSearchTerm(sportInput.value);
+          if (mutation.type === "attributes" && mutation.attributeName === "value") {
+            setSportSearchTerm(sportInput.value)
           }
-        });
-      });
+        })
+      })
 
       // Listen for input events
       const handleLocationInput = (e) => {
-        setSearchTerm(e.target.value);
-      };
+        setSearchTerm(e.target.value)
+      }
 
       const handleSportInput = (e) => {
-        setSportSearchTerm(e.target.value);
-      };
+        setSportSearchTerm(e.target.value)
+      }
 
-      locationInput.addEventListener('input', handleLocationInput);
-      sportInput.addEventListener('input', handleSportInput);
+      locationInput.addEventListener("input", handleLocationInput)
+      sportInput.addEventListener("input", handleSportInput)
 
       // Configure and start the observers
-      const config = { attributes: true, attributeFilter: ['value'] };
-      locationObserver.observe(locationInput, config);
-      sportObserver.observe(sportInput, config);
+      const config = { attributes: true, attributeFilter: ["value"] }
+      locationObserver.observe(locationInput, config)
+      sportObserver.observe(sportInput, config)
 
       // Check if both fields are filled from external source and trigger search
       const checkAndSearch = () => {
         if (locationInput.value && sportInput.value) {
           // If both fields have values and they were set externally
-          if (
-            locationInput.value !== searchTerm ||
-            sportInput.value !== sportSearchTerm
-          ) {
+          if (locationInput.value !== searchTerm || sportInput.value !== sportSearchTerm) {
             // Update our state
-            setSearchTerm(locationInput.value);
-            setSportSearchTerm(sportInput.value);
+            setSearchTerm(locationInput.value)
+            setSportSearchTerm(sportInput.value)
 
             // Wait a bit to ensure state is updated
             setTimeout(() => {
               // Trigger search if both fields are filled
               if (searchButtonRef.current && locationInput.value && sportInput.value) {
-                searchButtonRef.current.click();
+                searchButtonRef.current.click()
               }
-            }, 300);
+            }, 300)
           }
         }
-      };
+      }
 
       // Check once after component mounts
-      setTimeout(checkAndSearch, 500);
+      setTimeout(checkAndSearch, 500)
 
       return () => {
         // Clean up
-        locationInput.removeEventListener('input', handleLocationInput);
-        sportInput.removeEventListener('input', handleSportInput);
-        locationObserver.disconnect();
-        sportObserver.disconnect();
-      };
+        locationInput.removeEventListener("input", handleLocationInput)
+        sportInput.removeEventListener("input", handleSportInput)
+        locationObserver.disconnect()
+        sportObserver.disconnect()
+      }
     }
-  }, []);
+  }, [])
 
   // Handle location input change
   const handleLocationInputChange = (e) => {
@@ -186,32 +183,33 @@ const SearchForm = () => {
   // Handle search button click - updated for flexible search
   const handleSearchClick = () => {
     // Add loading indicator or animation here if desired
-    const searchButton = document.querySelector('#search button');
+    const searchButton = document.querySelector("#search button")
     if (searchButton) {
-      searchButton.classList.add('opacity-75');
-      searchButton.innerHTML = '<span class="inline-block animate-spin mr-2 h-4 w-4 border-t-2 border-white rounded-full"></span>Keresés...';
+      searchButton.classList.add("opacity-75")
+      searchButton.innerHTML =
+        '<span class="inline-block animate-spin mr-2 h-4 w-4 border-t-2 border-white rounded-full"></span>Keresés...'
     }
 
     // Check if both fields are empty - show all events
     if (!searchTerm && !sportSearchTerm) {
-      window.location.href = `/sportmate?allEvents=true`;
-      return;
+      window.location.href = `/sportmate?allEvents=true`
+      return
     }
 
     // If only location is provided
     if (searchTerm && !sportSearchTerm) {
-      window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&locationOnly=true`;
-      return;
+      window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&locationOnly=true`
+      return
     }
 
     // If only sport is provided
     if (!searchTerm && sportSearchTerm) {
-      window.location.href = `/sportmate?sport=${encodeURIComponent(sportSearchTerm)}&sportOnly=true`;
-      return;
+      window.location.href = `/sportmate?sport=${encodeURIComponent(sportSearchTerm)}&sportOnly=true`
+      return
     }
 
     // If both are provided - original behavior
-    window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&sport=${encodeURIComponent(sportSearchTerm)}`;
+    window.location.href = `/sportmate?telepules=${encodeURIComponent(searchTerm)}&sport=${encodeURIComponent(sportSearchTerm)}`
   }
 
   // Handle click outside to close suggestions
@@ -232,7 +230,7 @@ const SearchForm = () => {
   }, [])
 
   return (
-    <section className="py-6" id="search">
+    <section className="py-6 bg-[#0e1526]" id="search">
       <div className="container mx-auto px-4">
         <div className="backdrop-blur-xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-lg shadow-2xl p-6 -mt-20 relative z-20">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -242,13 +240,13 @@ const SearchForm = () => {
                 Válassz települést!
               </label>
               <div className="relative" ref={locationInputRef}>
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300">
                   <Search className="h-5 w-5" />
                 </div>
                 <input
                   id="destination"
                   placeholder="Település neve vagy hagyd üresen"
-                  className="w-full pl-10 py-3 bg-white rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300"
+                  className="w-full pl-10 py-3 bg-white rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400/60 transition-all duration-300"
                   value={searchTerm}
                   onChange={handleLocationInputChange}
                   onFocus={() => searchTerm && setShowSuggestions(true)}
@@ -260,7 +258,7 @@ const SearchForm = () => {
                     {filteredLocations.map((location, index) => (
                       <li
                         key={index}
-                        className="px-4 py-2 hover:bg-purple-50 cursor-pointer text-slate-700 border-b border-slate-100 last:border-0"
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-slate-700 border-b border-slate-100 last:border-0"
                         onClick={() => handleLocationSuggestionClick(location)}
                       >
                         {location}
@@ -277,13 +275,13 @@ const SearchForm = () => {
                 Válassz egy sportot!
               </label>
               <div className="relative" ref={sportInputRef}>
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-300">
                   <Users className="h-5 w-5" />
                 </div>
                 <input
                   id="sport"
                   placeholder="Sport neve vagy hagyd üresen"
-                  className="w-full pl-10 py-3 bg-white rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300"
+                  className="w-full pl-10 py-3 bg-white rounded-lg text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400/60 transition-all duration-300"
                   value={sportSearchTerm}
                   onChange={handleSportInputChange}
                   onFocus={() => sportSearchTerm && setShowSportSuggestions(true)}
@@ -295,7 +293,7 @@ const SearchForm = () => {
                     {filteredSports.map((sport, index) => (
                       <li
                         key={index}
-                        className="px-4 py-2 hover:bg-purple-50 cursor-pointer text-slate-700 border-b border-slate-100 last:border-0"
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-slate-700 border-b border-slate-100 last:border-0"
                         onClick={() => handleSportSuggestionClick(sport)}
                       >
                         {sport}
@@ -318,7 +316,8 @@ const SearchForm = () => {
             </div>
           </div>
           <div className="mt-2 text-xs text-white/60">
-            Kereshetsz csak település vagy csak sport alapján is. Ha mindkét mezőt üresen hagyod, az összes eseményt láthatod.
+            Kereshetsz csak település vagy csak sport alapján is. Ha mindkét mezőt üresen hagyod, az összes eseményt
+            láthatod.
           </div>
         </div>
       </div>
