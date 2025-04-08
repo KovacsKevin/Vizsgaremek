@@ -616,13 +616,29 @@ const SportMateFinder = () => {
     }
   }
 
+  // Modify the openEventModal function to check for authentication first
   const openEventModal = (event, isInvitation = false) => {
+    // Check if user is authenticated
+    const token = getAuthToken()
+    if (!token) {
+      // Redirect to login page if not authenticated
+      navigate('/login', {
+        state: {
+          from: window.location.pathname + window.location.search,
+          message: "A sportesemény részleteinek megtekintéséhez be kell jelentkezni."
+        }
+      })
+      return
+    }
+
+    // If authenticated, proceed as normal
     setSelectedEvent({
       ...event,
-      isInvitation: isInvitation, // Add this flag to the event object
+      isInvitation: isInvitation,
     })
     setShowModal(true)
   }
+
 
   const closeEventModal = () => {
     setShowModal(false)
@@ -915,8 +931,7 @@ const SportMateFinder = () => {
                                   openEventModal(event)
                                 }
                               }}
-                              className={`px-4 py-2 rounded-lg transition-colors ${
-                                getUserEventRole(event.id) === "szervező"
+                              className={`px-4 py-2 rounded-lg transition-colors ${getUserEventRole(event.id) === "szervező"
                                   ? "bg-gradient-to-r from-[#a855f7] to-[#6366f1] hover:from-[#9333ea] hover:to-[#4f46e5]"
                                   : getUserEventStatus(event.id) === "elfogadva"
                                     ? "bg-green-600 hover:bg-green-700"
@@ -925,7 +940,7 @@ const SportMateFinder = () => {
                                       : getUserEventStatus(event.id) === "meghívott"
                                         ? "bg-blue-600 hover:bg-blue-700"
                                         : "bg-red-600 hover:bg-red-700"
-                              } text-white`}
+                                } text-white`}
                             >
                               {getUserEventRole(event.id) === "szervező"
                                 ? "Szervező vagyok"
