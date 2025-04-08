@@ -1,31 +1,23 @@
 "use client"
 
-import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin, ArrowRight } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import React, { useState } from "react";
+import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const Footer = ({ Link, Image }) => {
+// Importáljuk a modal komponenseket
+import Rolunk from "../Footer/Rolunk";
+import AFSZ from "../Footer/AFSZ";
+import AdatvedelmiTajekoztato from "../Footer/AdatvedelmiTajekoztato";
+import Impresszum from "../Footer/Impresszum";
+
+const Footer = () => {
   const navigate = useNavigate();
-
-  const supportLinks = [
-    { text: "Segítség Központ", href: "#" },
-    { text: "Biztonsági Információk", href: "#" },
-    { text: "Lemondási Lehetőségek", href: "#" },
-    { text: "Kapcsolat", href: "#" },
-  ]
-
-  const companyLinks = [
-    { text: "Rólunk", href: "#" },
-    { text: "Karrier", href: "#" },
-    { text: "Sajtó", href: "#" },
-    { text: "Befektetők", href: "#" },
-  ]
-
-  const partnerLinks = [
-    { text: "Partner Portál", href: "#" },
-    { text: "Hirdesd Létesítményed", href: "#" },
-    { text: "Partnerprogram", href: "#" },
-    { text: "Kapcsolódó Partnerek", href: "#" },
-  ]
+  
+  // State-ek a modalok megjelenítéséhez
+  const [isRolunkOpen, setIsRolunkOpen] = useState(false);
+  const [isAFSZOpen, setIsAFSZOpen] = useState(false);
+  const [isAdatvedelemOpen, setIsAdatvedelemOpen] = useState(false);
+  const [isImpresszumOpen, setIsImpresszumOpen] = useState(false);
 
   return (
     <footer id="contact-section" className="relative overflow-hidden">
@@ -102,10 +94,77 @@ const Footer = ({ Link, Image }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Footer columns */}
-          <FooterColumn title="Rólunk" links={supportLinks} Link={Link} />
-          <FooterColumn title="ÁFSZ" links={companyLinks} Link={Link} />
-          <FooterColumn title="Adatvédelmi tájékoztató" links={partnerLinks} Link={Link} />
-          <FooterColumn title="Impresszum" links={partnerLinks} Link={Link} />
+          <div>
+            <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
+              Rólunk
+              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
+            </h3>
+            <ul className="space-y-3">
+              <li>
+                <button
+                  onClick={() => setIsRolunkOpen(true)}
+                  className="text-gray-300 hover:text-purple-300 transition-colors duration-300 flex items-center group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  Rólunk
+                </button>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
+              ÁFSZ
+              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
+            </h3>
+            <ul className="space-y-3">
+              <li>
+                <button
+                  onClick={() => setIsAFSZOpen(true)}
+                  className="text-gray-300 hover:text-purple-300 transition-colors duration-300 flex items-center group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  Általános Felhasználási Feltételek
+                </button>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
+              Adatvédelem
+              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
+            </h3>
+            <ul className="space-y-3">
+              <li>
+                <button
+                  onClick={() => setIsAdatvedelemOpen(true)}
+                  className="text-gray-300 hover:text-purple-300 transition-colors duration-300 flex items-center group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  Adatvédelmi tájékoztató
+                </button>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
+              Impresszum
+              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
+            </h3>
+            <ul className="space-y-3">
+              <li>
+                <button
+                  onClick={() => setIsImpresszumOpen(true)}
+                  className="text-gray-300 hover:text-purple-300 transition-colors duration-300 flex items-center group"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  Impresszum
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Contact info */}
@@ -139,29 +198,28 @@ const Footer = ({ Link, Image }) => {
               <MapPin className="h-5 w-5 text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Cím</p>
-              <p className="text-white">1051 Budapest, Példa utca 123.</p>
+            <p className="text-white">1051 Budapest, Példa utca 123.</p>
             </div>
           </div>
         </div>
 
         {/* Bottom section */}
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-700/50">
-        <div
-          className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
-          onClick={() => {
-            navigate('/homepage');
-            // Kis késleltetés, hogy biztosan betöltődjön az oldal
-            setTimeout(() => {
-              window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-              });
-            }, 100);
-          }}
-        >
-          Sporthaver
-        </div>
+          <div
+            className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
+            onClick={() => {
+              navigate('/homepage');
+              // Kis késleltetés, hogy biztosan betöltődjön az oldal
+              setTimeout(() => {
+                window.scrollTo({
+                  top: 0,
+                  behavior: 'smooth'
+                });
+              }, 100);
+            }}
+          >
+            Sporthaver
+          </div>
 
           {/* Social icons */}
           <div className="flex space-x-4 mb-6 md:mb-0">
@@ -194,32 +252,15 @@ const Footer = ({ Link, Image }) => {
           <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} Sporthaver. Minden jog fenntartva.</p>
         </div>
       </div>
+
+      {/* Modal components */}
+      <Rolunk isOpen={isRolunkOpen} onClose={() => setIsRolunkOpen(false)} />
+      <AFSZ isOpen={isAFSZOpen} onClose={() => setIsAFSZOpen(false)} />
+      <AdatvedelmiTajekoztato isOpen={isAdatvedelemOpen} onClose={() => setIsAdatvedelemOpen(false)} />
+      <Impresszum isOpen={isImpresszumOpen} onClose={() => setIsImpresszumOpen(false)} />
     </footer>
   )
 }
 
-const FooterColumn = ({ title, links, Link }) => {
-  return (
-    <div>
-      <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
-        {title}
-        <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
-      </h3>
-      <ul className="space-y-3">
-        {links.map((link, index) => (
-          <li key={index}>
-            <Link
-              href={link.href}
-              className="text-gray-300 hover:text-purple-300 transition-colors duration-300 flex items-center group"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500/50 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-              {link.text}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 export default Footer
+
