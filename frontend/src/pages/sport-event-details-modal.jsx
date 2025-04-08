@@ -450,7 +450,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       const token = getCookie('token');
 
       if (!token) {
-        return; 
+        return;
       }
 
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/check-participation`, {
@@ -525,6 +525,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setIsJoining(true);
     setJoinError('');
 
+    // When user sends a join request in handleJoinEvent function
     if (!isInvitation) {
       setIsParticipant(true);
       setUserStatus('függőben');
@@ -536,6 +537,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           status: 'függőben',
           updateParticipantCount: false
         });
+      }
+
+      // Add the event ID to pendingEvents in sessionStorage
+      const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
+      if (!pendingEvents.includes(currentEvent.id)) {
+        pendingEvents.push(currentEvent.id);
+        sessionStorage.setItem('pendingEvents', JSON.stringify(pendingEvents));
       }
     }
 
@@ -594,7 +602,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         setTimeout(() => {
           checkParticipation(currentEvent.id, currentUser);
           fetchParticipants(currentEvent.id);
-        }, 1000); 
+        }, 1000);
       }
     } finally {
       setIsJoining(false);
@@ -603,23 +611,25 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
   const handleCancelRequest = async () => {
     if (isCancelling) return;
-    
+
     setIsCancelling(true);
     setCancelError(null);
-    
-    const pendingEventId = sessionStorage.getItem('pendingEventId');
-    console.log("Attempting to cancel event with ID:", pendingEventId);
-    
-    if (!pendingEventId) {
+
+    // Get the current event ID
+    const eventId = currentEvent.id;
+
+    console.log("Attempting to cancel event with ID:", eventId);
+
+    if (!eventId) {
       console.error("No event ID found to cancel");
       setCancelError("Nem található esemény azonosító");
       setIsCancelling(false);
       return;
     }
-  
+
     try {
       const token = getCookie('token');
-  
+
       console.log("Sending cancel request to server...");
       const response = await fetch("http://localhost:8081/api/v1/cancel-pending-request", {
         method: 'POST',
@@ -628,20 +638,25 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
-          eseményId: pendingEventId
+          eseményId: eventId
         })
       });
-      
+
       console.log("Response status:", response.status);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Hiba történt a kérelem visszavonása közben');
       }
-  
+
+      // Remove this event ID from pendingEvents
+      const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
+      const updatedEvents = pendingEvents.filter(id => id !== eventId);
+      sessionStorage.setItem('pendingEvents', JSON.stringify(updatedEvents));
+
       console.log("Request successful, refreshing the page...");
-      window.location.reload(); 
-  
+      window.location.reload();
+
     } catch (error) {
       console.error('Hiba a kérelem visszavonásakor:', error);
       setCancelError(error.message || 'Ismeretlen hiba történt');
@@ -649,6 +664,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setIsCancelling(false);
     }
   };
+
+  const isEventPending = (eventId) => {
+    const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
+    return pendingEvents.includes(eventId);
+  };
+
 
   const handleAcceptInvitation = async () => {
     if (!currentEvent.id) {
@@ -723,19 +744,19 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setJoinError("Esemény azonosító hiányzik");
       return;
     }
-
+  
     setIsJoining(true);
     setJoinError('');
-
+  
     try {
       const token = getCookie('token');
-
+  
       if (!token) {
         throw new Error("Bejelentkezés szükséges a meghívás elutasításához");
       }
-
+  
       console.log("Rejecting invitation for event:", currentEvent.id);
-
+  
       const response = await fetch(`http://localhost:8081/api/v1/reject-invitation`, {
         method: "POST",
         headers: {
@@ -746,34 +767,46 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           eseményId: currentEvent.id
         }),
       });
-
+  
       let responseData = {};
       try {
         responseData = await response.json();
       } catch (e) {
         console.error("Failed to parse response JSON:", e);
       }
-
+  
       if (!response.ok) {
         throw new Error(responseData.message || "Sikertelen meghívás elutasítás");
       }
-
+  
       console.log("Invitation rejection successful:", responseData);
-
+  
+      // Update local state
       setIsParticipant(false);
       setUserStatus('elutasítva');
-
+      
+      // Notify parent components about the update
       if (onParticipantUpdate && currentUser) {
         onParticipantUpdate(currentEvent.id, false, {
           userId: currentUser.userId,
-          status: 'elutasítva'
+          status: 'elutasítva',
+          updateParticipantCount: true
         });
       }
-
+  
+      // Közvetlenül hívjuk meg az onRejectInvitation függvényt
       if (typeof onRejectInvitation === 'function') {
         onRejectInvitation();
       }
-
+      
+      // Bezárjuk a modalt
+      onClose();
+      
+      // Oldalfrissítés rövid késleltetéssel, hogy a modal bezárása látható legyen
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+  
     } catch (error) {
       console.error("Hiba a meghívás elutasítása során:", error);
       setJoinError(error.message || "Sikertelen meghívás elutasítás. Kérjük, próbáld újra később.");
@@ -781,6 +814,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setIsJoining(false);
     }
   };
+  
+
+
 
   const handleLeaveEvent = async () => {
     if (!currentEvent.id) {
@@ -1168,7 +1204,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
                       <XCircle className="h-4 w-4 text-red-500" />)}
-                  </span>                 
+                  </span>
                   <span className="px-3 py-1 bg-white/10 rounded-full text-sm flex items-center gap-1">
                     <DoorOpen className="h-4 w-4" /> Öltöző
                     {currentEvent.Helyszin?.Oltozo === true ? (
@@ -1240,13 +1276,15 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                             >
                               Kérelem elküldve
                             </button>
-                            <button
-                              onClick={handleCancelRequest}
-                              className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Kérelem visszavonása
-                            </button>
+                            {isEventPending(currentEvent.id) && (
+                              <button
+                                onClick={handleCancelRequest}
+                                className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                              >
+                                <XCircle className="h-4 w-4" />
+                                Kérelem visszavonása
+                              </button>
+                            )}
                           </div>
                         ) : userStatus === 'elutasítva' ? (
                           <button
@@ -1859,10 +1897,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         Cim: formData.helyszinCim,
         Telepules: formData.helyszinTelepules,
         Iranyitoszam: iranyitoszam,
-        Fedett: formData.helyszinFedett === true, 
+        Fedett: formData.helyszinFedett === true,
         Oltozo: formData.helyszinOltozo === true,
         Parkolas: formData.helyszinParkolas || "nincs",
-        Berles: formData.helyszinBerles === true, 
+        Berles: formData.helyszinBerles === true,
         Leiras: formData.helyszinLeiras || ""
       };
 
@@ -2774,7 +2812,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         body: JSON.stringify({
           eseményId: eventId,
           userIds: userIds,
-          status: 'meghívott' 
+          status: 'meghívott'
         }),
       });
 
@@ -2997,8 +3035,8 @@ const SportEventDetailsModal = ({
   isPending = false,
   onAcceptInvitation,
   onRejectInvitation,
-  onCancelPendingRequest 
-  
+  onCancelPendingRequest
+
 }) => {
   return (
     <EventModal

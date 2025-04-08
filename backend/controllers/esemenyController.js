@@ -634,7 +634,7 @@ const joinEsemeny = async (req, res) => {
             message: isOrganizer ? "Sikeresen csatlakozott az eseményhez" : "Csatlakozási kérelem elküldve",
             participant: {
                 userId: user.id,
-                name: user.name,
+                name: user.username,
                 image: user.image,
                 age: user.age,
                 level: user.level,
@@ -2565,6 +2565,34 @@ const cancelPendingRequest = async (req, res) => {
 };
 
 
+// Function to add an event ID to the pending requests in sessionStorage
+const addPendingEventId = (eventId) => {
+    // Get existing pending events or initialize empty array
+    const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
+    
+    // Add new event ID if it's not already in the list
+    if (!pendingEvents.includes(eventId)) {
+      pendingEvents.push(eventId);
+      sessionStorage.setItem('pendingEvents', JSON.stringify(pendingEvents));
+    }
+  };
+  
+  // Function to remove an event ID from pending requests
+  const removePendingEventId = (eventId) => {
+    // Get existing pending events or initialize empty array
+    const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
+    
+    // Remove the event ID
+    const updatedEvents = pendingEvents.filter(id => id !== eventId);
+    sessionStorage.setItem('pendingEvents', JSON.stringify(updatedEvents));
+  };
+  
+  // Function to check if an event ID is in pending requests
+  const isEventPending = (eventId) => {
+    const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
+    return pendingEvents.includes(eventId);
+  };
+
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -2603,7 +2631,10 @@ module.exports = {
     getAllEventInvitations,
     searchUsersForEvent,
     getPendingEvents,
-    cancelPendingRequest
+    cancelPendingRequest,
+    addPendingEventId,
+    removePendingEventId,
+    isEventPending
 };
 
 
