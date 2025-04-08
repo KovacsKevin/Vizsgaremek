@@ -678,11 +678,9 @@ const SportMateFinder = () => {
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#a855f7] to-[#6366f1]">
-              Legfrisebb sportesemények
+              Sporteseményeink
             </h1>
-            <p className="text-[#a1a1aa] max-w-2xl mx-auto">
-              Fedezd fel legfrissebb sporteseményeinket és csatlakozz a közösséghez
-            </p>
+            <p className="text-[#a1a1aa] max-w-2xl mx-auto">Tekints meg a keresésed alapján szűrt a sporteseményeket</p>
           </div>
 
           {/* Keresősáv hozzáadása */}
@@ -863,19 +861,19 @@ const SportMateFinder = () => {
                       <div className="p-5">
                         <div className="flex justify-between items-start mb-4">
                           <div className="space-y-2">
-                            <div className="flex items-start gap-2 text-white/80">
-                              <Calendar className="h-4 w-4 flex-shrink-0 mt-1" />
+                            <div className="flex items-start gap-2 text-white/80 mt-6">
+                              <Calendar className="h-5 w-5 flex-shrink-0 mt-1" />
                               <div>
-                                <div className="text-xs text-white/60">Kezdés</div>
-                                <div className="text-lg font-medium">{formatDateTime(event.kezdoIdo)}</div>
+                                <div className="text-sm text-white/60">Kezdés</div>
+                                <div className="text-xl font-medium">{formatDateTime(event.kezdoIdo)}</div>
                               </div>
                             </div>
 
-                            <div className="flex items-start gap-2 text-white/80">
-                              <Clock className="h-4 w-4 flex-shrink-0 mt-1" />
-                              <div>
-                                <div className="text-xs text-white/60">Befejezés</div>
-                                <div className="text-lg font-medium">{formatDateTime(event.zaroIdo)}</div>
+                            <div className="flex items-start gap-2 text-white/80 mt-20">
+                              <Clock className="h-5 w-5 flex-shrink-0 mt-6" />
+                              <div className="mt-6">
+                                <div className="text-sm text-white/60">Befejezés</div>
+                                <div className="text-xl font-medium">{formatDateTime(event.zaroIdo)}</div>
                               </div>
                             </div>
                           </div>
