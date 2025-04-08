@@ -1,8 +1,11 @@
 "use client"
 
 import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin, ArrowRight } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 const Footer = ({ Link, Image }) => {
+  const navigate = useNavigate();
+
   const supportLinks = [
     { text: "Segítség Központ", href: "#" },
     { text: "Biztonsági Információk", href: "#" },
@@ -99,37 +102,10 @@ const Footer = ({ Link, Image }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Footer columns */}
-          <FooterColumn title="Támogatás" links={supportLinks} Link={Link} />
-          <FooterColumn title="Cégünk" links={companyLinks} Link={Link} />
-          <FooterColumn title="Partnerek" links={partnerLinks} Link={Link} />
-
-          <div>
-            <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
-              Mobilalkalmazás
-              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-gradient-to-r from-purple-500 to-indigo-500"></span>
-            </h3>
-            <p className="mb-4 text-gray-300">Töltsd le az alkalmazást a könnyebb foglalásért és exkluzív ajánlatokért!</p>
-            <div className="flex space-x-4">
-              <Link href="#" className="block w-32 transform hover:scale-105 transition-transform duration-300">
-                <Image
-                  src="/placeholder.svg?height=40&width=120&text=App+Store"
-                  alt="Letöltés App Store-ból"
-                  width={120}
-                  height={40}
-                  className="w-full rounded-md shadow-lg"
-                />
-              </Link>
-              <Link href="#" className="block w-32 transform hover:scale-105 transition-transform duration-300">
-                <Image
-                  src="/placeholder.svg?height=40&width=120&text=Google+Play"
-                  alt="Letöltés Google Play-ből"
-                  width={120}
-                  height={40}
-                  className="w-full rounded-md shadow-lg"
-                />
-              </Link>
-            </div>
-          </div>
+          <FooterColumn title="Rólunk" links={supportLinks} Link={Link} />
+          <FooterColumn title="ÁFSZ" links={companyLinks} Link={Link} />
+          <FooterColumn title="Adatvédelmi tájékoztató" links={partnerLinks} Link={Link} />
+          <FooterColumn title="Impresszum" links={partnerLinks} Link={Link} />
         </div>
 
         {/* Contact info */}
@@ -171,9 +147,21 @@ const Footer = ({ Link, Image }) => {
 
         {/* Bottom section */}
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-700/50">
-          <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400 mb-4 md:mb-0">
-            Sporthaver
-          </div>
+        <div
+          className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
+          onClick={() => {
+            navigate('/homepage');
+            // Kis késleltetés, hogy biztosan betöltődjön az oldal
+            setTimeout(() => {
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+              });
+            }, 100);
+          }}
+        >
+          Sporthaver
+        </div>
 
           {/* Social icons */}
           <div className="flex space-x-4 mb-6 md:mb-0">

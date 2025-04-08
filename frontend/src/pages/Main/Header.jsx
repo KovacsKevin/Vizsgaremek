@@ -686,12 +686,19 @@ const Header = ({ activeTab, setActiveTab }) => {
             className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
             onClick={() => {
               navigate('/homepage');
-              window.scrollTo(0, 0);
+              // Kis késleltetés, hogy biztosan betöltődjön az oldal
+              setTimeout(() => {
+                window.scrollTo({
+                  top: 0,
+                  behavior: 'smooth'
+                });
+              }, 100);
               setActiveTab('home');
             }}
           >
             Sporthaver
           </div>
+
 
           {/* Jobb oldali elemek */}
           <div className="flex items-center space-x-4">
