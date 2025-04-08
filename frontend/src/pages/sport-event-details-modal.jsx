@@ -744,19 +744,19 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setJoinError("Esemény azonosító hiányzik");
       return;
     }
-  
+
     setIsJoining(true);
     setJoinError('');
-  
+
     try {
       const token = getCookie('token');
-  
+
       if (!token) {
         throw new Error("Bejelentkezés szükséges a meghívás elutasításához");
       }
-  
+
       console.log("Rejecting invitation for event:", currentEvent.id);
-  
+
       const response = await fetch(`http://localhost:8081/api/v1/reject-invitation`, {
         method: "POST",
         headers: {
@@ -767,24 +767,24 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           eseményId: currentEvent.id
         }),
       });
-  
+
       let responseData = {};
       try {
         responseData = await response.json();
       } catch (e) {
         console.error("Failed to parse response JSON:", e);
       }
-  
+
       if (!response.ok) {
         throw new Error(responseData.message || "Sikertelen meghívás elutasítás");
       }
-  
+
       console.log("Invitation rejection successful:", responseData);
-  
+
       // Update local state
       setIsParticipant(false);
       setUserStatus('elutasítva');
-      
+
       // Notify parent components about the update
       if (onParticipantUpdate && currentUser) {
         onParticipantUpdate(currentEvent.id, false, {
@@ -793,20 +793,20 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           updateParticipantCount: true
         });
       }
-  
+
       // Közvetlenül hívjuk meg az onRejectInvitation függvényt
       if (typeof onRejectInvitation === 'function') {
         onRejectInvitation();
       }
-      
+
       // Bezárjuk a modalt
       onClose();
-      
+
       // Oldalfrissítés rövid késleltetéssel, hogy a modal bezárása látható legyen
       setTimeout(() => {
         window.location.reload();
       }, 300);
-  
+
     } catch (error) {
       console.error("Hiba a meghívás elutasítása során:", error);
       setJoinError(error.message || "Sikertelen meghívás elutasítás. Kérjük, próbáld újra később.");
@@ -814,7 +814,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setIsJoining(false);
     }
   };
-  
+
 
 
 
@@ -2853,6 +2853,17 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+        }
+        
+        .custom-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg max-w-md w-full shadow-xl p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Felhasználók meghívása</h2>
@@ -2863,13 +2874,11 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             <X className="h-5 w-5" />
           </button>
         </div>
-
         {successMessage && (
           <div className="bg-green-500/20 border border-green-500/30 text-green-300 p-4 rounded-lg mb-4">
             {successMessage}
           </div>
         )}
-
         {errorMessage && (
           <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-lg mb-4">
             {errorMessage}
@@ -2885,7 +2894,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             <input
               type="text"
               className="bg-slate-700/50 border border-slate-600/50 text-white rounded-lg w-full p-3 pr-12 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Keresés név vagy email alapján..."
+              placeholder="Keresés felhasználónév alapján..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -2914,7 +2923,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         ) : searchResults.length > 0 ? (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? `Találatok (${searchResults.length})` : `Meghívható felhasználók (${searchResults.length})`}
+
             </h3>
             <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
               {searchResults.map(user => (
