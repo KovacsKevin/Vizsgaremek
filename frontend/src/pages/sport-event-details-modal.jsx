@@ -1124,41 +1124,36 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setLoadingParticipantDetails(true);
     setParticipantDetailsError(null);
     setParticipantDetails(null);
-
+  
     try {
       const token = getCookie('token');
       if (!token) {
         throw new Error("Bejelentkezés szükséges a felhasználói adatok megtekintéséhez");
       }
-
-      // Felhasználói adatok lekérése
+  
+      // Fetch user data from the API
       const response = await fetch(`http://localhost:8081/api/v1/getUser/${participant.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
+  
       if (!response.ok) {
         throw new Error("Nem sikerült lekérni a felhasználói adatokat");
       }
-
+  
       const userData = await response.json();
-
-      // Statisztikák lekérése
-      const statsResponse = await fetch(`http://localhost:8081/api/v1/user-stats/${participant.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      let stats = { createdEvents: 0, participatedEvents: 0 };
-      if (statsResponse.ok) {
-        stats = await statsResponse.json();
-      }
-
-      // Felhasználói adatok és statisztikák kombinálása
+      console.log("Fetched user data:", userData);
+  
+      // Set the participant details with the fetched data
       setParticipantDetails({
         ...userData,
-        stats: {
-          createdEvents: stats.createdEvents || 0,
-          participatedEvents: stats.participatedEvents || 0
-        }
+        name: participant.name || userData.username,
+        image: userData.profilePicture || participant.image,
+        role: participant.role,
+        age: participant.age || userData.age,
+        level: participant.level,
+        bio: userData.bio || participant.bio || "Ez a felhasználó még nem adott meg bemutatkozást.",
+        email: userData.email,
+        phone: userData.phone
       });
     } catch (error) {
       console.error("Hiba a felhasználói adatok betöltésekor:", error);
@@ -1167,6 +1162,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setLoadingParticipantDetails(false);
     }
   };
+  
+
 
 
   // Módosítsuk a closeProfileModal függvényt
@@ -1199,19 +1196,20 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   {currentEvent.Sportok?.Nev || "Sport"}
                 </div>
               </div>
-  
+
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Bal oldali információk */}
                 <div className="flex-1 space-y-3">
-                  <h2 className="text-2xl font-bold mb-4">{currentEvent.Helyszin?.Nev || "Helyszín"}</h2>
-                  
+                  <h2 className="text-2xl font-bold mb-4 text-white">{currentEvent.Helyszin?.Nev || "Helyszín"}</h2>
+
+                  {/* Ez a sor lesz egy vonalban a jobb oldali szint információval */}
                   <div className="flex items-center gap-2 text-white/80">
                     <MapPin className="h-5 w-5 flex-shrink-0 text-blue-400" />
                     <span>
                       {currentEvent.Helyszin?.Telepules || "Város"}, {currentEvent.Helyszin?.Cim || "Cím"}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-white/80 mt-1">
                     <Map className="h-5 w-5 flex-shrink-0 text-blue-400" />
                     <button
@@ -1221,7 +1219,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       Megtekintés térképen
                     </button>
                   </div>
-                  
+
                   <div className="flex items-start gap-2 text-white/80">
                     <Clock className="h-5 w-5 flex-shrink-0 text-blue-400 mt-1" />
                     <div className="flex flex-col">
@@ -1229,7 +1227,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       <span>{formatDateTime(currentEvent.kezdoIdo)}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-2 text-white/80">
                     <Clock className="h-5 w-5 flex-shrink-0 text-blue-400 mt-1" />
                     <div className="flex flex-col">
@@ -1237,21 +1235,15 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       <span>{formatDateTime(currentEvent.zaroIdo)}</span>
                     </div>
                   </div>
+
                   
-                  <div className="flex items-center gap-2 text-white/80">
-                    <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
-                    <span>
-                      {participants.length}/{currentEvent.maximumLetszam || 10} résztvevő
-                      {participants.length >= currentEvent.maximumLetszam && (
-                        <span className="ml-2 text-yellow-400 text-sm">(Betelt)</span>
-                      )}
-                    </span>
-                  </div>
                 </div>
-                
+
                 {/* Jobb oldali információk */}
                 <div className="w-full md:w-1/3 p-4 rounded-lg">
-                  <div className="space-y-3">
+                  {/* Eltávolítottam a láthatatlan címsort és helyette marginnal igazítom */}
+                  <div className="space-y-3 md:mt-10"> {/* Hozzáadott mt-10 a megfelelő igazításhoz */}
+                    {/* Ez a sor lesz egy vonalban a bal oldali helyszín címmel */}
                     <div className="flex items-center gap-2 text-white/80">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
@@ -1263,7 +1255,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                       </div>
                       <span>Szint: {currentEvent.szint || "Ismeretlen szint"}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-white/80">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                         <Home className="h-4 w-4 text-blue-400" />
@@ -1277,7 +1269,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                         )}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-white/80">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                         <DoorOpen className="h-4 w-4 text-blue-400" />
@@ -1291,7 +1283,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                         )}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-white/80">
                       <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                         <Car className="h-4 w-4 text-blue-400" />
@@ -1301,7 +1293,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   </div>
                 </div>
               </div>
-              
+
+
+
               {currentEvent.Helyszin?.Leiras && (
                 <div className="mt-6 p-4 bg-white/5 rounded-lg mb-6 w-full">
                   <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
@@ -1310,7 +1304,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   </div>
                 </div>
               )}
-  
+
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="w-full sm:w-auto flex gap-2">
                   {isInvitation ? (
@@ -1415,165 +1409,101 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           Csatlakozva
                         </button>
                       )}
-  
+
                       {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
-                        <button                        onClick={handleOpenInviteModal}
-                        className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                          <circle cx="9" cy="7" r="4"></circle>
-                          <line x1="19" y1="8" x2="19" y2="14"></line>
-                          <line x1="22" y1="11" x2="16" y2="11"></line>
-                        </svg>
-                        Meghívás
-                      </button>
-                    )}
-
-                    {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
-                      <>
-                        <button
-                          onClick={handleEditEvent}
-                          className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                        <button onClick={handleOpenInviteModal}
+                          className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
                         >
-                          <Edit className="h-4 w-4" />
-                          Szerkesztés
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <line x1="19" y1="8" x2="19" y2="14"></line>
+                            <line x1="22" y1="11" x2="16" y2="11"></line>
+                          </svg>
+                          Meghívás
                         </button>
+                      )}
+
+                      {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
+                        <>
+                          <button
+                            onClick={handleEditEvent}
+                            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Szerkesztés
+                          </button>
+                          <button
+                            onClick={handleDeleteClick}
+                            className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Trash className="h-4 w-4" />
+                            Törlés
+                          </button>
+                        </>
+                      )}
+
+                      {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
                         <button
-                          onClick={handleDeleteClick}
-                          className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          onClick={handleLeaveEvent}
+                          className={`w-full sm:w-auto px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                            } text-white rounded-md transition-colors flex items-center justify-center`}
+                          disabled={isLeaving}
                         >
-                          <Trash className="h-4 w-4" />
-                          Törlés
+                          {isLeaving ? "Kilépés..." : "Kilépés"}
                         </button>
-                      </>
-                    )}
-
-                    {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
-                      <button
-                        onClick={handleLeaveEvent}
-                        className={`w-full sm:w-auto px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
-                          } text-white rounded-md transition-colors flex items-center justify-center`}
-                        disabled={isLeaving}
-                      >
-                        {isLeaving ? "Kilépés..." : "Kilépés"}
-                      </button>
-                    )}
-                  </>
-                ) : participants.length >= currentEvent.maximumLetszam ? (
-                  <button
-                    className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
-                    disabled
-                  >
-                    Betelt
-                  </button>
-                ) : (
-                  <button
-                    className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                      } text-white rounded-md transition-colors flex items-center justify-center`}
-                    onClick={handleJoinEvent}
-                    disabled={isJoining}
-                  >
-                    {isJoining ? "Csatlakozás..." : "Csatlakozás"}
-                  </button>
-                )}
-                {joinError && (
-                  <p className="text-red-400 text-sm mt-2">{joinError}</p>
-                )}
-                {leaveError && (
-                  <p className="text-red-400 text-sm mt-2">{leaveError}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full md:w-2/5 p-6">
-            <h3 className="text-xl font-bold mb-4">Résztvevők</h3>
-
-            <div className="flex items-center gap-2 text-white/80 mb-4">
-              <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
-              <span>
-                {participants.length}/{currentEvent.maximumLetszam || 10} résztvevő
-                {participants.length >= currentEvent.maximumLetszam && (
-                  <span className="ml-2 text-yellow-400 text-sm">(Betelt)</span>
-                )}
-              </span>
-            </div>
-
-            {isUserOrganizer() && pendingParticipants.length > 0 && (
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">
-                  Jóváhagyásra váró résztvevők ({pendingParticipants.length})
-                </h4>
-                <div className="space-y-4">
-                  {pendingParticipants.map((participant) => (
-                    <div
-                      key={participant.id}
-                      className="flex items-center gap-4 p-3 rounded-lg bg-yellow-900/30 hover:bg-yellow-900/50 transition-colors"
+                      )}
+                    </>
+                  ) : participants.length >= currentEvent.maximumLetszam ? (
+                    <button
+                      className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
+                      disabled
                     >
-                      <div
-                        className="flex-grow flex items-center gap-4 cursor-pointer"
-                        onClick={() => handleParticipantClick(participant)}
-                      >
-                        <Image
-                          src={participant.image || "/placeholder.svg"}
-                          alt={participant.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <h4 className="font-medium">
-                            {participant.name}
-                          </h4>
-                          <p className="text-sm text-white/60">
-                            <span className="text-yellow-300">Függőben</span>
-                            {participant.age ? ` • ${participant.age} éves` : ""}
-                            {participant.level ? ` • ${participant.level}` : ""}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleApproveParticipant(participant.id)}
-                          className={`p-2 rounded-full ${isApproving ? "bg-green-800/50 cursor-not-allowed" : "bg-green-600/20 hover:bg-green-600/40"
-                            } text-green-400 transition-colors`}
-                          disabled={isApproving}
-                          title="Jóváhagyás"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleRejectParticipant(participant.id)}
-                          className={`p-2 rounded-full ${isRejecting ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
-                            } text-red-400 transition-colors`}
-                          disabled={isRejecting}
-                          title="Elutasítás"
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {approveRejectError && (
-                    <p className="text-red-400 text-sm mt-2">{approveRejectError}</p>
+                      Betelt
+                    </button>
+                  ) : (
+                    <button
+                      className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                        } text-white rounded-md transition-colors flex items-center justify-center`}
+                      onClick={handleJoinEvent}
+                      disabled={isJoining}
+                    >
+                      {isJoining ? "Csatlakozás..." : "Csatlakozás"}
+                    </button>
+                  )}
+                  {joinError && (
+                    <p className="text-red-400 text-sm mt-2">{joinError}</p>
+                  )}
+                  {leaveError && (
+                    <p className="text-red-400 text-sm mt-2">{leaveError}</p>
                   )}
                 </div>
               </div>
-            )}
+            </div>
 
-            <div className="mb-6">
-              <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Szervező</h4>
-              <div className="space-y-4">
-                {participants.filter(p => p.role === 'szervező').length === 0 ? (
-                  <p className="text-white/60">Nincs megjelenítendő szervező.</p>
-                ) : (
-                  participants
-                    .filter(p => p.role === 'szervező')
-                    .map((participant) => (
+            <div className="w-full md:w-2/5 p-6">
+              <h3 className="text-xl font-bold mb-4 text-white">Résztvevők</h3>
+
+              <div className="flex items-center gap-2 text-white/80 mb-4">
+                <Users className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                <span>
+                  {participants.length}/{currentEvent.maximumLetszam || 10} résztvevő
+                  {participants.length >= currentEvent.maximumLetszam && (
+                    <span className="ml-2 text-yellow-400 text-sm">(Betelt)</span>
+                  )}
+                </span>
+              </div>
+
+              {isUserOrganizer() && pendingParticipants.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">
+                    Jóváhagyásra váró résztvevők ({pendingParticipants.length})
+                  </h4>
+                  <div className="space-y-4">
+                    {pendingParticipants.map((participant) => (
                       <div
                         key={participant.id}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 transition-colors"
+                        className="flex items-center gap-4 p-3 rounded-lg bg-yellow-900/30 hover:bg-yellow-900/50 transition-colors"
                       >
                         <div
                           className="flex-grow flex items-center gap-4 cursor-pointer"
@@ -1587,227 +1517,303 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                           <div>
                             <h4 className="font-medium">
                               {participant.name}
-                              {currentUser && participant.id === currentUser.userId && (
-                                <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                              )}
                             </h4>
                             <p className="text-sm text-white/60">
-                              <span className="text-blue-300">Szervező</span>
+                              <span className="text-yellow-300">Függőben</span>
                               {participant.age ? ` • ${participant.age} éves` : ""}
                               {participant.level ? ` • ${participant.level}` : ""}
                             </p>
                           </div>
                         </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </div>
 
-            <div>
-              <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">Játékosok</h4>
-              <div className="space-y-4">
-                {participants.filter(p => p.role !== 'szervező').length === 0 ? (
-                  <p className="text-white/60">Még nincsenek játékosok.</p>
-                ) : (
-                  participants
-                    .filter(p => p.role !== 'szervező')
-                    .map((participant) => (
-                      <div
-                        key={participant.id}
-                        className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                      >
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApproveParticipant(participant.id)}
+                            className={`p-2 rounded-full ${isApproving ? "bg-green-800/50 cursor-not-allowed" : "bg-green-600/20 hover:bg-green-600/40"
+                              } text-green-400 transition-colors`}
+                            disabled={isApproving}
+                            title="Jóváhagyás"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleRejectParticipant(participant.id)}
+                            className={`p-2 rounded-full ${isRejecting ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
+                              } text-red-400 transition-colors`}
+                            disabled={isRejecting}
+                            title="Elutasítás"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {approveRejectError && (
+                      <p className="text-red-400 text-sm mt-2">{approveRejectError}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2 text-white">Szervező</h4>
+                <div className="space-y-4">
+                  {participants.filter(p => p.role === 'szervező').length === 0 ? (
+                    <p className="text-white/60">Nincs megjelenítendő szervező.</p>
+                  ) : (
+                    participants
+                      .filter(p => p.role === 'szervező')
+                      .map((participant) => (
                         <div
-                          className="flex-grow flex items-center gap-4 cursor-pointer"
-                          onClick={() => handleParticipantClick(participant)}
+                          key={participant.id}
+                          className="flex items-center gap-4 p-3 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 transition-colors"
                         >
-                          <Image
-                            src={participant.image || "/placeholder.svg"}
-                            alt={participant.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div>
-                            <h4 className="font-medium">
-                              {participant.name}
-                              {currentUser && participant.id === currentUser.userId && (
-                                <span className="ml-2 text-blue-400 text-sm">(Te)</span>
-                              )}
-                            </h4>
-                            <p className="text-sm text-white/60">
-                              {participant.age ? `${participant.age} éves • ` : ""}
-                              {participant.level || ""}
-                            </p>
+                          <div
+                            className="flex-grow flex items-center gap-4 cursor-pointer"
+                            onClick={() => handleParticipantClick(participant)}
+                          >
+                            <Image
+                              src={participant.image || "/placeholder.svg"}
+                              alt={participant.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">
+                                {participant.name}
+                                {currentUser && participant.id === currentUser.userId && (
+                                  <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                                )}
+                              </h4>
+                              <p className="text-sm text-white/60">
+                                <span className="text-blue-300">Szervező</span>
+                                {participant.age ? ` • ${participant.age} éves` : ""}
+                                {participant.level ? ` • ${participant.level}` : ""}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                      ))
+                  )}
+                </div>
+              </div>
 
-                        {!isArchived && currentUser &&
-                          participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
-                          participant.id !== currentUser.userId && (
-                            <button
-                              onClick={() => handleRemoveParticipant(participant.id)}
-                              className={`p-2 rounded-full ${isRemovingParticipant ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
-                                } text-red-400 transition-colors`}
-                              disabled={isRemovingParticipant}
-                              title="Résztvevő eltávolítása"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </button>
-                          )}
-                      </div>
-                    ))
-                )}
+              <div>
+                <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2 text-white">Játékosok</h4>
+                <div className="space-y-4">
+                  {participants.filter(p => p.role !== 'szervező').length === 0 ? (
+                    <p className="text-white/60">Még nincsenek játékosok.</p>
+                  ) : (
+                    participants
+                      .filter(p => p.role !== 'szervező')
+                      .map((participant) => (
+                        <div
+                          key={participant.id}
+                          className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div
+                            className="flex-grow flex items-center gap-4 cursor-pointer"
+                            onClick={() => handleParticipantClick(participant)}
+                          >
+                            <Image
+                              src={participant.image || "/placeholder.svg"}
+                              alt={participant.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h4 className="font-medium">
+                                {participant.name}
+                                {currentUser && participant.id === currentUser.userId && (
+                                  <span className="ml-2 text-blue-400 text-sm">(Te)</span>
+                                )}
+                              </h4>
+                              <p className="text-sm text-white/60">
+                                {participant.age ? `${participant.age} éves • ` : ""}
+                                {participant.level || ""}
+                              </p>
+                            </div>
+                          </div>
 
-                {removeParticipantError && (
-                  <p className="text-red-400 text-sm mt-2">{removeParticipantError}</p>
-                )}
+                          {!isArchived && currentUser &&
+                            participants.some(p => p.id === currentUser.userId && p.role === 'szervező') &&
+                            participant.id !== currentUser.userId && (
+                              <button
+                                onClick={() => handleRemoveParticipant(participant.id)}
+                                className={`p-2 rounded-full ${isRemovingParticipant ? "bg-red-800/50 cursor-not-allowed" : "bg-red-600/20 hover:bg-red-600/40"
+                                  } text-red-400 transition-colors`}
+                                disabled={isRemovingParticipant}
+                                title="Résztvevő eltávolítása"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </button>
+                            )}
+                        </div>
+                      ))
+                  )}
+
+                  {removeParticipantError && (
+                    <p className="text-red-400 text-sm mt-2">{removeParticipantError}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    {showProfileModal && selectedParticipant && (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
-        <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
-          <button
-            onClick={closeProfileModal}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+      {showProfileModal && selectedParticipant && (
+  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
+    <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+      <button
+        onClick={closeProfileModal}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+      >
+        <X className="h-5 w-5" />
+      </button>
 
-          <div className="flex flex-col items-center text-center">
-            <Image
-              src={selectedParticipant.image}
-              alt={selectedParticipant.name}
-              className="w-24 h-24 rounded-full object-cover mb-4"
-            />
-            <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
-            <p className="text-white/60 mb-4">
-              {selectedParticipant.role === 'szervező' && (
-                <span className="text-blue-300 mr-1">Szervező</span>
-              )}
-              {selectedParticipant.age ? `${selectedParticipant.age} éves • ` : ""}
-              {selectedParticipant.level || ""}
-            </p>
-
-            <div className="w-full space-y-4 mt-2">
-              <div className="bg-white/5 p-4 rounded-lg">
-                <h4 className="font-medium mb-2 flex items-center gap-2 text-white">
-                  <User className="h-4 w-4" /> Bemutatkozás
-                </h4>
-                <p className="text-sm text-white/80 whitespace-pre-line">
-                  {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
-                </p>
-              </div>
-
-              <div className="bg-white/5 p-4 rounded-lg text-left">
-                <h4 className="font-medium mb-2 text-white">Elérhetőségek</h4>
-                {selectedParticipant.email && (
-                  <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
-                    <Mail className="h-4 w-4 text-blue-400" />
-                    <span>{selectedParticipant.email}</span>
-                  </div>
-                )}
-                {selectedParticipant.phone && (
-                  <div className="flex items-center gap-2 text-white/80 text-sm">
-                    <Phone className="h-4 w-4 text-green-400" />
-                    <span>{selectedParticipant.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      {loadingParticipantDetails ? (
+        <div className="flex justify-center items-center py-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      </div>
-    )}
-
-    {isEditModalOpen && (
-      <EventEditModal
-        isOpen={isEditModalOpen}
-        onClose={closeEditModal}
-        event={currentEvent}
-        onSuccess={handleEventUpdate}
-      />
-    )}
-
-    {showDeleteConfirmation && (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80">
-        <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
-          <div className="flex flex-col items-center text-center">
-            <div className="bg-red-500/20 p-3 rounded-full mb-4">
-              <Trash className="h-8 w-8 text-red-500" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Esemény törlése</h3>
-            <p className="text-white/70 mb-6">
-              Biztosan törölni szeretnéd ezt az eseményt? Ez a művelet nem visszavonható, és minden résztvevő eltávolításra kerül.
-            </p>
-
-            {deleteError && (
-              <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-lg mb-4 w-full text-left">
-                {deleteError}
-              </div>
+      ) : participantDetailsError ? (
+        <div className="text-center py-10">
+          <p className="text-red-400">{participantDetailsError}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center text-center">
+          <Image
+            src={participantDetails?.image || selectedParticipant.image}
+            alt={participantDetails?.name || selectedParticipant.name}
+            className="w-24 h-24 rounded-full object-cover mb-4"
+          />
+          <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
+          <p className="text-white/60 mb-4">
+            {selectedParticipant.role === 'szervező' && (
+              <span className="text-blue-300 mr-1">Szervező</span>
             )}
+            {(participantDetails?.age || selectedParticipant.age) ? 
+              `${participantDetails?.age || selectedParticipant.age} éves • ` : ""}
+            {selectedParticipant.level || ""}
+          </p>
 
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={cancelDelete}
-                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
-                disabled={isDeleting}
-              >
-                Mégsem
-              </button>
-              <button
-                onClick={confirmDelete}
-                className={`flex-1 py-2 ${isDeleting ? "bg-red-800" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center`}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Törlés...
-                  </>
-                ) : (
-                  "Törlés"
-                )}
-              </button>
+          <div className="w-full space-y-4 mt-2">
+            <div className="bg-white/5 p-4 rounded-lg">
+              <h4 className="font-medium mb-2 flex items-center gap-2 text-white">
+                <User className="h-4 w-4" /> Bemutatkozás
+              </h4>
+              <p className="text-sm text-white/80 whitespace-pre-line">
+                {participantDetails?.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+              </p>
+            </div>
+
+            <div className="bg-white/5 p-4 rounded-lg text-left">
+              <h4 className="font-medium mb-2 text-white">Elérhetőségek</h4>
+              {participantDetails?.email && (
+                <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                  <Mail className="h-4 w-4 text-blue-400" />
+                  <span>{participantDetails.email}</span>
+                </div>
+              )}
+              {participantDetails?.phone && (
+                <div className="flex items-center gap-2 text-white/80 text-sm">
+                  <Phone className="h-4 w-4 text-green-400" />
+                  <span>{participantDetails.phone}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    )}
-
-    {showUserProfile && selectedUserId && (
-      <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
-    )}
-
-    {showMapModal && (
-      <LocationMapModal
-        location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
-        onClose={handleCloseMapModal}
-      />
-    )}
-
-    {showInviteModal && (
-      <InviteUsersModal
-        isOpen={showInviteModal}
-        onClose={handleCloseInviteModal}
-        eventId={currentEvent.id}
-      />
-    )}
-  </>
-);
+      )}
+    </div>
+  </div>
+)}
 
 
-  
+      {isEditModalOpen && (
+        <EventEditModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          event={currentEvent}
+          onSuccess={handleEventUpdate}
+        />
+      )}
+
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80">
+          <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-red-500/20 p-3 rounded-full mb-4">
+                <Trash className="h-8 w-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Esemény törlése</h3>
+              <p className="text-white/70 mb-6">
+                Biztosan törölni szeretnéd ezt az eseményt? Ez a művelet nem visszavonható, és minden résztvevő eltávolításra kerül.
+              </p>
+
+              {deleteError && (
+                <div className="bg-red-500/20 border border-red-500/30 text-red-300 p-4 rounded-lg mb-4 w-full text-left">
+                  {deleteError}
+                </div>
+              )}
+
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors"
+                  disabled={isDeleting}
+                >
+                  Mégsem
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className={`flex-1 py-2 ${isDeleting ? "bg-red-800" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center`}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Törlés...
+                    </>
+                  ) : (
+                    "Törlés"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUserProfile && selectedUserId && (
+        <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
+      )}
+
+      {showMapModal && (
+        <LocationMapModal
+          location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
+          onClose={handleCloseMapModal}
+        />
+      )}
+
+      {showInviteModal && (
+        <InviteUsersModal
+          isOpen={showInviteModal}
+          onClose={handleCloseInviteModal}
+          eventId={currentEvent.id}
+        />
+      )}
+    </>
+  );
+
+
+
 };
 
 
