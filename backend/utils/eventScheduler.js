@@ -46,8 +46,8 @@ const deleteEvent = async (eventId) => {
     });
     
     // Töröljük az időzítést a Map-ből
-    if (activeJobs.has(eventId)) {
-      activeJobs.delete(eventId);
+    if (activeJobs.has(`delete_${eventId}`)) {
+      activeJobs.delete(`delete_${eventId}`);
     }
     
   } catch (error) {
@@ -55,23 +55,84 @@ const deleteEvent = async (eventId) => {
   }
 };
 
+// Függőben lévő csatlakozási kérelmek törlése esemény lejáratakor
+const cleanupPendingRequests = async (eventId) => {
+  try {
+    console.log(`Függőben lévő csatlakozási kérelmek törlése (Esemény ID: ${eventId})...`);
+    
+    // Tranzakció kezdése
+    await sequelize.transaction(async (t) => {
+      // Ellenőrizzük, hogy az esemény létezik-e
+      const event = await Esemény.findByPk(eventId, { transaction: t });
+      
+      if (!event) {
+        console.log(`Az esemény (ID: ${eventId}) nem létezik.`);
+        return;
+      }
+      
+      // Függőben lévő és meghívott státuszú résztvevők törlése
+      const deletedPending = await Résztvevő.destroy({
+        where: { 
+          eseményId: eventId,
+          státusz: {
+            [Op.in]: ['függőben', 'meghívott']
+          }
+        },
+        transaction: t
+      });
+      
+      console.log(`Esemény (ID: ${eventId}) - ${deletedPending} függőben lévő csatlakozási kérelem törölve.`);
+    });
+    
+    // Töröljük az időzítést a Map-ből
+    if (activeJobs.has(`cleanup_${eventId}`)) {
+      activeJobs.delete(`cleanup_${eventId}`);
+    }
+    
+  } catch (error) {
+    console.error(`Hiba a függőben lévő kérelmek törlésekor (Esemény ID: ${eventId}):`, error);
+  }
+};
+
 // Időzítés beállítása egy eseményhez (záróidő + 31 nap után törlés)
 const scheduleEventDeletion = (event) => {
   try {
     // Ha már van időzítés ehhez az eseményhez, töröljük
-    if (activeJobs.has(event.id)) {
-      activeJobs.get(event.id).cancel();
-      activeJobs.delete(event.id);
+    if (activeJobs.has(`delete_${event.id}`)) {
+      activeJobs.get(`delete_${event.id}`).cancel();
+      activeJobs.delete(`delete_${event.id}`);
+    }
+    
+    if (activeJobs.has(`cleanup_${event.id}`)) {
+      activeJobs.get(`cleanup_${event.id}`).cancel();
+      activeJobs.delete(`cleanup_${event.id}`);
     }
     
     const endTime = new Date(event.zaroIdo);
+    const now = new Date();
     
     // Kiszámoljuk a törlési időpontot (záróidő + 31 nap)
     const deletionTime = new Date(endTime);
     deletionTime.setDate(deletionTime.getDate() + 31);
     
+    // Ellenőrizzük, hogy a záróidő a jövőben van-e
+    if (endTime > now) {
+      // Időzítés beállítása a záróidőre (függőben lévő kérelmek törlése)
+      const cleanupJob = schedule.scheduleJob(endTime, () => {
+        cleanupPendingRequests(event.id);
+      });
+      
+      // Időzítés mentése
+      activeJobs.set(`cleanup_${event.id}`, cleanupJob);
+      
+      console.log(`Függőben lévő kérelmek törlése időzítve (ID: ${event.id}) - Záróidő: ${endTime.toLocaleString()}`);
+    } else {
+      // Ha a záróidő már elmúlt, azonnal töröljük a függőben lévő kérelmeket
+      cleanupPendingRequests(event.id);
+    }
+    
     // Ellenőrizzük, hogy a törlési időpont a jövőben van-e
-    if (deletionTime <= new Date()) {
+    if (deletionTime <= now) {
       // Ha már lejárt a 31 napos időszak is, azonnal töröljük
       console.log(`Az esemény (ID: ${event.id}) archiválási időszaka már lejárt, azonnali törlés...`);
       deleteEvent(event.id);
@@ -79,12 +140,12 @@ const scheduleEventDeletion = (event) => {
     }
     
     // Időzítés beállítása a törlési időpontra (záróidő + 31 nap)
-    const job = schedule.scheduleJob(deletionTime, () => {
+    const deleteJob = schedule.scheduleJob(deletionTime, () => {
       deleteEvent(event.id);
     });
     
     // Időzítés mentése
-    activeJobs.set(event.id, job);
+    activeJobs.set(`delete_${event.id}`, deleteJob);
     
     console.log(`Esemény végleges törlés időzítve (ID: ${event.id}) - Archiválási időszak vége: ${deletionTime.toLocaleString()}`);
     
@@ -126,6 +187,23 @@ const scheduleAllEvents = async () => {
     
     for (const event of expiredEvents) {
       await deleteEvent(event.id);
+    }
+    
+    // Lejárt, de 31 napnál nem régebbi események függőben lévő kérelmeinek törlése
+    const currentTime = new Date();
+    const archivedEvents = await Esemény.findAll({
+      where: {
+        zaroIdo: { 
+          [Op.lte]: currentTime,  // Záróidő már elmúlt
+          [Op.gt]: thirtyOneDaysAgo  // De nem régebbi 31 napnál
+        }
+      }
+    });
+    
+    console.log(`${archivedEvents.length} archivált esemény függőben lévő kérelmeinek törlése...`);
+    
+    for (const event of archivedEvents) {
+      await cleanupPendingRequests(event.id);
     }
     
   } catch (error) {
