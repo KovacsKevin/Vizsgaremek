@@ -1038,14 +1038,17 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
   const handleEventUpdate = (updatedEvent) => {
     console.log("Event updated, new data:", updatedEvent);
-
+  
+    // Update local state first
     setCurrentEvent({
       ...updatedEvent,
       resztvevok_lista: participants
     });
-
+  
+    // Close the modal
     closeEditModal();
-
+  
+    // Notify parent components if needed
     if (onParticipantUpdate) {
       onParticipantUpdate(updatedEvent.id, true, {
         userId: 'event-updated',
@@ -1055,6 +1058,9 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }
       });
     }
+    
+    // Immediately refresh the page
+    window.location.reload();
   };
 
   const handleDeleteClick = () => {
