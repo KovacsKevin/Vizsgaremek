@@ -1311,178 +1311,179 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   </div>
 )}
 
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="w-full sm:w-auto flex gap-2">
-                  {isInvitation ? (
-                    <div className="w-full flex gap-2">
-                      <button
-                        onClick={handleAcceptInvitation}
-                        className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-                        disabled={isJoining}
-                      >
-                        {isJoining ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Elfogadás...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4" />
-                            Elfogadás
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={handleRejectInvitation}
-                        className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-                        disabled={isJoining}
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Elutasítás
-                      </button>
-                    </div>
-                  ) : isArchived ? (
-                    <div className="w-full px-6 py-3 bg-amber-600/30 text-amber-300 rounded-md flex items-center justify-center">
-                      <Archive className="h-4 w-4 mr-2" />
-                      Ez az esemény már lejárt
-                    </div>
-                  ) : isParticipant ? (
-                    <>
-                      {userStatus === 'függőben' ? (
-                        <div className="w-full flex gap-2">
-                          <button
-                            className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
-                            disabled
-                          >
-                            Kérelem elküldve
-                          </button>
-                          <button
-                            onClick={handleCancelRequest}
-                            className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Kérelem visszavonása
-                          </button>
-                        </div>
-                      ) : userStatus === 'elutasítva' ? (
-                        <button
-                          className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-md cursor-not-allowed"
-                          disabled
-                        >
-                          Elutasítva
-                        </button>
-                      ) : userStatus === 'meghívott' ? (
-                        <div className="w-full flex gap-2">
-                          <button
-                            onClick={handleAcceptInvitation}
-                            className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-                            disabled={isJoining}
-                          >
-                            {isJoining ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Elfogadás...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4" />
-                                Elfogadás
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={handleRejectInvitation}
-                            className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-                            disabled={isJoining}
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Elutasítás
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
-                          disabled
-                        >
-                          Csatlakozva
-                        </button>
-                      )}
+<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+    {isInvitation ? (
+      <div className="w-full flex flex-col sm:flex-row gap-2">
+        <button
+          onClick={handleAcceptInvitation}
+          className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+          disabled={isJoining}
+        >
+          {isJoining ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Elfogadás...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-4 w-4" />
+              Elfogadás
+            </>
+          )}
+        </button>
+        <button
+          onClick={handleRejectInvitation}
+          className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+          disabled={isJoining}
+        >
+          <XCircle className="h-4 w-4" />
+          Elutasítás
+        </button>
+      </div>
+    ) : isArchived ? (
+      <div className="w-full px-6 py-3 bg-amber-600/30 text-amber-300 rounded-md flex items-center justify-center">
+        <Archive className="h-4 w-4 mr-2" />
+        Ez az esemény már lejárt
+      </div>
+    ) : isParticipant ? (
+      <>
+        {userStatus === 'függőben' ? (
+          <div className="w-full flex flex-col sm:flex-row gap-2">
+            <button
+              className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
+              disabled
+            >
+              Kérelem elküldve
+            </button>
+            <button
+              onClick={handleCancelRequest}
+              className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              Kérelem visszavonása
+            </button>
+          </div>
+        ) : userStatus === 'elutasítva' ? (
+          <button
+            className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-md cursor-not-allowed"
+            disabled
+          >
+            Elutasítva
+          </button>
+        ) : userStatus === 'meghívott' ? (
+          <div className="w-full flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleAcceptInvitation}
+              className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+              disabled={isJoining}
+            >
+              {isJoining ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Elfogadás...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Elfogadás
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleRejectInvitation}
+              className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+              disabled={isJoining}
+            >
+              <XCircle className="h-4 w-4" />
+              Elutasítás
+            </button>
+          </div>
+        ) : (
+          <button
+            className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
+            disabled
+          >
+            Csatlakozva
+          </button>
+        )}
 
-                      {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
-                        <button onClick={handleOpenInviteModal}
-                          className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <line x1="19" y1="8" x2="19" y2="14"></line>
-                            <line x1="22" y1="11" x2="16" y2="11"></line>
-                          </svg>
-                          Meghívás
-                        </button>
-                      )}
+        {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
+          <button onClick={handleOpenInviteModal}
+            className="w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <line x1="19" y1="8" x2="19" y2="14"></line>
+              <line x1="22" y1="11" x2="16" y2="11"></line>
+            </svg>
+            Meghívás
+          </button>
+        )}
 
-                      {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
-                        <>
-                          <button
-                            onClick={handleEditEvent}
-                            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Szerkesztés
-                          </button>
-                          <button
-                            onClick={handleDeleteClick}
-                            className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Trash className="h-4 w-4" />
-                            Törlés
-                          </button>
-                        </>
-                      )}
+        {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+            <button
+              onClick={handleEditEvent}
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Szerkesztés
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+            >
+              <Trash className="h-4 w-4" />
+              Törlés
+            </button>
+          </div>
+        )}
 
-                      {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
-                        <button
-                          onClick={handleLeaveEvent}
-                          className={`w-full sm:w-auto px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
-                            } text-white rounded-md transition-colors flex items-center justify-center`}
-                          disabled={isLeaving}
-                        >
-                          {isLeaving ? "Kilépés..." : "Kilépés"}
-                        </button>
-                      )}
-                    </>
-                  ) : participants.length >= currentEvent.maximumLetszam ? (
-                    <button
-                      className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
-                      disabled
-                    >
-                      Betelt
-                    </button>
-                  ) : (
-                    <button
-                      className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                        } text-white rounded-md transition-colors flex items-center justify-center`}
-                      onClick={handleJoinEvent}
-                      disabled={isJoining}
-                    >
-                      {isJoining ? "Csatlakozás..." : "Csatlakozás"}
-                    </button>
-                  )}
-                  {joinError && (
-                    <p className="text-red-400 text-sm mt-2">{joinError}</p>
-                  )}
-                  {leaveError && (
-                    <p className="text-red-400 text-sm mt-2">{leaveError}</p>
-                  )}
-                </div>
-              </div>
+        {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
+          <button
+            onClick={handleLeaveEvent}
+            className={`w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+              } text-white rounded-md transition-colors flex items-center justify-center`}
+            disabled={isLeaving}
+          >
+            {isLeaving ? "Kilépés..." : "Kilépés"}
+          </button>
+        )}
+      </>
+    ) : participants.length >= currentEvent.maximumLetszam ? (
+      <button
+        className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
+        disabled
+      >
+        Betelt
+      </button>
+    ) : (
+      <button
+        className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          } text-white rounded-md transition-colors flex items-center justify-center`}
+        onClick={handleJoinEvent}
+        disabled={isJoining}
+      >
+        {isJoining ? "Csatlakozás..." : "Csatlakozás"}
+      </button>
+    )}
+    {joinError && (
+      <p className="text-red-400 text-sm mt-2">{joinError}</p>
+    )}
+    {leaveError && (
+      <p className="text-red-400 text-sm mt-2">{leaveError}</p>
+    )}
+  </div>
+</div>
+
             </div>
 
             <div className="w-full md:w-2/5 p-6">
