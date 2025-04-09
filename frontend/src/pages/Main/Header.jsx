@@ -2,16 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 import {
-  Hotel,
-  Plane,
-  Car,
-  Map,
   LogOut,
   User,
   ChevronRight,
-  Bell,
   Calendar,
-  Heart,
   ImageIcon,
   Upload,
   Menu,
@@ -61,7 +55,6 @@ const Header = ({ activeTab, setActiveTab }) => {
   const [userEmail, setUserEmail] = useState("")
   const [userId, setUserId] = useState(null)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [notificationCount, setNotificationCount] = useState(3)
   const [selectedBackground, setSelectedBackground] = useState("gradient1")
   const [customBackground, setCustomBackground] = useState(null)
   const fileInputRef = useRef(null)
@@ -1054,22 +1047,7 @@ const Header = ({ activeTab, setActiveTab }) => {
               </div>
             )}
 
-            {/* Értesítések mobilnézetben, ha be van jelentkezve */}
-            {isLoggedIn && (
-              <div className="pt-3 border-t border-slate-700/50">
-                <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-300 hover:bg-white/5 hover:text-white">
-                  <div className="flex items-center gap-3">
-                    <Bell className="h-5 w-5" />
-                    <span>Értesítések</span>
-                  </div>
-                  {notificationCount > 0 && (
-                    <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-gradient-to-r from-pink-500 to-purple-600 rounded-full">
-                      {notificationCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
+           
           </div>
         </div>
       )}
