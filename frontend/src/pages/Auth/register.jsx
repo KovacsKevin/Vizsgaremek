@@ -385,6 +385,19 @@ const Register = () => {
     }
   };
 
+  // Function to navigate to homepage and scroll to bottom
+  const navigateToTerms = (e) => {
+    e.preventDefault();
+    navigate('/');
+    // Use setTimeout to ensure navigation completes before scrolling
+    setTimeout(() => {
+      window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+      });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0f1424]">
       {/* Header */}
@@ -648,17 +661,25 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Additional info */}
+          {/* Additional info - UPDATED SECTION */}
           <div className="mt-6 text-center">
             <p className="text-sm text-slate-500">
               A regisztrációval elfogadod a{" "}
-              <Link to="/terms" className="text-purple-400 hover:underline">
+              <a 
+                href="#" 
+                onClick={navigateToTerms}
+                className="text-purple-400 hover:underline"
+              >
                 Felhasználási feltételeket
-              </Link>{" "}
+              </a>{" "}
               és az{" "}
-              <Link to="/privacy" className="text-purple-400 hover:underline">
+              <a 
+                href="#" 
+                onClick={navigateToTerms}
+                className="text-purple-400 hover:underline"
+              >
                 Adatvédelmi irányelveket
-              </Link>
+              </a>
             </p>
           </div>
         </div>
