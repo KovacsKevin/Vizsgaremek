@@ -115,7 +115,7 @@ const UserProfileModal = ({ userId, onClose }) => {
                 <h4 className="font-medium mb-2 flex items-center gap-2">
                   <User className="h-4 w-4" /> Bemutatkozás
                 </h4>
-                <p className="text-sm text-white/80 whitespace-pre-line">
+                <p className="text-sm text-white/80 whitespace-pre-line break-words overflow-auto max-h-40">
                   {user.bio}
                 </p>
               </div>
@@ -1124,36 +1124,41 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     setLoadingParticipantDetails(true);
     setParticipantDetailsError(null);
     setParticipantDetails(null);
-  
+
     try {
       const token = getCookie('token');
       if (!token) {
         throw new Error("Bejelentkezés szükséges a felhasználói adatok megtekintéséhez");
       }
-  
-      // Fetch user data from the API
+
+      // Felhasználói adatok lekérése
       const response = await fetch(`http://localhost:8081/api/v1/getUser/${participant.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-  
+
       if (!response.ok) {
         throw new Error("Nem sikerült lekérni a felhasználói adatokat");
       }
-  
+
       const userData = await response.json();
-      console.log("Fetched user data:", userData);
-  
-      // Set the participant details with the fetched data
+
+      // Statisztikák lekérése
+      const statsResponse = await fetch(`http://localhost:8081/api/v1/user-stats/${participant.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      let stats = { createdEvents: 0, participatedEvents: 0 };
+      if (statsResponse.ok) {
+        stats = await statsResponse.json();
+      }
+
+      // Felhasználói adatok és statisztikák kombinálása
       setParticipantDetails({
         ...userData,
-        name: participant.name || userData.username,
-        image: userData.profilePicture || participant.image,
-        role: participant.role,
-        age: participant.age || userData.age,
-        level: participant.level,
-        bio: userData.bio || participant.bio || "Ez a felhasználó még nem adott meg bemutatkozást.",
-        email: userData.email,
-        phone: userData.phone
+        stats: {
+          createdEvents: stats.createdEvents || 0,
+          participatedEvents: stats.participatedEvents || 0
+        }
       });
     } catch (error) {
       console.error("Hiba a felhasználói adatok betöltésekor:", error);
@@ -1162,11 +1167,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setLoadingParticipantDetails(false);
     }
   };
-  
 
-
-
-  // Módosítsuk a closeProfileModal függvényt
   const closeProfileModal = () => {
     setShowProfileModal(false);
     setSelectedParticipant(null);
@@ -1236,7 +1237,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                     </div>
                   </div>
 
-                  
+
                 </div>
 
                 {/* Jobb oldali információk */}
@@ -1628,7 +1629,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                                 )}
                               </h4>
                               <p className="text-sm text-white/60">
-                                {participant.age ? `${participant.age} éves • ` : ""}
+                                {participant.age ? `${participant.age} éves  ` : ""}
                                 {participant.level || ""}
                               </p>
                             </div>
@@ -1662,71 +1663,153 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       </div>
 
       {showProfileModal && selectedParticipant && (
-  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
-    <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
-      <button
-        onClick={closeProfileModal}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-      >
-        <X className="h-5 w-5" />
-      </button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
+          <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl p-6">
+            <button
+              onClick={closeProfileModal}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-      {loadingParticipantDetails ? (
-        <div className="flex justify-center items-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      ) : participantDetailsError ? (
-        <div className="text-center py-10">
-          <p className="text-red-400">{participantDetailsError}</p>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center text-center">
-          <Image
-            src={participantDetails?.image || selectedParticipant.image}
-            alt={participantDetails?.name || selectedParticipant.name}
-            className="w-24 h-24 rounded-full object-cover mb-4"
-          />
-          <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
-          <p className="text-white/60 mb-4">
-            {selectedParticipant.role === 'szervező' && (
-              <span className="text-blue-300 mr-1">Szervező</span>
+            {loadingParticipantDetails ? (
+              <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : participantDetailsError ? (
+              <div className="text-center py-10">
+                <p className="text-red-400">{participantDetailsError}</p>
+              </div>
+            ) : participantDetails ? (
+              <div className="flex flex-col items-center text-center">
+                <Image
+                  src={participantDetails?.image || selectedParticipant.image}
+                  alt={participantDetails?.name || selectedParticipant.name}
+                  className="w-24 h-24 rounded-full object-cover mb-4"
+                />
+                <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
+                <p className="text-white/60 mb-4">
+                  {selectedParticipant.role === 'szervező' && (
+                    <span className="text-blue-300 mr-1">Szervező</span>
+                  )}
+                  {(participantDetails?.age || selectedParticipant.age) ?
+                    `${participantDetails?.age || selectedParticipant.age} éves  ` : ""}
+                  {selectedParticipant.level || ""}
+                </p>
+
+                <div className="w-full space-y-4 mt-2">
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-2 text-white">
+                      Bemutatkozás
+                    </h4>
+                    <div className="flex items-start gap-2 text-white/80 text-sm">
+                      <User className="h-4 w-4 text-blue-400 mt-1" />
+                      <p className="whitespace-pre-line break-words overflow-auto max-h-40">
+                        {participantDetails.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+                      </p>
+                    </div>
+
+                  </div>
+
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-2 text-white">
+                      Elérhetőség
+                    </h4>
+                    {participantDetails.email && (
+                      <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                        <Mail className="h-4 w-4 text-blue-400" />
+                        <span>{participantDetails.email}</span>
+                      </div>
+                    )}
+                    {participantDetails?.phone && (
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Phone className="h-4 w-4 text-green-400" />
+                        <span>{participantDetails.phone}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Esemény statisztikák - a Profile.jsx-ből átvéve */}
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-3">
+                        <h5 className="text-blue-400 text-xs font-medium mb-1">Létrehozott események</h5>
+                        <p className="text-xl font-bold text-white">
+                          {participantDetails.stats?.createdEvents || 0}
+                        </p>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-3">
+                        <h5 className="text-purple-400 text-xs font-medium mb-1">Részvételek</h5>
+                        <p className="text-xl font-bold text-white">
+                          {participantDetails.stats?.participatedEvents || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center">
+                <Image
+                  src={selectedParticipant.image}
+                  alt={selectedParticipant.name}
+                  className="w-24 h-24 rounded-full object-cover mb-4"
+                />
+                <h3 className="text-xl font-bold">{selectedParticipant.name}</h3>
+                <p className="text-white/60 mb-4">
+                  {selectedParticipant.role === 'szervező' && (
+                    <span className="text-blue-300 mr-1">Szervező</span>
+                  )}
+                  {selectedParticipant.age ? `${selectedParticipant.age} éves  ` : ""}
+                  {selectedParticipant.level || ""}
+                </p>
+
+                <div className="w-full space-y-4 mt-2">
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-2 text-white">
+                      Bemutatkozás
+                    </h4>
+                    <div className="flex items-start gap-2 text-white/80 text-sm">
+                      <User className="h-4 w-4 text-blue-400 mt-1" />
+                      <p className="whitespace-pre-line">
+                        {selectedParticipant.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-2 text-white">
+                      Elérhetőség
+                    </h4>
+                    {selectedParticipant.email && (
+                      <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                        <Mail className="h-4 w-4 text-blue-400" />
+                        <span>{selectedParticipant.email}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Esemény statisztikák alapértelmezett értékekkel */}
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-3">
+                        <h5 className="text-blue-400 text-xs font-medium mb-1">Létrehozott események</h5>
+                        <p className="text-xl font-bold text-white">0</p>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-3">
+                        <h5 className="text-purple-400 text-xs font-medium mb-1">Részvételek</h5>
+                        <p className="text-xl font-bold text-white">0</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-            {(participantDetails?.age || selectedParticipant.age) ? 
-              `${participantDetails?.age || selectedParticipant.age} éves • ` : ""}
-            {selectedParticipant.level || ""}
-          </p>
-
-          <div className="w-full space-y-4 mt-2">
-            <div className="bg-white/5 p-4 rounded-lg">
-              <h4 className="font-medium mb-2 flex items-center gap-2 text-white">
-                <User className="h-4 w-4" /> Bemutatkozás
-              </h4>
-              <p className="text-sm text-white/80 whitespace-pre-line">
-                {participantDetails?.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
-              </p>
-            </div>
-
-            <div className="bg-white/5 p-4 rounded-lg text-left">
-              <h4 className="font-medium mb-2 text-white">Elérhetőségek</h4>
-              {participantDetails?.email && (
-                <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
-                  <Mail className="h-4 w-4 text-blue-400" />
-                  <span>{participantDetails.email}</span>
-                </div>
-              )}
-              {participantDetails?.phone && (
-                <div className="flex items-center gap-2 text-white/80 text-sm">
-                  <Phone className="h-4 w-4 text-green-400" />
-                  <span>{participantDetails.phone}</span>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
-    </div>
-  </div>
-)}
 
 
       {isEditModalOpen && (
