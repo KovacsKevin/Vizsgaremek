@@ -50,7 +50,7 @@ const HeroSection = ({ Image }) => {
   };
 
   return (
-    <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
+    <section className="relative h-[60vh] sm:h-[65vh] md:h-[70vh] min-h-[400px] sm:min-h-[500px] overflow-hidden">
       {/* Background image with parallax effect */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 transform scale-110 transition-transform duration-10000 animate-slow-zoom">
@@ -72,9 +72,9 @@ const HeroSection = ({ Image }) => {
           <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(79,70,229,0.2),transparent_40%)]"></div>
         </div>
 
-        {/* Animated particles */}
+        {/* Animated particles - csökkentett mennyiség mobilon */}
         <div className="absolute inset-0 overflow-hidden">
-          {[...Array(30)].map((_, i) => (
+          {[...Array(15)].map((_, i) => (
             <div
               key={i}
               className="absolute rounded-full bg-white/20"
@@ -127,11 +127,11 @@ const HeroSection = ({ Image }) => {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center">
         <div className="max-w-3xl animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
-          <div className="inline-block px-4 py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-indigo-600/20 backdrop-blur-md border border-purple-500/30 text-sm text-purple-300 font-medium mb-6">
+          <div className="inline-block px-3 py-1 sm:px-4 sm:py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-indigo-600/20 backdrop-blur-md border border-purple-500/30 text-xs sm:text-sm text-purple-300 font-medium mb-4 sm:mb-6">
             Sporthaver - Sportolj közösségben
           </div>
 
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
             <span
               className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-indigo-200 animate-text-shimmer"
               style={{
@@ -147,16 +147,16 @@ const HeroSection = ({ Image }) => {
             </span>
           </h1>
 
-          <p className="text-xl md:text-2xl mb-8 text-gray-300 max-w-2xl">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-gray-300 max-w-2xl">
             Találj barátokra és sportolj bátran! Fedezd fel a környékeden elérhető sportlehetőségeket és csatlakozz a
             közösséghez.
           </p>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <a
               href="#create-event"
               onClick={handleCreateEventClick}
-              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-purple-700/30 hover:shadow-purple-700/50 transform hover:-translate-y-1 flex items-center group"
+              className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-purple-700/30 hover:shadow-purple-700/50 transform hover:-translate-y-1 flex items-center justify-center sm:justify-start group text-center sm:text-left"
             >
               <span>Esemény létrehozása</span>
               <svg
@@ -173,20 +173,18 @@ const HeroSection = ({ Image }) => {
             <a
               href="#"
               onClick={handleBrowseEventsClick}
-              className="px-8 py-4 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-medium rounded-xl transition-all duration-300 transform hover:-translate-y-1"
+              className="px-6 sm:px-8 py-3 sm:py-4 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 hover:border-white/30 text-white font-medium rounded-xl transition-all duration-300 transform hover:-translate-y-1 text-center"
             >
               Események böngészése
             </a>
           </div>
         </div>
-
-        {/* Scroll indicator removed as requested */}
       </div>
 
       {/* Bottom wave decoration */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden z-10">
+      <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-16 overflow-hidden z-10">
         <svg
-          className="absolute bottom-0 w-full h-20 fill-slate-900 transform translate-y-1"
+          className="absolute bottom-0 w-full h-16 sm:h-20 fill-slate-900 transform translate-y-1"
           viewBox="0 0 1200 120"
           preserveAspectRatio="none"
         >
