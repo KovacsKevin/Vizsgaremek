@@ -1183,7 +1183,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
+      <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto custom-scrollbar bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
