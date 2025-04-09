@@ -2404,32 +2404,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                 </div>
 
                 <div>
-                  <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
-                    Kezdő időpont
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="kezdoIdo"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    value={formData.kezdoIdo}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="zaroIdo" className="block mb-2 text-sm font-medium text-gray-300">
-                    Záró időpont
-                  </label>
-                  <input
-                    type="datetime-local"
-                    id="zaroIdo"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    value={formData.zaroIdo}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
                   <label htmlFor="maximumLetszam" className="block mb-2 text-sm font-medium text-gray-300">
                     Létszám
                   </label>
@@ -2445,22 +2419,36 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
+
                 <div>
-                  <label htmlFor="szint" className="block mb-2 text-sm font-medium text-gray-300">
-                    Szint
+                  <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
+                    Kezdő időpont
                   </label>
-                  <select id="szint"
+                  <input
+                    type="datetime-local"
+                    id="kezdoIdo"
                     className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    value={formData.szint}
+                    value={formData.kezdoIdo}
                     onChange={handleChange}
                     required
-                  >
-                    <option value="">Válassz szintet</option>
-                    <option value="kezdő">Kezdő</option>
-                    <option value="haladó">Haladó</option>
-                    <option value="profi">Profi</option>
-                  </select>
+                  />
                 </div>
+
+                <div>
+                  <label htmlFor="zaroIdo" className="block mb-2 text-sm font-medium text-gray-300">
+                    Záró időpont
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="zaroIdo"
+                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                    value={formData.zaroIdo}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+
                 <div>
                   <label htmlFor="minimumEletkor" className="block mb-2 text-sm font-medium text-gray-300">
                     Minimum életkor
@@ -2477,6 +2465,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
+
                 <div>
                   <label htmlFor="maximumEletkor" className="block mb-2 text-sm font-medium text-gray-300">
                     Maximum életkor
@@ -2494,19 +2483,24 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <label htmlFor="leiras" className="block mb-2 text-sm font-medium text-gray-300">
-                    Esemény leírása
+                <div>
+                  <label htmlFor="szint" className="block mb-2 text-sm font-medium text-gray-300">
+                    Szint
                   </label>
-                  <textarea
-                    id="leiras"
-                    rows="4"
+                  <select id="szint"
                     className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Részletes leírás az eseményről..."
-                    value={formData.leiras}
+                    value={formData.szint}
                     onChange={handleChange}
-                  ></textarea>
+                    required
+                  >
+                    <option value="">Válassz szintet</option>
+                    <option value="kezdő">Kezdő</option>
+                    <option value="haladó">Haladó</option>
+                    <option value="profi">Profi</option>
+                  </select>
                 </div>
+
+                
 
                 <div className="md:col-span-2">
                   <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
@@ -2677,13 +2671,13 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 
                 <div className="md:col-span-2">
                   <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
-                    Helyszín leírása
+                    Leírás
                   </label>
                   <textarea
                     id="helyszinLeiras"
                     rows="4"
                     className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Részletes leírás a helyszínről..."
+                    placeholder="Leírás..."
                     value={formData.helyszinLeiras}
                     onChange={handleChange}
                   ></textarea>
