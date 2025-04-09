@@ -586,26 +586,26 @@ const Profile = () => {
                         <div className="p-8">
                             {/* Bemutatkozás szekció */}
                             <div className="mb-8">
-                                <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Bemutatkozás</h2>
+    <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Bemutatkozás</h2>
 
-                                {isEditing ? (
-                                    <textarea
-                                        name="bio"
-                                        value={formData.bio}
-                                        onChange={handleInputChange}
-                                        className="w-full h-32 bg-slate-700 text-white px-4 py-3 rounded-lg resize-none"
-                                        placeholder="Írj magadról néhány mondatot..."
-                                    />
-                                ) : (
-                                    <div className="bg-slate-700/50 rounded-lg p-4">
-                                        {user?.bio ? (
-                                            <p className="text-slate-300 whitespace-pre-line">{user.bio}</p>
-                                        ) : (
-                                            <p className="text-slate-500 italic">Nincs bemutatkozás megadva</p>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+    {isEditing ? (
+        <textarea
+            name="bio"
+            value={formData.bio}
+            onChange={handleInputChange}
+            className="w-full h-32 bg-slate-700 text-white px-4 py-3 rounded-lg resize-none"
+            placeholder="Írj magadról néhány mondatot..."
+        />
+    ) : (
+        <div className="bg-slate-700/50 rounded-lg p-4 max-h-60 overflow-y-auto custom-scrollbar">
+            {user?.bio ? (
+                <p className="text-slate-300 whitespace-pre-wrap break-words">{user.bio}</p>
+            ) : (
+                <p className="text-slate-500 italic">Nincs bemutatkozás megadva</p>
+            )}
+        </div>
+    )}
+</div>
 
                             <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Személyes adatok</h2>
 
@@ -807,16 +807,35 @@ const Profile = () => {
                 </div>
             )}
 
-            <style jsx>{`
-                    @keyframes fadeIn {
-                        from { opacity: 0; transform: translateY(-10px); }
-                        to { opacity: 1; transform: translateY(0); }
-                    }
-                    .animate-fadeIn {
-                        animation: fadeIn 0.2s ease-out forwards;
-                    }
-                `}</style>
-        </>
+<style jsx>{`
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out forwards;
+    }
+    
+    /* Custom scrollbar styling */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 4px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.5);
+        border-radius: 4px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(99, 102, 241, 0.7);
+    }
+`}</style>
+</>
     );
 };
 
