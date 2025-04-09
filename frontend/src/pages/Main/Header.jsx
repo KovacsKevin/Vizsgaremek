@@ -485,127 +485,138 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-// Navigáció kezelése - továbbfejlesztett verzió
-const handleNavigation = (id, path) => {
-  setActiveTab(id);
+  // Navigáció kezelése - továbbfejlesztett verzió
+  const handleNavigation = (id, path) => {
+    setActiveTab(id);
 
-  // Speciális kezelés a "Főoldal" gombra kattintáskor
-  if (id === "home" && (path === "/homepage" || path === "/")) {
-    // Ha már a főoldalon vagyunk, csak görgessünk fel
-    if (location.pathname === "/" || location.pathname === "/homepage") {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    } else {
-      // Ha nem a főoldalon vagyunk, navigáljunk oda, majd görgessünk fel
-      navigate("/homepage");
-      setTimeout(() => {
+    // Speciális kezelés a "Főoldal" gombra kattintáskor
+    if (id === "home" && (path === "/homepage" || path === "/")) {
+      // Ha már a főoldalon vagyunk, csak görgessünk fel
+      if (location.pathname === "/" || location.pathname === "/homepage") {
         window.scrollTo({
           top: 0,
-          behavior: 'smooth'
-        });
-      }, 100);
-    }
-    setIsMobileMenuOpen(false);
-    return;
-  }
-
-  // Ellenőrizzük, hogy van-e hash a path-ban
-  if (path.includes('#')) {
-    const [url, hash] = path.split('#');
-    
-    // Nagyobb késleltetés bizonyos oldalakról való navigációnál
-    const isFromSpecialPage = 
-      location.pathname === '/my-events' || 
-      location.pathname.includes('/create-event') ||
-      location.pathname.includes('/event/');
-    
-    const delay = isFromSpecialPage ? 800 : 500; // Nagyobb késleltetés, ha speciális oldalról jövünk
-
-    // Ha már a megfelelő oldalon vagyunk, csak görgessünk
-    if (location.pathname === url || (url === '/homepage' && (location.pathname === '/' || location.pathname === '/homepage'))) {
-      setTimeout(() => {
-        scrollToSection(hash);
-      }, 100); // Kis késleltetés a görgetéshez, hogy biztosan betöltődjön minden
-    } else {
-      // Különben navigáljunk az oldalra, majd a betöltés után görgessünk
-      navigate(url);
-      
-      // Tároljuk el a hash-t, hogy tudjuk, hova kell görgetni a betöltés után
-      const targetHash = hash;
-      
-      setTimeout(() => {
-        scrollToSection(targetHash);
-      }, delay); // Használjuk a megfelelő késleltetést
-    }
-  } else {
-    // Ha speciális oldalra navigálunk vagy speciális oldalról jövünk, használjunk nagyobb késleltetést
-    const isSpecialPage = path === '/my-events';
-    const isFromSpecialPage = 
-      location.pathname === '/my-events' || 
-      location.pathname.includes('/create-event') ||
-      location.pathname.includes('/event/');
-    
-    if (isSpecialPage || isFromSpecialPage) {
-      navigate(path);
-      setTimeout(() => {
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-      }, isFromSpecialPage ? 800 : 100);
-    } else {
-      // Ha nincs hash, egyszerűen navigáljunk
-      navigate(path);
-      window.scrollTo(0, 0);
-    }
-  }
-
-  setIsMobileMenuOpen(false);
-};
-
-
-// Külön függvény a szekcióhoz görgetéshez a kód duplikáció elkerülése érdekében
-const scrollToSection = (hash) => {
-  const headerHeight = 120; // Fejléc magassága
-
-  const element = document.getElementById(hash);
-  if (element) {
-    // Ha az "Esemény létrehozása" szekcióhoz görgetünk, akkor speciális kezelés
-    if (hash === 'create-event') {
-      // Megkeressük az event-section elemet
-      const section = document.getElementById('event-section');
-      if (section) {
-        // Kiszámoljuk a pozíciót úgy, hogy a szekció teteje legyen látható
-        const sectionPosition = section.getBoundingClientRect().top;
-        const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
-        });
-      }
-    }
-    // Ha a "Legfrissebb sportesemények" szekcióhoz görgetünk, akkor speciális kezelés
-    else if (hash === 'latest-events') {
-      // Kiszámoljuk a pozíciót úgy, hogy a cím és a leírás teljes egészében látszódjon
-
-      // Megkeressük a címet tartalmazó div-et (a cím szülőeleme)
-      const titleContainer = element.closest('div');
-
-      // Ha megtaláltuk a címet tartalmazó div-et, akkor annak a pozícióját használjuk
-      if (titleContainer) {
-        const containerPosition = titleContainer.getBoundingClientRect().top;
-        // Kicsit nagyobb offset-et használunk, hogy biztosan látszódjon a teljes szöveg
-        const offsetPosition = containerPosition + window.pageYOffset - (headerHeight + 20);
-
-        window.scrollTo({
-          top: offsetPosition,
           behavior: 'smooth'
         });
       } else {
-        // Ha nem találtuk meg a címet tartalmazó div-et, akkor az elem pozícióját használjuk
+        // Ha nem a főoldalon vagyunk, navigáljunk oda, majd görgessünk fel
+        navigate("/homepage");
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }, 100);
+      }
+      setIsMobileMenuOpen(false);
+      return;
+    }
+
+    // Ellenőrizzük, hogy van-e hash a path-ban
+    if (path.includes('#')) {
+      const [url, hash] = path.split('#');
+
+      // Nagyobb késleltetés bizonyos oldalakról való navigációnál
+      const isFromSpecialPage =
+        location.pathname === '/my-events' ||
+        location.pathname.includes('/create-event') ||
+        location.pathname.includes('/event/');
+
+      const delay = isFromSpecialPage ? 800 : 500; // Nagyobb késleltetés, ha speciális oldalról jövünk
+
+      // Ha már a megfelelő oldalon vagyunk, csak görgessünk
+      if (location.pathname === url || (url === '/homepage' && (location.pathname === '/' || location.pathname === '/homepage'))) {
+        setTimeout(() => {
+          scrollToSection(hash);
+        }, 100); // Kis késleltetés a görgetéshez, hogy biztosan betöltődjön minden
+      } else {
+        // Különben navigáljunk az oldalra, majd a betöltés után görgessünk
+        navigate(url);
+
+        // Tároljuk el a hash-t, hogy tudjuk, hova kell görgetni a betöltés után
+        const targetHash = hash;
+
+        setTimeout(() => {
+          scrollToSection(targetHash);
+        }, delay); // Használjuk a megfelelő késleltetést
+      }
+    } else {
+      // Ha speciális oldalra navigálunk vagy speciális oldalról jövünk, használjunk nagyobb késleltetést
+      const isSpecialPage = path === '/my-events';
+      const isFromSpecialPage =
+        location.pathname === '/my-events' ||
+        location.pathname.includes('/create-event') ||
+        location.pathname.includes('/event/');
+
+      if (isSpecialPage || isFromSpecialPage) {
+        navigate(path);
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }, isFromSpecialPage ? 800 : 100);
+      } else {
+        // Ha nincs hash, egyszerűen navigáljunk
+        navigate(path);
+        window.scrollTo(0, 0);
+      }
+    }
+
+    setIsMobileMenuOpen(false);
+  };
+
+
+  // Külön függvény a szekcióhoz görgetéshez a kód duplikáció elkerülése érdekében
+  const scrollToSection = (hash) => {
+    const headerHeight = 120; // Fejléc magassága
+
+    const element = document.getElementById(hash);
+    if (element) {
+      // Ha az "Esemény létrehozása" szekcióhoz görgetünk, akkor speciális kezelés
+      if (hash === 'create-event') {
+        // Megkeressük az event-section elemet
+        const section = document.getElementById('event-section');
+        if (section) {
+          // Kiszámoljuk a pozíciót úgy, hogy a szekció teteje legyen látható
+          const sectionPosition = section.getBoundingClientRect().top;
+          const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }
+      // Ha a "Legfrissebb sportesemények" szekcióhoz görgetünk, akkor speciális kezelés
+      else if (hash === 'latest-events') {
+        // Kiszámoljuk a pozíciót úgy, hogy a cím és a leírás teljes egészében látszódjon
+
+        // Megkeressük a címet tartalmazó div-et (a cím szülőeleme)
+        const titleContainer = element.closest('div');
+
+        // Ha megtaláltuk a címet tartalmazó div-et, akkor annak a pozícióját használjuk
+        if (titleContainer) {
+          const containerPosition = titleContainer.getBoundingClientRect().top;
+          // Kicsit nagyobb offset-et használunk, hogy biztosan látszódjon a teljes szöveg
+          const offsetPosition = containerPosition + window.pageYOffset - (headerHeight + 20);
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        } else {
+          // Ha nem találtuk meg a címet tartalmazó div-et, akkor az elem pozícióját használjuk
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }
+      // Ha az "Elérhetőségek" szekcióhoz görgetünk (contact-section)
+      else if (hash === 'contact-section') {
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
 
@@ -614,65 +625,54 @@ const scrollToSection = (hash) => {
           behavior: 'smooth'
         });
       }
-    }
-    // Ha az "Elérhetőségek" szekcióhoz görgetünk (contact-section)
-    else if (hash === 'contact-section') {
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+      else {
+        // Egyéb elemekhez normál görgetés
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
-    else {
-      // Egyéb elemekhez normál görgetés
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    } else if (hash === 'create-event') {
+      // Ha a create-event nem található, próbáljuk meg a szekciót
+      const section = document.getElementById('event-section');
+      if (section) {
+        const sectionPosition = section.getBoundingClientRect().top;
+        const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
-  } else if (hash === 'create-event') {
-    // Ha a create-event nem található, próbáljuk meg a szekciót
-    const section = document.getElementById('event-section');
-    if (section) {
-      const sectionPosition = section.getBoundingClientRect().top;
-      const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    } else if (hash === 'latest-events') {
+      // Ha a latest-events nem található, próbáljuk meg a szekciót
+      const section = document.getElementById('popular-destinations');
+      if (section) {
+        const sectionPosition = section.getBoundingClientRect().top;
+        const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
-  } else if (hash === 'latest-events') {
-    // Ha a latest-events nem található, próbáljuk meg a szekciót
-    const section = document.getElementById('popular-destinations');
-    if (section) {
-      const sectionPosition = section.getBoundingClientRect().top;
-      const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    } else if (hash === 'contact-section') {
+      // Ha a contact-section nem található, próbáljuk meg a footer-t
+      const footer = document.querySelector('footer');
+      if (footer) {
+        const footerPosition = footer.getBoundingClientRect().top;
+        const offsetPosition = footerPosition + window.pageYOffset - headerHeight;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }
-  } else if (hash === 'contact-section') {
-    // Ha a contact-section nem található, próbáljuk meg a footer-t
-    const footer = document.querySelector('footer');
-    if (footer) {
-      const footerPosition = footer.getBoundingClientRect().top;
-      const offsetPosition = footerPosition + window.pageYOffset - headerHeight;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
-  }
-};
+  };
 
 
 
@@ -710,7 +710,7 @@ const scrollToSection = (hash) => {
                   <button
                     id="avatarButton"
                     onClick={toggleProfileDropdown}
-                    className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl cursor-pointer bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 ring-2 ring-white/10 hover:ring-white/30 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 group"
+                    className="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden rounded-xl cursor-pointer bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 ring-2 ring-white/10 hover:ring-white/30 transition-all duration-300 shadow-lg hover:shadow-purple-500/20 group p-0.5"
                     style={{
                       backgroundSize: isProfileOpen ? "100% 100%" : "200% 200%",
                       animation: isProfileOpen ? "none" : "gradient-shift 3s ease infinite",
@@ -729,19 +729,19 @@ const scrollToSection = (hash) => {
                             }
                           `}</style>
                     {/* Avatar megjelenítése */}
-                    <span className="font-bold text-white text-sm group-hover:scale-110 transition-transform duration-300">
+                    <span className="font-bold text-white text-sm group-hover:scale-110 transition-transform duration-300 w-full h-full overflow-hidden rounded-lg">
                       {profilePicture ? (
                         <ImageWithFallback
                           src={profilePicture}
                           alt={userName}
-                          className="w-full h-full object-cover rounded-lg"
+                          className="w-full h-full object-cover"
                           defaultSrc={defaultProfilePicture}
                         />
                       ) : (
                         <ImageWithFallback
                           src={defaultProfilePicture}
                           alt={userName}
-                          className="w-full h-full object-cover rounded-lg"
+                          className="w-full h-full object-cover"
                           defaultSrc={defaultProfilePicture}
                         />
                       )}
@@ -815,11 +815,11 @@ const scrollToSection = (hash) => {
                           {/* Centered Username and Profile Picture */}
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             <div
-                              className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 mb-3 relative group cursor-pointer"
+                              className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-0.5 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 mb-3 relative group cursor-pointer"
                               style={{ animation: "gradient-shift 3s ease infinite" }}
                               onClick={handleProfilePicClick}
                             >
-                              <div className="w-full h-full rounded-xl bg-slate-800 flex items-center justify-center overflow-hidden">
+                              <div className="w-full h-full rounded-xl overflow-hidden">
                                 {profilePicture ? (
                                   <ImageWithFallback
                                     src={profilePicture}
@@ -1094,29 +1094,29 @@ const scrollToSection = (hash) => {
       </div>
 
       <style jsx>{`
-        @keyframes gradient-shift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes pulse {
-          0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
-          70% { box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
-        }
-        @keyframes float {
-          0% { transform: translateY(0) translateX(0); }
-          50% { transform: translateY(-20px) translateX(10px); }
-          100% { transform: translateY(0) translateX(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out forwards;
-        }
-      `}</style>
+                                        @keyframes gradient-shift {
+                                          0% { background-position: 0% 50%; }
+                                          50% { background-position: 100% 50%; }
+                                          100% { background-position: 0% 50%; }
+                                        }
+                                        @keyframes pulse {
+                                          0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7); }
+                                          70% { box-shadow: 0 0 0 10px rgba(147, 51, 234, 0); }
+                                          100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
+                                        }
+                                        @keyframes float {
+                                          0% { transform: translateY(0) translateX(0); }
+                                          50% { transform: translateY(-20px) translateX(10px); }
+                                          100% { transform: translateY(0) translateX(0); }
+                                        }
+                                        @keyframes fadeIn {
+                                          from { opacity: 0; transform: translateY(-10px); }
+                                          to { opacity: 1; transform: translateY(0); }
+                                        }
+                                        .animate-fadeIn {
+                                          animation: fadeIn 0.2s ease-out forwards;
+                                        }
+                                      `}</style>
     </header>
   )
 }
