@@ -1351,19 +1351,18 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                     </div>
                   ) : isParticipant ? (
                     <>
-                      {userStatus === 'függőben' ? (
-                        <div className="w-full flex flex-col sm:flex-row gap-2">
+                      {userStatus === "függőben" ? (
+                        <div className="w-full flex flex-col sm:flex-row gap-3">
                           <button
-                            className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
+                            className="flex-1 px-4 py-2.5 bg-amber-600 text-white rounded-md cursor-not-allowed text-center font-medium"
                             disabled
                           >
                             Kérelem elküldve
                           </button>
                           <button
                             onClick={handleCancelRequest}
-                            className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors text-center font-medium whitespace-nowrap"
                           >
-                            <XCircle className="h-4 w-4" />
                             Kérelem visszavonása
                           </button>
                         </div>
@@ -1921,29 +1920,20 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     `}</style>
     </>
   );
-
-
-
 };
-
-
-
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   const safeEvent = event || {};
 
   // Add this function here
   const formatImageUrl = (url) => {
     if (!url) return "";
-
     // If it's already a complete URL, return it
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
       return url;
     }
-
     // If it's a relative path, prepend the API base URL
     return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
   };
-
   const [formData, setFormData] = useState({
     helyszinId: safeEvent.helyszinId || safeEvent.Helyszin?.Id || "",
     sportId: safeEvent.sportId || safeEvent.Sportok?.Id || "",
@@ -1964,11 +1954,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     helyszinBerles: Boolean(safeEvent.Helyszin?.Berles) || false,
     helyszinLeiras: safeEvent.Helyszin?.Leiras || "",
   });
-
-
-
-
-
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(formatImageUrl(safeEvent.imageUrl) || "");
   const [submitting, setSubmitting] = useState(false);
@@ -1979,32 +1964,26 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   const [sports, setSports] = useState([]);
   const [loadingSports, setLoadingSports] = useState(false);
   const [editingLocation, setEditingLocation] = useState(false);
-
   const parkolasOptions = [
     { value: "ingyenes", label: "Ingyenes" },
     { value: "fizetős", label: "Fizetős" },
     { value: "nincs", label: "Nincs" }
   ];
-
   useEffect(() => {
     if (isOpen) {
       fetchLocations(); fetchSports();
     }
   }, [isOpen]);
-
   const fetchLocations = async () => {
     setLoadingLocations(true);
     setErrorMessage("");
-
     try {
       const token = getCookie('token');
-
       if (!token) {
         setErrorMessage("Authentication token is missing. Please login again.");
         setLoadingLocations(false);
         return;
       }
-
       const response = await fetch("http://localhost:8081/api/v1/getOwnHelyszin", {
         method: "GET",
         headers: {
@@ -2012,12 +1991,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           "Content-Type": "application/json",
         },
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Failed to fetch locations");
       }
-
       const data = await response.json();
       setLocations(data.locations || []);
     } catch (error) {
@@ -2026,20 +2003,16 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       setLoadingLocations(false);
     }
   };
-
   const fetchSports = async () => {
     setLoadingSports(true);
     setErrorMessage("");
-
     try {
       const token = getCookie('token');
-
       if (!token) {
         setErrorMessage("Authentication token is missing. Please login again.");
         setLoadingSports(false);
         return;
       }
-
       const response = await fetch("http://localhost:8081/api/v1/allSportok", {
         method: "GET",
         headers: {
@@ -2047,12 +2020,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           "Content-Type": "application/json",
         },
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Failed to fetch sports");
       }
-
       const data = await response.json();
       setSports(data.sportok || []);
     } catch (error) {
@@ -2061,20 +2032,15 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       setLoadingSports(false);
     }
   };
-
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
-
     const newValue = type === 'checkbox' ? checked : value;
-
     console.log(`Field ${id} changed to:`, type === 'checkbox' ? checked : value);
-
     setFormData((prevState) => ({
       ...prevState,
       [id]: newValue,
     }));
   };
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -2084,31 +2050,24 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       console.log("Image preview set to:", previewUrl);
     }
   };
-
-
   const startLocationEditing = () => {
     setEditingLocation(true);
   };
-
   const cancelLocationEditing = () => {
     setEditingLocation(false);
   };
-
   const saveLocation = async () => {
     try {
       const token = getCookie('token');
-
       if (!token) {
         setErrorMessage("Authentication token is missing. Please login again.");
         return null;
       }
-
       const iranyitoszam = parseInt(formData.helyszinIranyitoszam);
       if (isNaN(iranyitoszam) || iranyitoszam < 1000 || iranyitoszam > 9999) {
         setErrorMessage("Az irányítószám 1000 és 9999 közötti szám kell legyen.");
         return null;
       }
-
       const locationData = {
         Nev: formData.helyszinNev,
         Cim: formData.helyszinCim,
@@ -2120,15 +2079,11 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         Berles: formData.helyszinBerles === true,
         Leiras: formData.helyszinLeiras || ""
       };
-
       console.log("Sending location update with data:", locationData);
-
       if (!["ingyenes", "fizetős", "nincs"].includes(locationData.Parkolas)) {
         locationData.Parkolas = "nincs";
       }
-
       console.log("Updating location with data:", locationData);
-
       const response = await fetch(`http://localhost:8081/api/v1/updateHelyszin/${formData.helyszinId}`, {
         method: "PUT",
         headers: {
@@ -2137,17 +2092,13 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         },
         body: JSON.stringify(locationData),
       });
-
       if (!response.ok) {
         const responseData = await response.json();
         throw new Error(responseData.message || "Failed to save location");
       }
-
       const responseData = await response.json();
       console.log("Location updated successfully:", responseData);
-
       await fetchLocations();
-
       if (responseData.updatedLocation) {
         setFormData(prev => ({
           ...prev,
@@ -2162,9 +2113,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
           helyszinLeiras: responseData.updatedLocation.Leiras || ""
         }));
       }
-
       setEditingLocation(false);
-
       return formData.helyszinId;
     } catch (error) {
       console.error("Error saving location:", error);
@@ -2172,22 +2121,18 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       return null;
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setErrorMessage("");
     setSuccess(false);
-
     try {
       const token = getCookie('token');
-
       if (!token) {
         setErrorMessage("Authentication token is missing. Please login again.");
         setSubmitting(false);
         return;
       }
-
       let finalHelyszinId = formData.helyszinId;
       if (editingLocation) {
         const savedLocationId = await saveLocation();
@@ -2196,7 +2141,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }
         finalHelyszinId = savedLocationId;
       }
-
       const formDataToSend = new FormData();
       formDataToSend.append("helyszinId", finalHelyszinId);
       formDataToSend.append("sportId", formData.sportId);
@@ -2208,15 +2152,11 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       formDataToSend.append("maximumLetszam", formData.maximumLetszam);
       formDataToSend.append("leiras", formData.leiras);
       formDataToSend.append("autoApprove", formData.autoApprove);
-
       if (imageFile) {
         formDataToSend.append("imageFile", imageFile);
       }
-
       formDataToSend.append("id", safeEvent.id);
-
       console.log("Sending event update with data:", Object.fromEntries(formDataToSend));
-
       const response = await fetch(`http://localhost:8081/api/v1/updateEsemeny/${safeEvent.id}`, {
         method: "PUT",
         headers: {
@@ -2224,16 +2164,12 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         },
         body: formDataToSend,
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || "Failed to update event");
       }
-
       console.log("Event updated successfully:", data);
       setSuccess(true);
-
       if (onSuccess) {
         const updatedEvent = {
           ...safeEvent,
@@ -2269,11 +2205,9 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             updatedEvent.Sportok = newSport;
           }
         }
-
         console.log("Updating event with:", updatedEvent);
         onSuccess(updatedEvent);
       }
-
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -2283,10 +2217,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       setSubmitting(false);
     }
   };
-
-
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70] transition-all duration-300">
       <div
@@ -2320,7 +2251,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                         }
                       }
                     `}</style>
-
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -2336,7 +2266,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
               <X className="w-5 h-5" />
             </button>
           </div>
-
           {success && (
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-300 p-4 rounded-xl mb-6 flex items-center">
               <div className="mr-3 flex-shrink-0 bg-green-500/20 rounded-full p-2">
@@ -2353,7 +2282,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
               <p>Az esemény sikeresen frissítve!</p>
             </div>
           )}
-
           {errorMessage && (
             <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 flex items-center">
               <div className="mr-3 flex-shrink-0 bg-red-500/20 rounded-full p-2">
@@ -2375,7 +2303,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
               <p>{errorMessage}</p>
             </div>
           )}
-
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <div className="flex border-b border-slate-700">
@@ -2401,7 +2328,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                 </button>
               </div>
             </div>
-
             {!editingLocation ? (
               <div className="grid gap-6 mb-6 md:grid-cols-2">
                 <div>
@@ -2449,7 +2375,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     </p>
                   )}
                 </div>
-
                 <div>
                   <label htmlFor="maximumLetszam" className="block mb-2 text-sm font-medium text-gray-300">
                     Létszám
@@ -2466,7 +2391,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
-
                 <div>
                   <label htmlFor="kezdoIdo" className="block mb-2 text-sm font-medium text-gray-300">
                     Kezdő időpont
@@ -2480,7 +2404,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
-
                 <div>
                   <label htmlFor="zaroIdo" className="block mb-2 text-sm font-medium text-gray-300">
                     Záró időpont
@@ -2494,8 +2417,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
-
-
                 <div>
                   <label htmlFor="minimumEletkor" className="block mb-2 text-sm font-medium text-gray-300">
                     Minimum életkor
@@ -2512,7 +2433,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
-
                 <div>
                   <label htmlFor="maximumEletkor" className="block mb-2 text-sm font-medium text-gray-300">
                     Maximum életkor
@@ -2529,7 +2449,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     required
                   />
                 </div>
-
                 <div>
                   <label htmlFor="szint" className="block mb-2 text-sm font-medium text-gray-300">
                     Szint
@@ -2546,9 +2465,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     <option value="profi">Profi</option>
                   </select>
                 </div>
-
-
-
                 <div className="md:col-span-2">
                   <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
                     Kép cseréje (opcionális)
@@ -2714,7 +2630,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                       />
                     </label>
                   </div>
-
                   <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
                     <label htmlFor="helyszinOltozo" className="flex items-center justify-between cursor-pointer w-full">
                       <div className="flex items-center">
@@ -2752,9 +2667,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     </label>
                   </div>
                 </div>
-
-
-
                 <div className="md:col-span-2">
                   <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
                     Leírás
@@ -2771,7 +2683,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
 
               </div>
             )}
-
             <div className="flex justify-end gap-3 mt-6">
               {editingLocation ? (
                 <>
@@ -2840,8 +2751,6 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     </div >
   );
 };
-
-
 const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -2857,7 +2766,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
   const [ageRange, setAgeRange] = useState({ min: 0, max: 100 });
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(null);
-
   useEffect(() => {
     if (isOpen) {
       loadEventDetails();
@@ -2865,18 +2773,15 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       loadPendingInvitations();
     }
   }, [isOpen, eventId]);
-
   const loadEventDetails = async () => {
     try {
       const token = getCookie('token');
       if (!token) return;
-
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
-
       if (response.ok) {
         const data = await response.json();
         setEventDetails(data.event || {});
@@ -2892,11 +2797,9 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       console.error("Error loading event details:", error);
     }
   };
-
   const loadCurrentParticipants = async () => {
     try {
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
-
       if (response.ok) {
         const data = await response.json();
         setCurrentParticipants(data.participants || []);
@@ -2908,18 +2811,15 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       console.error("Error loading current participants:", error);
     }
   };
-
   const loadPendingInvitations = async () => {
     try {
       const token = getCookie('token');
       if (!token) return;
-
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/all-invitations`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
-
       if (response.ok) {
         const data = await response.json();
         setPendingInvitations(data.invitations || []);
@@ -2931,40 +2831,32 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       console.error("Error loading invitations:", error);
     }
   };
-
   const searchUsers = async () => {
     if (!searchTerm || searchTerm.length < 2) {
       setSearchResults([]);
       return;
     }
-
     setIsSearching(true);
     setErrorMessage('');
-
     try {
       const token = getCookie('token');
       if (!token) {
         throw new Error("Bejelentkezés szükséges a felhasználók kereséséhez");
       }
-
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/search-users?query=${encodeURIComponent(searchTerm)}`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Hiba a felhasználók keresése során");
       }
-
       const data = await response.json();
       setSearchResults(data.users || []);
-
       if (data.ageRange) {
         setAgeRange(data.ageRange);
       }
-
       console.log("Search results:", data.users);
     } catch (error) {
       console.error("Hiba a felhasználók keresése során:", error);
@@ -2974,35 +2866,29 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       setIsSearching(false);
     }
   };
-
   const loadUsersForEvent = async () => {
     setIsLoading(true);
     setErrorMessage('');
-
     try {
       const token = getCookie('token');
       if (!token) {
         throw new Error("Bejelentkezés szükséges a felhasználók betöltéséhez");
       }
-
       const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/search-users`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Hiba a felhasználók betöltése során");
       }
-
       const data = await response.json();
       setSearchResults(data.users || []);
 
       if (data.ageRange) {
         setAgeRange(data.ageRange);
       }
-
       console.log("Available users:", data.users);
     } catch (error) {
       console.error("Hiba a felhasználók betöltése során:", error);
@@ -3011,7 +2897,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       setIsLoading(false);
     }
   };
-
   useEffect(() => {
     if (searchTerm && searchTerm.length >= 2) {
       const delayDebounceFn = setTimeout(() => {
@@ -3022,7 +2907,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       loadUsersForEvent();
     }
   }, [searchTerm, eventId]);
-
   const toggleUserSelection = (user) => {
     setSelectedUsers(prev => {
       const isSelected = prev.some(u => u.id === user.id);
@@ -3033,27 +2917,21 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       }
     });
   };
-
   const sendInvitations = async () => {
     if (selectedUsers.length === 0) {
       setErrorMessage("Válassz ki legalább egy felhasználót a meghíváshoz");
       return;
     }
-
     setIsSending(true);
     setErrorMessage('');
     setSuccessMessage('');
-
     try {
       const token = getCookie('token');
       if (!token) {
         throw new Error("Bejelentkezés szükséges a meghívók küldéséhez");
       }
-
       const userIds = selectedUsers.map(user => user.id);
-
       console.log("Sending invitations for event:", eventId, "to users:", userIds);
-
       const response = await fetch(`http://localhost:8081/api/v1/invite-users`, {
         method: "POST",
         headers: {
@@ -3066,23 +2944,18 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           status: 'meghívott'
         }),
       });
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Hiba a meghívók küldése során");
       }
-
       setSuccessMessage(`Sikeresen elküldtél ${selectedUsers.length} meghívót!`);
       setSelectedUsers([]);
-
       await loadPendingInvitations();
-
       if (searchTerm && searchTerm.length >= 2) {
         searchUsers();
       } else {
         loadUsersForEvent();
       }
-
       setTimeout(() => {
         onClose();
       }, 3000);
@@ -3093,15 +2966,12 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
       setIsSending(false);
     }
   };
-
   useEffect(() => {
     if (isOpen && eventId) {
       loadUsersForEvent();
     }
   }, [isOpen, eventId]);
-
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
       <style jsx>{`
@@ -3109,7 +2979,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           width: 0px;
           background: transparent;
         }
-        
         .custom-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
@@ -3135,11 +3004,9 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             {errorMessage}
           </div>
         )}
-
         <div className="mb-4 bg-blue-500/20 border border-blue-500/30 text-blue-300 p-3 rounded-lg text-sm">
           <p>Csak {ageRange.min}-{ageRange.max} év közötti felhasználók jelennek meg.</p>
         </div>
-
         <div className="mb-4">
           <div className="relative">
             <input
@@ -3163,7 +3030,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             </div>
           </div>
         </div>
-
         {isLoading ? (
           <div className="flex justify-center items-center py-10">
             <svg className="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -3174,7 +3040,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         ) : searchResults.length > 0 ? (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">
-
             </h3>
             <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
               {searchResults.map(user => (
@@ -3222,7 +3087,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             {searchTerm ? "Nincs találat a keresési feltételeknek megfelelően" : "Nincs meghívható felhasználó a korhatáron belül"}
           </div>
         )}
-
         {selectedUsers.length > 0 && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Kiválasztott felhasználók ({selectedUsers.length})</h3>
@@ -3248,7 +3112,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             </div>
           </div>
         )}
-
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
@@ -3284,8 +3147,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
     </div>
   );
 };
-
-
 const SportEventDetailsModal = ({
   event,
   onClose,
@@ -3296,7 +3157,6 @@ const SportEventDetailsModal = ({
   onAcceptInvitation,
   onRejectInvitation,
   onCancelPendingRequest
-
 }) => {
   return (
     <EventModal
@@ -3310,7 +3170,4 @@ const SportEventDetailsModal = ({
     />
   );
 };
-
-
-
 export default SportEventDetailsModal;
