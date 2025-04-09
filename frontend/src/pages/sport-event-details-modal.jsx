@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import {
   X, MapPin, Calendar, Clock, Users, Home, DoorOpen, Car, User, CheckCircle, XCircle, Trash, Edit, Plus, Archive,
-  Mail, Phone, AlertTriangle, Map
+  Mail, Phone, AlertTriangle, Map, ShowerHead
 } from "lucide-react"
 import { HelyszinModal } from "./Main/helyszin-modal"
 
@@ -2681,44 +2681,79 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="helyszinFedett"
-                      className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                      checked={formData.helyszinFedett}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor="helyszinFedett" className="ml-2 text-sm font-medium text-gray-300">
-                      Fedett
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="helyszinOltozo"
-                      className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                      checked={formData.helyszinOltozo}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor="helyszinOltozo" className="ml-2 text-sm font-medium text-gray-300">
-                      Öltöző
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="helyszinBerles"
-                      className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                      checked={formData.helyszinBerles}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor="helyszinBerles" className="ml-2 text-sm font-medium text-gray-300">
-                      Bérlés
-                    </label>
-                  </div>
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+  <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
+    <label htmlFor="helyszinFedett" className="flex items-center justify-between cursor-pointer w-full">
+      <div className="flex items-center">
+        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <span className="text-sm font-medium text-gray-300">Fedett helyszín</span>
+      </div>
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.helyszinFedett ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+        {formData.helyszinFedett ? (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        )}
+      </div>
+      <input
+        type="checkbox"
+        id="helyszinFedett"
+        className="sr-only" // Hidden but still functional
+        checked={formData.helyszinFedett}
+        onChange={handleChange}
+      />
+    </label>
+  </div>
+  
+  <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
+    <label htmlFor="helyszinOltozo" className="flex items-center justify-between cursor-pointer w-full">
+      <div className="flex items-center">
+        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
+          {/* Using DoorOpen icon from Lucide which is already imported in the file */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+            <path d="M13 4h3a2 2 0 0 1 2 2v14"></path>
+            <path d="M2 20h3"></path>
+            <path d="M13 20h9"></path>
+            <path d="M10 12v.01"></path>
+            <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"></path>
+          </svg>
+        </div>
+        <span className="text-sm font-medium text-gray-300">Öltöző elérhető</span>
+      </div>
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.helyszinOltozo ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+        {formData.helyszinOltozo ? (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        )}
+      </div>
+      <input
+        type="checkbox"
+        id="helyszinOltozo"
+        className="sr-only" // Hidden but still functional
+        checked={formData.helyszinOltozo}
+        onChange={handleChange}
+      />
+    </label>
+  </div>
+</div>
+
+
 
                 <div className="md:col-span-2">
                   <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
