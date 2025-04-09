@@ -385,18 +385,35 @@ const Register = () => {
     }
   };
 
-  // Function to navigate to homepage and scroll to bottom
-  const navigateToTerms = (e) => {
-    e.preventDefault();
-    navigate('/');
-    // Use setTimeout to ensure navigation completes before scrolling
-    setTimeout(() => {
+  // Function to navigate to homepage and scroll to the footer
+const navigateToTerms = (e) => {
+  e.preventDefault();
+  navigate('/');
+  // Use setTimeout to ensure navigation completes before scrolling
+  setTimeout(() => {
+    // Target the footer element
+    const footerElement = document.querySelector('footer');
+    
+    if (footerElement) {
+      // Scroll to the footer
+      footerElement.scrollIntoView({ behavior: 'smooth' });
+      
+      // If you want to scroll to the very bottom of the footer specifically
+      // This will scroll to the bottom section of the footer where copyright info is
+      const bottomSection = footerElement.querySelector('.border-t.border-slate-700\\/50:last-of-type');
+      if (bottomSection) {
+        bottomSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // Fallback if footer is not found
       window.scrollTo({
         top: document.body.scrollHeight,
         behavior: 'smooth'
       });
-    }, 100);
-  };
+    }
+  }, 300); // Increased timeout to ensure the page is fully loaded
+};
+
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0f1424]">
