@@ -109,17 +109,16 @@ const UserProfileModal = ({ userId, onClose }) => {
             )}
           </p>
 
-          <div className="w-full space-y-4 mt-2">
-            {user.bio && (
-              <div className="bg-white/5 p-4 rounded-lg">
-                <h4 className="font-medium mb-2 flex items-center gap-2">
-                  <User className="h-4 w-4" /> Bemutatkozás
-                </h4>
-                <p className="text-sm text-white/80 whitespace-pre-line break-words overflow-auto max-h-40">
-                  {user.bio}
-                </p>
-              </div>
-            )}
+          {user.bio && (
+  <div className="bg-white/5 p-4 rounded-lg">
+    <h4 className="font-medium mb-2 flex items-center gap-2">
+      <User className="h-4 w-4" /> Bemutatkozás
+    </h4>
+    <p className="text-sm text-white/80 whitespace-pre-wrap break-words overflow-y-auto max-h-40 custom-scrollbar pr-2">
+      {user.bio}
+    </p>
+  </div>
+)}
 
             <div className="bg-white/5 p-4 rounded-lg">
               <h4 className="font-medium mb-2">Elérhetőség</h4>
@@ -139,7 +138,7 @@ const UserProfileModal = ({ userId, onClose }) => {
           </div>
         </div>
       </div>
-    </div>
+    
   );
 };
 
@@ -216,7 +215,7 @@ const LocationMapModal = ({ location, onClose }) => {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-
+  
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
       <div
@@ -1298,13 +1297,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
 
               {currentEvent.Helyszin?.Leiras && (
-                <div className="mt-6 p-4 bg-white/5 rounded-lg mb-6 w-full">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
-                  <div className="max-h-40 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
-                    <p className="text-sm text-white/80 whitespace-pre-line break-words">{currentEvent.Helyszin.Leiras}</p>
-                  </div>
-                </div>
-              )}
+  <div className="mt-6 p-4 bg-white/5 rounded-lg mb-6 w-full">
+    <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
+    <div className="max-h-40 overflow-y-auto custom-scrollbar pr-2">
+      <p className="text-sm text-white/80 whitespace-pre-wrap break-words">{currentEvent.Helyszin.Leiras}</p>
+    </div>
+  </div>
+)}
 
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="w-full sm:w-auto flex gap-2">
@@ -1498,8 +1497,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">
                     Jóváhagyásra váró résztvevők ({pendingParticipants.length})
                   </h4>
-                  <div className="space-y-4">
-                    {pendingParticipants.map((participant) => (
+                  <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+  {pendingParticipants.map((participant) => (
                       <div
                         key={participant.id}
                         className="flex items-center gap-4 p-3 rounded-lg bg-yellow-900/30 hover:bg-yellow-900/50 transition-colors"
@@ -1599,13 +1598,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
               <div>
                 <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2 text-white">Játékosok</h4>
-                <div className="space-y-4">
-                  {participants.filter(p => p.role !== 'szervező').length === 0 ? (
-                    <p className="text-white/60">Még nincsenek játékosok.</p>
-                  ) : (
-                    participants
-                      .filter(p => p.role !== 'szervező')
-                      .map((participant) => (
+                <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+  {participants.filter(p => p.role !== 'szervező').length === 0 ? (
+    <p className="text-white/60">Még nincsenek játékosok.</p>
+  ) : (
+    participants
+      .filter(p => p.role !== 'szervező')
+      .map((participant) => (
                         <div
                           key={participant.id}
                           className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
@@ -1671,84 +1670,83 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
             </button>
 
             {loadingParticipantDetails ? (
-              <div className="flex justify-center items-center py-10">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : participantDetailsError ? (
-              <div className="text-center py-10">
-                <p className="text-red-400">{participantDetailsError}</p>
-              </div>
-            ) : participantDetails ? (
-              <div className="flex flex-col items-center text-center">
-                <Image
-                  src={participantDetails?.image || selectedParticipant.image}
-                  alt={participantDetails?.name || selectedParticipant.name}
-                  className="w-24 h-24 rounded-full object-cover mb-4"
-                />
-                <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
-                <p className="text-white/60 mb-4">
-                  {selectedParticipant.role === 'szervező' && (
-                    <span className="text-blue-300 mr-1">Szervező</span>
-                  )}
-                  {(participantDetails?.age || selectedParticipant.age) ?
-                    `${participantDetails?.age || selectedParticipant.age} éves  ` : ""}
-                  {selectedParticipant.level || ""}
-                </p>
+  <div className="flex justify-center items-center py-10">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+) : participantDetailsError ? (
+  <div className="text-center py-10">
+    <p className="text-red-400">{participantDetailsError}</p>
+  </div>
+) : participantDetails ? (
+  <div className="flex flex-col items-center text-center">
+    <Image
+      src={participantDetails?.image || selectedParticipant.image}
+      alt={participantDetails?.name || selectedParticipant.name}
+      className="w-24 h-24 rounded-full object-cover mb-4"
+    />
+    <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
+    <p className="text-white/60 mb-4">
+      {selectedParticipant.role === 'szervező' && (
+        <span className="text-blue-300 mr-1">Szervező</span>
+      )}
+      {(participantDetails?.age || selectedParticipant.age) ?
+        `${participantDetails?.age || selectedParticipant.age} éves  ` : ""}
+      {selectedParticipant.level || ""}
+    </p>
 
-                <div className="w-full space-y-4 mt-2">
-                  <div className="bg-white/5 p-4 rounded-lg text-left">
-                    <h4 className="font-medium mb-2 text-white">
-                      Bemutatkozás
-                    </h4>
-                    <div className="flex items-start gap-2 text-white/80 text-sm">
-                      <User className="h-4 w-4 text-blue-400 mt-1" />
-                      <p className="whitespace-pre-line break-words overflow-auto max-h-40">
-                        {participantDetails.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
-                      </p>
-                    </div>
+    <div className="w-full space-y-4 mt-2">
+      <div className="bg-white/5 p-4 rounded-lg text-left">
+        <h4 className="font-medium mb-2 text-white">
+          Bemutatkozás
+        </h4>
+        <div className="flex items-start gap-2 text-white/80 text-sm">
+          <User className="h-4 w-4 text-blue-400 mt-1" />
+          <p className="whitespace-pre-line break-words overflow-y-auto max-h-40 custom-scrollbar pr-2">
+            {participantDetails.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+          </p>
+        </div>
+      </div>
 
-                  </div>
+      <div className="bg-white/5 p-4 rounded-lg text-left">
+        <h4 className="font-medium mb-2 text-white">
+          Elérhetőség
+        </h4>
+        {participantDetails.email && (
+          <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+            <Mail className="h-4 w-4 text-blue-400" />
+            <span>{participantDetails.email}</span>
+          </div>
+        )}
+        {participantDetails?.phone && (
+          <div className="flex items-center gap-2 text-white/80 text-sm">
+            <Phone className="h-4 w-4 text-green-400" />
+            <span>{participantDetails.phone}</span>
+          </div>
+        )}
+      </div>
 
-                  <div className="bg-white/5 p-4 rounded-lg text-left">
-                    <h4 className="font-medium mb-2 text-white">
-                      Elérhetőség
-                    </h4>
-                    {participantDetails.email && (
-                      <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
-                        <Mail className="h-4 w-4 text-blue-400" />
-                        <span>{participantDetails.email}</span>
-                      </div>
-                    )}
-                    {participantDetails?.phone && (
-                      <div className="flex items-center gap-2 text-white/80 text-sm">
-                        <Phone className="h-4 w-4 text-green-400" />
-                        <span>{participantDetails.phone}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Esemény statisztikák - a Profile.jsx-ből átvéve */}
-                  <div className="bg-white/5 p-4 rounded-lg text-left">
-                    <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-3">
-                        <h5 className="text-blue-400 text-xs font-medium mb-1">Létrehozott események</h5>
-                        <p className="text-xl font-bold text-white">
-                          {participantDetails.stats?.createdEvents || 0}
-                        </p>
-                      </div>
-                      <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-3">
-                        <h5 className="text-purple-400 text-xs font-medium mb-1">Részvételek</h5>
-                        <p className="text-xl font-bold text-white">
-                          {participantDetails.stats?.participatedEvents || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center text-center">
+      {/* Esemény statisztikák - a Profile.jsx-ből átvéve */}
+      <div className="bg-white/5 p-4 rounded-lg text-left">
+        <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-3">
+            <h5 className="text-blue-400 text-xs font-medium mb-1">Létrehozott események</h5>
+            <p className="text-xl font-bold text-white">
+              {participantDetails.stats?.createdEvents || 0}
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-3">
+            <h5 className="text-purple-400 text-xs font-medium mb-1">Részvételek</h5>
+            <p className="text-xl font-bold text-white">
+              {participantDetails.stats?.participatedEvents || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+) : (
+  <div className="flex flex-col items-center text-center">
                 <Image
                   src={selectedParticipant.image}
                   alt={selectedParticipant.name}
@@ -1876,26 +1874,51 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
       )}
 
-      {showMapModal && (
-        <LocationMapModal
-          location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
-          onClose={handleCloseMapModal}
-        />
-      )}
+{showMapModal && (
+  <LocationMapModal
+    location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
+    onClose={handleCloseMapModal}
+  />
+)}
 
-      {showInviteModal && (
-        <InviteUsersModal
-          isOpen={showInviteModal}
-          onClose={handleCloseInviteModal}
-          eventId={currentEvent.id}
-        />
-      )}
-    </>
-  );
+
+
+
+{showInviteModal && (
+  <InviteUsersModal
+    isOpen={showInviteModal}
+    onClose={handleCloseInviteModal}
+    eventId={currentEvent.id}
+  />
+)}
+ {/* Add the style tag here */}
+ <style jsx>{`
+      /* Custom scrollbar styling */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 4px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(99, 102, 241, 0.5);
+        border-radius: 4px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(99, 102, 241, 0.7);
+      }
+    `}</style>
+  </>
+);
 
 
 
 };
+
 
 
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
@@ -3244,5 +3267,7 @@ const SportEventDetailsModal = ({
     />
   );
 };
+
+
 
 export default SportEventDetailsModal;
