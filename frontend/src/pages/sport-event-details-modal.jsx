@@ -1903,6 +1903,19 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
   const safeEvent = event || {};
 
+  // Add this function here
+  const formatImageUrl = (url) => {
+    if (!url) return "";
+
+    // If it's already a complete URL, return it
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
+      return url;
+    }
+
+    // If it's a relative path, prepend the API base URL
+    return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
+  };
+
   const [formData, setFormData] = useState({
     helyszinId: safeEvent.helyszinId || safeEvent.Helyszin?.Id || "",
     sportId: safeEvent.sportId || safeEvent.Sportok?.Id || "",
@@ -1924,8 +1937,12 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     helyszinLeiras: safeEvent.Helyszin?.Leiras || "",
   });
 
+
+
+
+
   const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(safeEvent.imageUrl || "");
+  const [imagePreview, setImagePreview] = useState(formatImageUrl(safeEvent.imageUrl) || "");
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [success, setSuccess] = useState(false);
@@ -2036,8 +2053,10 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
       setImageFile(file);
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
+      console.log("Image preview set to:", previewUrl);
     }
   };
+
 
   const startLocationEditing = () => {
     setEditingLocation(true);
@@ -2500,11 +2519,11 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   </select>
                 </div>
 
-                
+
 
                 <div className="md:col-span-2">
                   <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
-                    Kép feltöltése (opcionális)
+                    Kép cseréje (opcionális)
                   </label>
                   <div className="relative">
                     <input
@@ -2521,9 +2540,13 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                       {imagePreview ? (
                         <div className="w-full h-full flex items-center justify-center">
                           <img
-                            src={imagePreview || "/placeholder.svg"}
+                            src={imagePreview}
                             alt="Preview"
-                            className="h-full object-contain rounded-lg"
+                            className="max-h-full max-w-full object-contain rounded-lg"
+                            onError={(e) => {
+                              console.error("Error loading image:", imagePreview);
+                              e.target.src = "/placeholder.svg";
+                            }}
                           />
                         </div>
                       ) : (
@@ -2553,204 +2576,204 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                     </label>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="grid gap-6 mb-6 md:grid-cols-2">
-                <div>
-                  <label htmlFor="helyszinNev" className="block mb-2 text-sm font-medium text-gray-300">
-                    Helyszín neve
-                  </label>
-                  <input
-                    type="text"
-                    id="helyszinNev"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Pl. Városi Sportpálya"
-                    value={formData.helyszinNev}
-                    onChange={handleChange}
-                    required
-                  />
                 </div>
-                <div>
-                  <label htmlFor="helyszinTelepules" className="block mb-2 text-sm font-medium text-gray-300">
-                    Település
-                  </label>
-                  <input
-                    type="text"
-                    id="helyszinTelepules"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Pl. Budapest"
-                    value={formData.helyszinTelepules}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="helyszinCim" className="block mb-2 text-sm font-medium text-gray-300">
-                    Cím
-                  </label>
-                  <input
-                    type="text"
-                    id="helyszinCim"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Pl. Példa utca 123."
-                    value={formData.helyszinCim}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="helyszinIranyitoszam" className="block mb-2 text-sm font-medium text-gray-300">
-                    Irányítószám
-                  </label>
-                  <input
-                    type="text"
-                    id="helyszinIranyitoszam"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Pl. 1234"
-                    value={formData.helyszinIranyitoszam}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="helyszinParkolas" className="block mb-2 text-sm font-medium text-gray-300">
-                    Parkolás
-                  </label>
-                  <select
-                    id="helyszinParkolas"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    value={formData.helyszinParkolas}
-                    onChange={handleChange}
-                    required
-                  >
-                    {parkolasOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="helyszinFedett"
-                      className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                      checked={formData.helyszinFedett}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor="helyszinFedett" className="ml-2 text-sm font-medium text-gray-300">
-                      Fedett
+                ) : (
+                <div className="grid gap-6 mb-6 md:grid-cols-2">
+                  <div>
+                    <label htmlFor="helyszinNev" className="block mb-2 text-sm font-medium text-gray-300">
+                      Helyszín neve
                     </label>
-                  </div>
-                  <div className="flex items-center">
                     <input
-                      type="checkbox"
-                      id="helyszinOltozo"
-                      className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                      checked={formData.helyszinOltozo}
+                      type="text"
+                      id="helyszinNev"
+                      className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                      placeholder="Pl. Városi Sportpálya"
+                      value={formData.helyszinNev}
                       onChange={handleChange}
+                      required
                     />
-                    <label htmlFor="helyszinOltozo" className="ml-2 text-sm font-medium text-gray-300">
-                      Öltöző
-                    </label>
                   </div>
-                  <div className="flex items-center">
+                  <div>
+                    <label htmlFor="helyszinTelepules" className="block mb-2 text-sm font-medium text-gray-300">
+                      Település
+                    </label>
                     <input
-                      type="checkbox"
-                      id="helyszinBerles"
-                      className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
-                      checked={formData.helyszinBerles}
+                      type="text"
+                      id="helyszinTelepules"
+                      className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                      placeholder="Pl. Budapest"
+                      value={formData.helyszinTelepules}
                       onChange={handleChange}
+                      required
                     />
-                    <label htmlFor="helyszinBerles" className="ml-2 text-sm font-medium text-gray-300">
-                      Bérlés
-                    </label>
                   </div>
-                </div>
+                  <div>
+                    <label htmlFor="helyszinCim" className="block mb-2 text-sm font-medium text-gray-300">
+                      Cím
+                    </label>
+                    <input
+                      type="text"
+                      id="helyszinCim"
+                      className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                      placeholder="Pl. Példa utca 123."
+                      value={formData.helyszinCim}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="helyszinIranyitoszam" className="block mb-2 text-sm font-medium text-gray-300">
+                      Irányítószám
+                    </label>
+                    <input
+                      type="text"
+                      id="helyszinIranyitoszam"
+                      className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                      placeholder="Pl. 1234"
+                      value={formData.helyszinIranyitoszam}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="helyszinParkolas" className="block mb-2 text-sm font-medium text-gray-300">
+                      Parkolás
+                    </label>
+                    <select
+                      id="helyszinParkolas"
+                      className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                      value={formData.helyszinParkolas}
+                      onChange={handleChange}
+                      required
+                    >
+                      {parkolasOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="helyszinFedett"
+                        className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
+                        checked={formData.helyszinFedett}
+                        onChange={handleChange}
+                      />
+                      <label htmlFor="helyszinFedett" className="ml-2 text-sm font-medium text-gray-300">
+                        Fedett
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="helyszinOltozo"
+                        className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
+                        checked={formData.helyszinOltozo}
+                        onChange={handleChange}
+                      />
+                      <label htmlFor="helyszinOltozo" className="ml-2 text-sm font-medium text-gray-300">
+                        Öltöző
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="helyszinBerles"
+                        className="w-4 h-4 text-purple-600 bg-slate-800 border-slate-600 rounded focus:ring-purple-500"
+                        checked={formData.helyszinBerles}
+                        onChange={handleChange}
+                      />
+                      <label htmlFor="helyszinBerles" className="ml-2 text-sm font-medium text-gray-300">
+                        Bérlés
+                      </label>
+                    </div>
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
-                    Leírás
-                  </label>
-                  <textarea
-                    id="helyszinLeiras"
-                    rows="4"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
-                    placeholder="Leírás..."
-                    value={formData.helyszinLeiras}
-                    onChange={handleChange}
-                  ></textarea>
+                  <div className="md:col-span-2">
+                    <label htmlFor="helyszinLeiras" className="block mb-2 text-sm font-medium text-gray-300">
+                      Leírás
+                    </label>
+                    <textarea
+                      id="helyszinLeiras"
+                      rows="4"
+                      className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                      placeholder="Leírás..."
+                      value={formData.helyszinLeiras}
+                      onChange={handleChange}
+                    ></textarea>
+                  </div>
                 </div>
-              </div>
             )}
 
-            <div className="flex justify-end gap-3 mt-6">
-              {editingLocation ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={cancelLocationEditing}
-                    className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors"
-                  >
-                    Vissza
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveLocation}
-                    className="text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
-                  >
-                    Helyszín mentése
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors"
-                  >
-                    Mégsem
-                  </button>
-                  <button
-                    type="submit"
-                    className={`text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg ${submitting
-                      ? "bg-purple-700/50 cursor-not-allowed"
-                      : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
-                      }`}
-                    disabled={submitting}
-                    style={{
-                      animation: submitting ? "none" : "pulse-glow 2s infinite",
-                    }}
-                  >
-                    {submitting ? (
-                      <div className="flex items-center justify-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Mentés...
-                      </div>
-                    ) : (
-                      "Mentés"
-                    )}
-                  </button>
-                </>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  {editingLocation ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={cancelLocationEditing}
+                        className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors"
+                      >
+                        Vissza
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveLocation}
+                        className="text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
+                      >
+                        Helyszín mentése
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors"
+                      >
+                        Mégsem
+                      </button>
+                      <button
+                        type="submit"
+                        className={`text-white font-medium rounded-xl text-sm px-6 py-3.5 text-center transition duration-300 shadow-lg ${submitting
+                          ? "bg-purple-700/50 cursor-not-allowed"
+                          : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-700/20 hover:shadow-purple-700/40"
+                          }`}
+                        disabled={submitting}
+                        style={{
+                          animation: submitting ? "none" : "pulse-glow 2s infinite",
+                        }}
+                      >
+                        {submitting ? (
+                          <div className="flex items-center justify-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Mentés...
+                          </div>
+                        ) : (
+                          "Mentés"
+                        )}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </form>
     </div>
+      </div >
+    </div >
   );
 };
 
