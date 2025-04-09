@@ -110,35 +110,35 @@ const UserProfileModal = ({ userId, onClose }) => {
           </p>
 
           {user.bio && (
-  <div className="bg-white/5 p-4 rounded-lg">
-    <h4 className="font-medium mb-2 flex items-center gap-2">
-      <User className="h-4 w-4" /> Bemutatkozás
-    </h4>
-    <p className="text-sm text-white/80 whitespace-pre-wrap break-words overflow-y-auto max-h-40 custom-scrollbar pr-2">
-      {user.bio}
-    </p>
-  </div>
-)}
-
             <div className="bg-white/5 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Elérhetőség</h4>
-              {user.email && (
-                <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
-                  <Mail className="h-4 w-4 text-blue-400" />
-                  <span>{user.email}</span>
-                </div>
-              )}
-              {user.phone && (
-                <div className="flex items-center gap-2 text-white/80 text-sm">
-                  <Phone className="h-4 w-4 text-green-400" />
-                  <span>{user.phone}</span>
-                </div>
-              )}
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <User className="h-4 w-4" /> Bemutatkozás
+              </h4>
+              <p className="text-sm text-white/80 whitespace-pre-wrap break-words overflow-y-auto max-h-40 custom-scrollbar pr-2">
+                {user.bio}
+              </p>
             </div>
+          )}
+
+          <div className="bg-white/5 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Elérhetőség</h4>
+            {user.email && (
+              <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                <Mail className="h-4 w-4 text-blue-400" />
+                <span>{user.email}</span>
+              </div>
+            )}
+            {user.phone && (
+              <div className="flex items-center gap-2 text-white/80 text-sm">
+                <Phone className="h-4 w-4 text-green-400" />
+                <span>{user.phone}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    
+    </div>
+
   );
 };
 
@@ -215,7 +215,7 @@ const LocationMapModal = ({ location, onClose }) => {
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
-  
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70">
       <div
@@ -1038,16 +1038,16 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
   const handleEventUpdate = (updatedEvent) => {
     console.log("Event updated, new data:", updatedEvent);
-  
+
     // Update local state first
     setCurrentEvent({
       ...updatedEvent,
       resztvevok_lista: participants
     });
-  
+
     // Close the modal
     closeEditModal();
-  
+
     // Notify parent components if needed
     if (onParticipantUpdate) {
       onParticipantUpdate(updatedEvent.id, true, {
@@ -1058,7 +1058,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         }
       });
     }
-    
+
     // Immediately refresh the page
     window.location.reload();
   };
@@ -1183,7 +1183,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto custom-scrollbar bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
+        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-auto custom-scrollbar bg-gradient-to-br from-slate-800 to-zinc-900 rounded-lg shadow-xl">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
@@ -1303,186 +1303,186 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
 
 
               {currentEvent.Helyszin?.Leiras && (
-  <div className="mt-6 p-4 bg-white/5 rounded-lg mb-6 w-full">
-    <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
-    <div className="max-h-40 overflow-y-auto custom-scrollbar pr-2">
-      <p className="text-sm text-white/80 whitespace-pre-wrap break-words">{currentEvent.Helyszin.Leiras}</p>
-    </div>
-  </div>
-)}
-
-<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-  <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
-    {isInvitation ? (
-      <div className="w-full flex flex-col sm:flex-row gap-2">
-        <button
-          onClick={handleAcceptInvitation}
-          className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-          disabled={isJoining}
-        >
-          {isJoining ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Elfogadás...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="h-4 w-4" />
-              Elfogadás
-            </>
-          )}
-        </button>
-        <button
-          onClick={handleRejectInvitation}
-          className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-          disabled={isJoining}
-        >
-          <XCircle className="h-4 w-4" />
-          Elutasítás
-        </button>
-      </div>
-    ) : isArchived ? (
-      <div className="w-full px-6 py-3 bg-amber-600/30 text-amber-300 rounded-md flex items-center justify-center">
-        <Archive className="h-4 w-4 mr-2" />
-        Ez az esemény már lejárt
-      </div>
-    ) : isParticipant ? (
-      <>
-        {userStatus === 'függőben' ? (
-          <div className="w-full flex flex-col sm:flex-row gap-2">
-            <button
-              className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
-              disabled
-            >
-              Kérelem elküldve
-            </button>
-            <button
-              onClick={handleCancelRequest}
-              className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-            >
-              <XCircle className="h-4 w-4" />
-              Kérelem visszavonása
-            </button>
-          </div>
-        ) : userStatus === 'elutasítva' ? (
-          <button
-            className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-md cursor-not-allowed"
-            disabled
-          >
-            Elutasítva
-          </button>
-        ) : userStatus === 'meghívott' ? (
-          <div className="w-full flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={handleAcceptInvitation}
-              className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-              disabled={isJoining}
-            >
-              {isJoining ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Elfogadás...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4" />
-                  Elfogadás
-                </>
+                <div className="mt-6 p-4 bg-white/5 rounded-lg mb-6 w-full">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">Leírás:</h4>
+                  <div className="max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                    <p className="text-sm text-white/80 whitespace-pre-wrap break-words">{currentEvent.Helyszin.Leiras}</p>
+                  </div>
+                </div>
               )}
-            </button>
-            <button
-              onClick={handleRejectInvitation}
-              className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
-              disabled={isJoining}
-            >
-              <XCircle className="h-4 w-4" />
-              Elutasítás
-            </button>
-          </div>
-        ) : (
-          <button
-            className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
-            disabled
-          >
-            Csatlakozva
-          </button>
-        )}
 
-        {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
-          <button onClick={handleOpenInviteModal}
-            className="w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
-            Meghívás
-          </button>
-        )}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+                  {isInvitation ? (
+                    <div className="w-full flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={handleAcceptInvitation}
+                        className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                        disabled={isJoining}
+                      >
+                        {isJoining ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Elfogadás...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4" />
+                            Elfogadás
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleRejectInvitation}
+                        className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                        disabled={isJoining}
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Elutasítás
+                      </button>
+                    </div>
+                  ) : isArchived ? (
+                    <div className="w-full px-6 py-3 bg-amber-600/30 text-amber-300 rounded-md flex items-center justify-center">
+                      <Archive className="h-4 w-4 mr-2" />
+                      Ez az esemény már lejárt
+                    </div>
+                  ) : isParticipant ? (
+                    <>
+                      {userStatus === 'függőben' ? (
+                        <div className="w-full flex flex-col sm:flex-row gap-2">
+                          <button
+                            className="flex-1 px-6 py-2 bg-yellow-600 text-white rounded-md cursor-not-allowed"
+                            disabled
+                          >
+                            Kérelem elküldve
+                          </button>
+                          <button
+                            onClick={handleCancelRequest}
+                            className="flex-1 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Kérelem visszavonása
+                          </button>
+                        </div>
+                      ) : userStatus === 'elutasítva' ? (
+                        <button
+                          className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-md cursor-not-allowed"
+                          disabled
+                        >
+                          Elutasítva
+                        </button>
+                      ) : userStatus === 'meghívott' ? (
+                        <div className="w-full flex flex-col sm:flex-row gap-2">
+                          <button
+                            onClick={handleAcceptInvitation}
+                            className={`flex-1 px-6 py-2 ${isJoining ? "bg-green-800 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                            disabled={isJoining}
+                          >
+                            {isJoining ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Elfogadás...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-4 w-4" />
+                                Elfogadás
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={handleRejectInvitation}
+                            className={`flex-1 px-6 py-2 ${isJoining ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} text-white rounded-md transition-colors flex items-center justify-center gap-2`}
+                            disabled={isJoining}
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Elutasítás
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded-md cursor-not-allowed"
+                          disabled
+                        >
+                          Csatlakozva
+                        </button>
+                      )}
 
-        {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
-          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
-            <button
-              onClick={handleEditEvent}
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Szerkesztés
-            </button>
-            <button
-              onClick={handleDeleteClick}
-              className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
-            >
-              <Trash className="h-4 w-4" />
-              Törlés
-            </button>
-          </div>
-        )}
+                      {currentUser && participants.some(p => p.id === currentUser.userId) && userStatus === 'elfogadva' && (
+                        <button onClick={handleOpenInviteModal}
+                          className="w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <line x1="19" y1="8" x2="19" y2="14"></line>
+                            <line x1="22" y1="11" x2="16" y2="11"></line>
+                          </svg>
+                          Meghívás
+                        </button>
+                      )}
 
-        {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
-          <button
-            onClick={handleLeaveEvent}
-            className={`w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
-              } text-white rounded-md transition-colors flex items-center justify-center`}
-            disabled={isLeaving}
-          >
-            {isLeaving ? "Kilépés..." : "Kilépés"}
-          </button>
-        )}
-      </>
-    ) : participants.length >= currentEvent.maximumLetszam ? (
-      <button
-        className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
-        disabled
-      >
-        Betelt
-      </button>
-    ) : (
-      <button
-        className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          } text-white rounded-md transition-colors flex items-center justify-center`}
-        onClick={handleJoinEvent}
-        disabled={isJoining}
-      >
-        {isJoining ? "Csatlakozás..." : "Csatlakozás"}
-      </button>
-    )}
-    {joinError && (
-      <p className="text-red-400 text-sm mt-2">{joinError}</p>
-    )}
-    {leaveError && (
-      <p className="text-red-400 text-sm mt-2">{leaveError}</p>
-    )}
-  </div>
-</div>
+                      {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'szervező' && (
+                        <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+                          <button
+                            onClick={handleEditEvent}
+                            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Edit className="h-4 w-4" />
+                            Szerkesztés
+                          </button>
+                          <button
+                            onClick={handleDeleteClick}
+                            className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Trash className="h-4 w-4" />
+                            Törlés
+                          </button>
+                        </div>
+                      )}
+
+                      {currentUser && participants.find(p => p.id === currentUser.userId)?.role === 'játékos' && userStatus === 'elfogadva' && (
+                        <button
+                          onClick={handleLeaveEvent}
+                          className={`w-full sm:w-auto mt-2 sm:mt-0 px-6 py-2 ${isLeaving ? "bg-red-800 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                            } text-white rounded-md transition-colors flex items-center justify-center`}
+                          disabled={isLeaving}
+                        >
+                          {isLeaving ? "Kilépés..." : "Kilépés"}
+                        </button>
+                      )}
+                    </>
+                  ) : participants.length >= currentEvent.maximumLetszam ? (
+                    <button
+                      className="w-full sm:w-auto px-6 py-2 bg-gray-600 text-white rounded-md cursor-not-allowed"
+                      disabled
+                    >
+                      Betelt
+                    </button>
+                  ) : (
+                    <button
+                      className={`w-full sm:w-auto px-6 py-2 ${isJoining ? "bg-blue-800 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                        } text-white rounded-md transition-colors flex items-center justify-center`}
+                      onClick={handleJoinEvent}
+                      disabled={isJoining}
+                    >
+                      {isJoining ? "Csatlakozás..." : "Csatlakozás"}
+                    </button>
+                  )}
+                  {joinError && (
+                    <p className="text-red-400 text-sm mt-2">{joinError}</p>
+                  )}
+                  {leaveError && (
+                    <p className="text-red-400 text-sm mt-2">{leaveError}</p>
+                  )}
+                </div>
+              </div>
 
             </div>
 
@@ -1505,7 +1505,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                     Jóváhagyásra váró résztvevők ({pendingParticipants.length})
                   </h4>
                   <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-  {pendingParticipants.map((participant) => (
+                    {pendingParticipants.map((participant) => (
                       <div
                         key={participant.id}
                         className="flex items-center gap-4 p-3 rounded-lg bg-yellow-900/30 hover:bg-yellow-900/50 transition-colors"
@@ -1606,12 +1606,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
               <div>
                 <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2 text-white">Játékosok</h4>
                 <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-  {participants.filter(p => p.role !== 'szervező').length === 0 ? (
-    <p className="text-white/60">Még nincsenek játékosok.</p>
-  ) : (
-    participants
-      .filter(p => p.role !== 'szervező')
-      .map((participant) => (
+                  {participants.filter(p => p.role !== 'szervező').length === 0 ? (
+                    <p className="text-white/60">Még nincsenek játékosok.</p>
+                  ) : (
+                    participants
+                      .filter(p => p.role !== 'szervező')
+                      .map((participant) => (
                         <div
                           key={participant.id}
                           className="flex items-center gap-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
@@ -1677,83 +1677,83 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
             </button>
 
             {loadingParticipantDetails ? (
-  <div className="flex justify-center items-center py-10">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-  </div>
-) : participantDetailsError ? (
-  <div className="text-center py-10">
-    <p className="text-red-400">{participantDetailsError}</p>
-  </div>
-) : participantDetails ? (
-  <div className="flex flex-col items-center text-center">
-    <Image
-      src={participantDetails?.image || selectedParticipant.image}
-      alt={participantDetails?.name || selectedParticipant.name}
-      className="w-24 h-24 rounded-full object-cover mb-4"
-    />
-    <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
-    <p className="text-white/60 mb-4">
-      {selectedParticipant.role === 'szervező' && (
-        <span className="text-blue-300 mr-1">Szervező</span>
-      )}
-      {(participantDetails?.age || selectedParticipant.age) ?
-        `${participantDetails?.age || selectedParticipant.age} éves  ` : ""}
-      {selectedParticipant.level || ""}
-    </p>
+              <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : participantDetailsError ? (
+              <div className="text-center py-10">
+                <p className="text-red-400">{participantDetailsError}</p>
+              </div>
+            ) : participantDetails ? (
+              <div className="flex flex-col items-center text-center">
+                <Image
+                  src={participantDetails?.image || selectedParticipant.image}
+                  alt={participantDetails?.name || selectedParticipant.name}
+                  className="w-24 h-24 rounded-full object-cover mb-4"
+                />
+                <h3 className="text-xl font-bold">{participantDetails?.name || selectedParticipant.name}</h3>
+                <p className="text-white/60 mb-4">
+                  {selectedParticipant.role === 'szervező' && (
+                    <span className="text-blue-300 mr-1">Szervező</span>
+                  )}
+                  {(participantDetails?.age || selectedParticipant.age) ?
+                    `${participantDetails?.age || selectedParticipant.age} éves  ` : ""}
+                  {selectedParticipant.level || ""}
+                </p>
 
-    <div className="w-full space-y-4 mt-2">
-      <div className="bg-white/5 p-4 rounded-lg text-left">
-        <h4 className="font-medium mb-2 text-white">
-          Bemutatkozás
-        </h4>
-        <div className="flex items-start gap-2 text-white/80 text-sm">
-          <User className="h-4 w-4 text-blue-400 mt-1" />
-          <p className="whitespace-pre-line break-words overflow-y-auto max-h-40 custom-scrollbar pr-2">
-            {participantDetails.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
-          </p>
-        </div>
-      </div>
+                <div className="w-full space-y-4 mt-2">
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-2 text-white">
+                      Bemutatkozás
+                    </h4>
+                    <div className="flex items-start gap-2 text-white/80 text-sm">
+                      <User className="h-4 w-4 text-blue-400 mt-1" />
+                      <p className="whitespace-pre-line break-words overflow-y-auto max-h-40 custom-scrollbar pr-2">
+                        {participantDetails.bio || "Ez a felhasználó még nem adott meg bemutatkozást."}
+                      </p>
+                    </div>
+                  </div>
 
-      <div className="bg-white/5 p-4 rounded-lg text-left">
-        <h4 className="font-medium mb-2 text-white">
-          Elérhetőség
-        </h4>
-        {participantDetails.email && (
-          <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
-            <Mail className="h-4 w-4 text-blue-400" />
-            <span>{participantDetails.email}</span>
-          </div>
-        )}
-        {participantDetails?.phone && (
-          <div className="flex items-center gap-2 text-white/80 text-sm">
-            <Phone className="h-4 w-4 text-green-400" />
-            <span>{participantDetails.phone}</span>
-          </div>
-        )}
-      </div>
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-2 text-white">
+                      Elérhetőség
+                    </h4>
+                    {participantDetails.email && (
+                      <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                        <Mail className="h-4 w-4 text-blue-400" />
+                        <span>{participantDetails.email}</span>
+                      </div>
+                    )}
+                    {participantDetails?.phone && (
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <Phone className="h-4 w-4 text-green-400" />
+                        <span>{participantDetails.phone}</span>
+                      </div>
+                    )}
+                  </div>
 
-      {/* Esemény statisztikák - a Profile.jsx-ből átvéve */}
-      <div className="bg-white/5 p-4 rounded-lg text-left">
-        <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-3">
-            <h5 className="text-blue-400 text-xs font-medium mb-1">Létrehozott események</h5>
-            <p className="text-xl font-bold text-white">
-              {participantDetails.stats?.createdEvents || 0}
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-3">
-            <h5 className="text-purple-400 text-xs font-medium mb-1">Részvételek</h5>
-            <p className="text-xl font-bold text-white">
-              {participantDetails.stats?.participatedEvents || 0}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-) : (
-  <div className="flex flex-col items-center text-center">
+                  {/* Esemény statisztikák - a Profile.jsx-ből átvéve */}
+                  <div className="bg-white/5 p-4 rounded-lg text-left">
+                    <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/20 rounded-xl p-3">
+                        <h5 className="text-blue-400 text-xs font-medium mb-1">Létrehozott események</h5>
+                        <p className="text-xl font-bold text-white">
+                          {participantDetails.stats?.createdEvents || 0}
+                        </p>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/20 rounded-xl p-3">
+                        <h5 className="text-purple-400 text-xs font-medium mb-1">Részvételek</h5>
+                        <p className="text-xl font-bold text-white">
+                          {participantDetails.stats?.participatedEvents || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center text-center">
                 <Image
                   src={selectedParticipant.image}
                   alt={selectedParticipant.name}
@@ -1881,25 +1881,25 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         <UserProfileModal userId={selectedUserId} onClose={handleCloseUserProfile} />
       )}
 
-{showMapModal && (
-  <LocationMapModal
-    location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
-    onClose={handleCloseMapModal}
-  />
-)}
+      {showMapModal && (
+        <LocationMapModal
+          location={`${currentEvent.Helyszin?.Telepules || ""}, ${currentEvent.Helyszin?.Cim || ""}`}
+          onClose={handleCloseMapModal}
+        />
+      )}
 
 
 
 
-{showInviteModal && (
-  <InviteUsersModal
-    isOpen={showInviteModal}
-    onClose={handleCloseInviteModal}
-    eventId={currentEvent.id}
-  />
-)}
- {/* Add the style tag here */}
- <style jsx>{`
+      {showInviteModal && (
+        <InviteUsersModal
+          isOpen={showInviteModal}
+          onClose={handleCloseInviteModal}
+          eventId={currentEvent.id}
+        />
+      )}
+      {/* Add the style tag here */}
+      <style jsx>{`
       /* Custom scrollbar styling */
       .custom-scrollbar::-webkit-scrollbar {
         width: 8px;
@@ -1919,8 +1919,8 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         background: rgba(99, 102, 241, 0.7);
       }
     `}</style>
-  </>
-);
+    </>
+  );
 
 
 
@@ -2682,76 +2682,76 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-  <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
-    <label htmlFor="helyszinFedett" className="flex items-center justify-between cursor-pointer w-full">
-      <div className="flex items-center">
-        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-        </div>
-        <span className="text-sm font-medium text-gray-300">Fedett helyszín</span>
-      </div>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.helyszinFedett ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-        {formData.helyszinFedett ? (
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        )}
-      </div>
-      <input
-        type="checkbox"
-        id="helyszinFedett"
-        className="sr-only" // Hidden but still functional
-        checked={formData.helyszinFedett}
-        onChange={handleChange}
-      />
-    </label>
-  </div>
-  
-  <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
-    <label htmlFor="helyszinOltozo" className="flex items-center justify-between cursor-pointer w-full">
-      <div className="flex items-center">
-        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
-          {/* Using DoorOpen icon from Lucide which is already imported in the file */}
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
-            <path d="M13 4h3a2 2 0 0 1 2 2v14"></path>
-            <path d="M2 20h3"></path>
-            <path d="M13 20h9"></path>
-            <path d="M10 12v.01"></path>
-            <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"></path>
-          </svg>
-        </div>
-        <span className="text-sm font-medium text-gray-300">Öltöző elérhető</span>
-      </div>
-      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.helyszinOltozo ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-        {formData.helyszinOltozo ? (
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        )}
-      </div>
-      <input
-        type="checkbox"
-        id="helyszinOltozo"
-        className="sr-only" // Hidden but still functional
-        checked={formData.helyszinOltozo}
-        onChange={handleChange}
-      />
-    </label>
-  </div>
-</div>
+                  <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
+                    <label htmlFor="helyszinFedett" className="flex items-center justify-between cursor-pointer w-full">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">Fedett helyszín</span>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.helyszinFedett ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                        {formData.helyszinFedett ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        )}
+                      </div>
+                      <input
+                        type="checkbox"
+                        id="helyszinFedett"
+                        className="sr-only" // Hidden but still functional
+                        checked={formData.helyszinFedett}
+                        onChange={handleChange}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="bg-slate-800/80 border border-slate-600/50 rounded-xl p-3 transition-all duration-300">
+                    <label htmlFor="helyszinOltozo" className="flex items-center justify-between cursor-pointer w-full">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                          {/* Using DoorOpen icon from Lucide which is already imported in the file */}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                            <path d="M13 4h3a2 2 0 0 1 2 2v14"></path>
+                            <path d="M2 20h3"></path>
+                            <path d="M13 20h9"></path>
+                            <path d="M10 12v.01"></path>
+                            <path d="M13 4.562v16.157a1 1 0 0 1-1.242.97L5 20V5.562a2 2 0 0 1 1.515-1.94l4-1A2 2 0 0 1 13 4.561Z"></path>
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-300">Öltöző elérhető</span>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${formData.helyszinOltozo ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                        {formData.helyszinOltozo ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        )}
+                      </div>
+                      <input
+                        type="checkbox"
+                        id="helyszinOltozo"
+                        className="sr-only" // Hidden but still functional
+                        checked={formData.helyszinOltozo}
+                        onChange={handleChange}
+                      />
+                    </label>
+                  </div>
+                </div>
 
 
 
@@ -2762,12 +2762,13 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                   <textarea
                     id="helyszinLeiras"
                     rows="4"
-                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50"
+                    className="bg-slate-800/80 border border-slate-600/50 text-gray-100 text-sm rounded-xl focus:ring-purple-500 focus:border-purple-500 block w-full p-3 transition-all duration-300 hover:border-purple-500/50 custom-scrollbar"
                     placeholder="Leírás..."
                     value={formData.helyszinLeiras}
                     onChange={handleChange}
                   ></textarea>
                 </div>
+
               </div>
             )}
 
