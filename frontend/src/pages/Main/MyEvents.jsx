@@ -89,7 +89,7 @@ const MyEvents = () => {
           }),
           fetch("http://localhost:8081/api/v1/pending-events", { // Új végpont a függőben lévő eseményekhez
             headers: { Authorization: `Bearer ${token}` }
-            
+
           })
         ]);
 
@@ -817,13 +817,20 @@ const MyEvents = () => {
                     <img
                       src={getSportImage(event)}
                       alt={getSportName(event)}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-fill"
                       onError={(e) => {
                         console.error(`Kép betöltési hiba: ${activeFilter === "invitations" || activeFilter === "pending" ? event.imageUrl : event.imageUrl}`);
                         e.target.src = `/placeholder.svg?height=300&width=400&text=Betöltési%20Hiba`;
                       }}
                     />
                   </div>
+
+
+
+
+
+
+
                   <div className="p-4">
                     <h3 className="text-xl font-semibold mb-2 truncate">{getSportName(event)}</h3>
                     <div className="space-y-2 mb-4">
@@ -854,14 +861,14 @@ const MyEvents = () => {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className={`text-xs px-2 py-1 rounded-full ${activeFilter === "archived"
-                          ? "bg-amber-500/20 text-amber-400"
-                          : activeFilter === "invitations"
-                            ? "bg-purple-500/20 text-purple-400"
-                            : activeFilter === "pending"
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : getEventRole(getEventId(event)) === "szervező"
-                                ? "bg-green-500/20 text-green-400"
-                                : "bg-blue-500/20 text-blue-400"
+                        ? "bg-amber-500/20 text-amber-400"
+                        : activeFilter === "invitations"
+                          ? "bg-purple-500/20 text-purple-400"
+                          : activeFilter === "pending"
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : getEventRole(getEventId(event)) === "szervező"
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-blue-500/20 text-blue-400"
                         }`}>
                         {activeFilter === "archived"
                           ? getEventRole(getEventId(event)) === "szervező" ? "Szervező (archív)" : "Résztvevő (archív)"
