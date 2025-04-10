@@ -71,7 +71,7 @@ const createEsemeny = async (req, res) => {
 
             // Validate maximum participants
             if (parseInt(maximumLetszam) < 2) {
-                return res.status(400).json({ message: "Maximum létszám legalább 2 fő kell legyen!" });
+                return res.status(400).json({ message: "A létszámnak legalább 2 főnek kell lennie!" });
             }
 
             // Validate dates
@@ -224,7 +224,7 @@ const updateEsemeny = async (req, res) => {
 
             // Validate maximum participants
             if (parseInt(maximumLetszam) < 2) {
-                return res.status(400).json({ message: "Maximum létszám legalább 2 fő kell legyen!" });
+                return res.status(400).json({ message: "A létszámnak legalább 2 főnek kell lennie!" });
             }
 
             // Validate dates
@@ -2593,6 +2593,392 @@ const addPendingEventId = (eventId) => {
     return pendingEvents.includes(eventId);
   };
 
+  // Get events filtered by user age or where user is organizer
+const getEsemenyekFilteredByUserAgeOrOrganizer = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+        const currentTime = new Date();
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        // Get events where user is organizer
+        const organizerEvents = await Résztvevő.findAll({
+            where: {
+                userId: userId,
+                szerep: 'szervező',
+                státusz: 'elfogadva'
+            },
+            attributes: ['eseményId']
+        });
+
+        const organizerEventIds = organizerEvents.map(event => event.eseményId);
+
+        // Fetch all active events
+        const allEvents = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // Filter events by age or where user is organizer
+        const filteredEvents = allEvents.filter(event => {
+            // Include if user is organizer for this event
+            if (organizerEventIds.includes(event.id)) {
+                return true;
+            }
+            
+            // Otherwise apply age filter
+            return age >= event.minimumEletkor && age <= event.maximumEletkor;
+        });
+
+        // If no events are found, return a 404 response
+        if (filteredEvents.length === 0) {
+            return res.status(404).json({
+                message: "No events found for your age range or where you are organizer.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events: filteredEvents,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get events by location and sport, filtered by user age or where user is organizer
+const getEsemenyekByTelepulesAndSportNevAndAgeOrOrganizer = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+        const currentTime = new Date();
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        const { telepules, sportNev } = req.params;
+
+        // Check if both city (telepules) and sport name (sportNev) are provided
+        if (!telepules || !sportNev) {
+            return res.status(400).json({ message: "Both city (telepules) and sport name (sportNev) are required!" });
+        }
+
+        // Get events where user is organizer
+        const organizerEvents = await Résztvevő.findAll({
+            where: {
+                userId: userId,
+                szerep: 'szervező',
+                státusz: 'elfogadva'
+            },
+            attributes: ['eseményId']
+        });
+
+        const organizerEventIds = organizerEvents.map(event => event.eseményId);
+
+        // Fetch events based on city and sport name
+        const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    where: { Telepules: telepules },
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    where: { Nev: sportNev },
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // Filter events by age or where user is organizer
+        const filteredEvents = events.filter(event => {
+            // Include if user is organizer for this event
+            if (organizerEventIds.includes(event.id)) {
+                return true;
+            }
+            
+            // Otherwise apply age filter
+            return age >= event.minimumEletkor && age <= event.maximumEletkor;
+        });
+
+        // If no events are found, return a 404 response
+        if (filteredEvents.length === 0) {
+            return res.status(404).json({
+                message: "No events found for the specified city, sport, and your age range or where you are organizer.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events: filteredEvents,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get events by location only with age filter or where user is organizer
+const getEsemenyekByTelepulesAndAgeOrOrganizer = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+        const currentTime = new Date();
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        const { telepules } = req.params;
+
+        // Check if city is provided
+        if (!telepules) {
+            return res.status(400).json({ message: "City (telepules) is required!" });
+        }
+
+        // Get events where user is organizer
+        const organizerEvents = await Résztvevő.findAll({
+            where: {
+                userId: userId,
+                szerep: 'szervező',
+                státusz: 'elfogadva'
+            },
+            attributes: ['eseményId']
+        });
+
+        const organizerEventIds = organizerEvents.map(event => event.eseményId);
+
+        // Fetch events based on city
+        const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    where: { Telepules: telepules },
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // Filter events by age or where user is organizer
+        const filteredEvents = events.filter(event => {
+            // Include if user is organizer for this event
+            if (organizerEventIds.includes(event.id)) {
+                return true;
+            }
+            
+            // Otherwise apply age filter
+            return age >= event.minimumEletkor && age <= event.maximumEletkor;
+        });
+
+        // If no events are found, return a 404 response
+        if (filteredEvents.length === 0) {
+            return res.status(404).json({
+                message: "No events found for the specified city and your age range or where you are organizer.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events: filteredEvents,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events by location:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get events by sport only with age filter or where user is organizer
+const getEsemenyekBySportNevAndAgeOrOrganizer = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) {
+            return res.status(401).json({ message: "Authentication token is required!" });
+        }
+
+        const decoded = jwt.verify(token, "secretkey");
+        const userId = decoded.userId;
+        const currentTime = new Date();
+
+        // Get user details to calculate age
+        const user = await User.findByPk(userId);
+        if (!user || !user.birthDate) {
+            return res.status(400).json({ message: "User birth date is not available!" });
+        }
+
+        // Calculate user's age
+        const birthDate = new Date(user.birthDate);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        const { sportNev } = req.params;
+
+        // Check if sport name is provided
+        if (!sportNev) {
+            return res.status(400).json({ message: "Sport name (sportNev) is required!" });
+        }
+
+        // Get events where user is organizer
+        const organizerEvents = await Résztvevő.findAll({
+            where: {
+                userId: userId,
+                szerep: 'szervező',
+                státusz: 'elfogadva'
+            },
+            attributes: ['eseményId']
+        });
+
+        const organizerEventIds = organizerEvents.map(event => event.eseményId);
+
+        // Fetch events based on sport name
+        const events = await Esemény.findAll({
+            where: {
+                zaroIdo: { [Op.gt]: currentTime } // Only events with closing time in the future
+            },
+            include: [
+                {
+                    model: Helyszin,
+                    attributes: [
+                        'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
+                        'Parkolas', 'Leiras', 'Berles', 'userId'
+                    ]
+                },
+                {
+                    model: Sportok,
+                    where: { Nev: sportNev },
+                    attributes: ['Id', 'Nev', 'Leiras', 'KepUrl']
+                }
+            ]
+        });
+
+        // Filter events by age or where user is organizer
+        const filteredEvents = events.filter(event => {
+            // Include if user is organizer for this event
+            if (organizerEventIds.includes(event.id)) {
+                return true;
+            }
+            
+            // Otherwise apply age filter
+            return age >= event.minimumEletkor && age <= event.maximumEletkor;
+        });
+
+        // If no events are found, return a 404 response
+        if (filteredEvents.length === 0) {
+            return res.status(404).json({
+                message: "No events found for the specified sport and your age range or where you are organizer.",
+                userAge: age
+            });
+        }
+
+        // Return the found events as a response with full event details
+        res.json({
+            events: filteredEvents,
+            userAge: age
+        });
+    } catch (error) {
+        // Log the error and send a 500 response in case of an exception
+        console.error("❌ Error fetching age-filtered events by sport:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
 module.exports = {
     createEsemeny,
     deleteEsemeny,
@@ -2622,7 +3008,6 @@ module.exports = {
     getPendingParticipants,
     approveParticipant,
     rejectParticipant,
-    // Új funkciók
     inviteUserToEvent,
     inviteUsersToEvent,
     getUserInvitations,
@@ -2634,7 +3019,11 @@ module.exports = {
     cancelPendingRequest,
     addPendingEventId,
     removePendingEventId,
-    isEventPending
+    isEventPending,
+    getEsemenyekFilteredByUserAgeOrOrganizer,
+    getEsemenyekByTelepulesAndSportNevAndAgeOrOrganizer,
+    getEsemenyekByTelepulesAndAgeOrOrganizer,
+    getEsemenyekBySportNevAndAgeOrOrganizer
 };
 
 

@@ -415,128 +415,130 @@ const SportMateFinder = () => {
   }
 
   // Fetch events from API - módosított verzió a rugalmas kereséshez
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        // Get the authentication token
-        const token = getAuthToken()
+  // Modify the fetchEvents function in the useEffect to include events where the user is an organizer
+useEffect(() => {
+  const fetchEvents = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Get the authentication token
+      const token = getAuthToken();
 
-        // Check query parameters
-        const { allEvents, ageFilter, locationOnly, sportOnly } = getQueryParams()
+      // Check query parameters
+      const { allEvents, ageFilter, locationOnly, sportOnly } = getQueryParams();
 
-        let apiUrl
-        let headers = {}
+      let apiUrl;
+      let headers = {};
 
-        if (token) {
-          headers = {
-            Authorization: `Bearer ${token}`,
-          }
-        }
-
-        // Determine which API endpoint to use based on search parameters
-        if (allEvents) {
-          // Use the endpoint that returns all events
-          if (!token) {
-            apiUrl = `http://localhost:8081/api/v1/getAllEsemeny`
-          } else {
-            apiUrl = `http://localhost:8081/api/v1/all-events-by-age`
-          }
-        } else if (locationOnly && selectedLocation) {
-          // Search by location only
-          if (!token) {
-            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepules/${encodeURIComponent(selectedLocation)}`
-          } else {
-            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepulesAndAge/${encodeURIComponent(selectedLocation)}`
-          }
-        } else if (sportOnly && selectedSport) {
-          // Search by sport only
-          if (!token) {
-            apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNev/${encodeURIComponent(selectedSport)}`
-          } else {
-            apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNevAndAge/${encodeURIComponent(selectedSport)}`
-          }
-        } else if (ageFilter) {
-          // Use the endpoint that returns all events filtered by age
-          if (!token) {
-            setError("A funkció használatához be kell jelentkezni!")
-            setLoading(false)
-            return
-          }
-          apiUrl = `http://localhost:8081/api/v1/events-by-age`
-        } else {
-          // Both location and sport are specified
-          if (selectedSport && selectedLocation) {
-            if (token) {
-              apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAge/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`
-            } else {
-              apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`
-            }
-          } else {
-            // If we don't have enough parameters, show an error
-            setError("A kereséshez meg kell adni a sportot és/vagy a települést!")
-            setLoading(false)
-            return
-          }
-        }
-
-        console.log("Fetching events from:", apiUrl)
-
-        const response = await fetch(apiUrl, { headers })
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`)
-        }
-
-        const data = await response.json()
-        let fetchedEvents = data.events || []
-
-        // Filter out events with expired closing times
-        const currentTime = new Date()
-        fetchedEvents = fetchedEvents.filter((event) => new Date(event.zaroIdo) > currentTime)
-
-        // Now fetch participant data for each event
-        const eventsWithParticipants = await Promise.all(
-          fetchedEvents.map(async (event) => {
-            try {
-              const participantsResponse = await fetch(`http://localhost:8081/api/v1/events/${event.id}/participants`)
-              if (participantsResponse.ok) {
-                const participantsData = await participantsResponse.json()
-                return {
-                  ...event,
-                  resztvevok_lista: participantsData.participants || [],
-                }
-              }
-              return event
-            } catch (err) {
-              console.error(`Failed to fetch participants for event ${event.id}:`, err)
-              return event
-            }
-          }),
-        )
-
-        setEvents(eventsWithParticipants)
-
-        // Ha van token, ellenőrizzük a felhasználó csatlakozási állapotát és szerepét
-        if (token && eventsWithParticipants.length > 0) {
-          await checkParticipationForEvents(eventsWithParticipants)
-        }
-
-        // If we got user age information, we can display it
-        if (data.userAge) {
-          setUserAge(data.userAge)
-        }
-      } catch (err) {
-        console.error("Failed to fetch events:", err)
-        setError("Nem sikerült betölteni az eseményeket. Kérjük, próbálja újra később.")
-        setEvents([])
-      } finally {
-        setLoading(false)
+      if (token) {
+        headers = {
+          Authorization: `Bearer ${token}`,
+        };
       }
-    }
 
-    fetchEvents()
-  }, [selectedSport, selectedLocation, window.location.search])
+      // Determine which API endpoint to use based on search parameters
+      if (allEvents) {
+        // Use the endpoint that returns all events
+        if (!token) {
+          apiUrl = `http://localhost:8081/api/v1/getAllEsemeny`;
+        } else {
+          apiUrl = `http://localhost:8081/api/v1/all-events-by-age-or-organizer`;  // Modified endpoint
+        }
+      } else if (locationOnly && selectedLocation) {
+        // Search by location only
+        if (!token) {
+          apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepules/${encodeURIComponent(selectedLocation)}`;
+        } else {
+          apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepulesAndAgeOrOrganizer/${encodeURIComponent(selectedLocation)}`;  // Modified endpoint
+        }
+      } else if (sportOnly && selectedSport) {
+        // Search by sport only
+        if (!token) {
+          apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNev/${encodeURIComponent(selectedSport)}`;
+        } else {
+          apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNevAndAgeOrOrganizer/${encodeURIComponent(selectedSport)}`;  // Modified endpoint
+        }
+      } else if (ageFilter) {
+        // Use the endpoint that returns all events filtered by age
+        if (!token) {
+          setError("A funkció használatához be kell jelentkezni!");
+          setLoading(false);
+          return;
+        }
+        apiUrl = `http://localhost:8081/api/v1/all-events-by-age-or-organizer`;  // Modified endpoint
+      } else {
+        // Both location and sport are specified
+        if (selectedSport && selectedLocation) {
+          if (token) {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAgeOrOrganizer/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;  // Modified endpoint
+          } else {
+            apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
+          }
+        } else {
+          // If we don't have enough parameters, show an error
+          setError("A kereséshez meg kell adni a sportot és/vagy a települést!");
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log("Fetching events from:", apiUrl);
+
+      const response = await fetch(apiUrl, { headers });
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      let fetchedEvents = data.events || [];
+
+      // Filter out events with expired closing times
+      const currentTime = new Date();
+      fetchedEvents = fetchedEvents.filter((event) => new Date(event.zaroIdo) > currentTime);
+
+      // Now fetch participant data for each event
+      const eventsWithParticipants = await Promise.all(
+        fetchedEvents.map(async (event) => {
+          try {
+            const participantsResponse = await fetch(`http://localhost:8081/api/v1/events/${event.id}/participants`);
+            if (participantsResponse.ok) {
+              const participantsData = await participantsResponse.json();
+              return {
+                ...event,
+                resztvevok_lista: participantsData.participants || [],
+              };
+            }
+            return event;
+          } catch (err) {
+            console.error(`Failed to fetch participants for event ${event.id}:`, err);
+            return event;
+          }
+        })
+      );
+
+      setEvents(eventsWithParticipants);
+
+      // Ha van token, ellenőrizzük a felhasználó csatlakozási állapotát és szerepét
+      if (token && eventsWithParticipants.length > 0) {
+        await checkParticipationForEvents(eventsWithParticipants);
+      }
+
+      // If we got user age information, we can display it
+      if (data.userAge) {
+        setUserAge(data.userAge);
+      }
+    } catch (err) {
+      console.error("Failed to fetch events:", err);
+      setError("Nem sikerült betölteni az eseményeket. Kérjük, próbálja újra később.");
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchEvents();
+}, [selectedSport, selectedLocation, window.location.search]);
+
 
   // Módosított függvény a résztvevők frissítésére
   const handleParticipantUpdate = (eventId, isJoined, participant) => {

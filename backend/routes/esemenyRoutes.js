@@ -120,5 +120,13 @@ router.get('/pending-events', authenticateToken, esemenyController.getPendingEve
 // Függőben lévő kérelem visszavonása
 router.post('/cancel-pending-request', authenticateToken, esemenyController.cancelPendingRequest);
 
+router.get('/all-events-by-age-or-organizer', authenticateToken, esemenyController.getEsemenyekFilteredByUserAgeOrOrganizer);
+
+router.get('/getEsemenyekByAgeOrOrganizer/:telepules/:sportNev', authenticateToken, esemenyController.getEsemenyekByTelepulesAndSportNevAndAgeOrOrganizer);
+
+router.get('/getEsemenyekByTelepulesAndAgeOrOrganizer/:telepules', authenticateToken, esemenyController.getEsemenyekByTelepulesAndAgeOrOrganizer);
+
+router.get('/getEsemenyekBySportNevAndAgeOrOrganizer/:sportNev', authenticateToken, esemenyController.getEsemenyekBySportNevAndAgeOrOrganizer);
+
 
 module.exports = router;
