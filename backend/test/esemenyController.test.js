@@ -1,26 +1,66 @@
-const jwt = require("jsonwebtoken");
-const { 
-  createSportok, 
-  getAllSportok, 
-  getSportokById, 
-  updateSportok, 
-  deleteSportok 
-} = require("../controllers/sportokController");
-const Sportok = require("../models/sportokModel");
+const {
+  createEsemeny,
+  getEsemenyById,
+  getAllEsemeny,
+  updateEsemeny,
+  deleteEsemeny,
+  getEventParticipants,
+  leaveEsemeny,
+  joinEsemeny,
+  approveParticipant,
+  rejectParticipant,
+  getEsemenyekByTelepulesAndSportNev,
+  getOrganizedEvents,
+  getParticipatedEvents,
+  inviteUserToEvent,
+  acceptInvitation,
+  rejectInvitation,
+  checkParticipation,
+  removeParticipant,
+  getEsemenyekFilteredByUserAge,
+  getPendingEvents,
+  cancelPendingRequest
+} = require('./esemenyController');
+const User = require('../models/userModel');
+const Helyszin = require('../models/helyszinModel');
+const Esemény = require('../models/esemenyModel');
+const Sportok = require('../models/sportokModel');
+const Résztvevő = require('../models/resztvevoModel');
+const sequelize = require('../config/db');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const { scheduleEventDeletion } = require('../utils/eventScheduler');
 
-// Mock the dependencies
-jest.mock("jsonwebtoken");
-jest.mock("../models/sportokModel");
+// Mock dependencies
+jest.mock('../models/userModel');
+jest.mock('../models/helyszinModel');
+jest.mock('../models/esemenyModel');
+jest.mock('../models/sportokModel');
+jest.mock('../models/resztvevoModel');
+jest.mock('../config/db');
+jest.mock('jsonwebtoken');
+jest.mock('multer');
+jest.mock('fs');
+jest.mock('path');
+jest.mock('../utils/eventScheduler');
 
-describe("Sportok Controller", () => {
-  let req;
-  let res;
+describe('esemenyController', () => {
+  let req, res;
   
   beforeEach(() => {
+    // Reset mocks
+    jest.clearAllMocks();
+    
+    // Setup request and response objects
     req = {
-      body: {},
       params: {},
-      headers: {}
+      body: {},
+      headers: {
+        authorization: 'Bearer test-token'
+      },
+      file: null
     };
     
     res = {
@@ -28,715 +68,1792 @@ describe("Sportok Controller", () => {
       json: jest.fn()
     };
     
-    // Reset all mocks
-    jest.clearAllMocks();
+    // Mock JWT verification
+    jwt.verify.mockReturnValue({ userId: 1 });
     
-    // Reset jwt.verify to a default implementation
-    jwt.verify.mockReset();
-    jwt.verify.mockImplementation(() => ({ userId: 1 }));
-  });
-  
-  describe("createSportok", () => {
-    it("should create a sport successfully", async () => {
-      // Arrange
-      req.headers = {
-        authorization: "Bearer token123"
-      };
-      
-      req.body = {
-        Nev: "Futball",
-        Leiras: "Labdarúgás, 11 fős csapatsport"
-      };
-      
-      jwt.verify.mockReturnValue({ userId: 1 });
-      
-      const mockCreatedSport = {
-        id: 1,
-        Nev: "Futball",
-        Leiras: "Labdarúgás, 11 fős csapatsport",
-        userId: 1
-      };
-      
-      Sportok.create.mockResolvedValue(mockCreatedSport);
-      
-      // Act
-      await createSportok(req, res);
-      
-      // Assert
-      expect(jwt.verify).toHaveBeenCalledWith("token123", "secretkey");
-      expect(Sportok.create).toHaveBeenCalledWith({
-        Nev: "Futball",
-        Leiras: "Labdarúgás, 11 fős csapatsport",
-        userId: 1
-      });
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Sport created successfully!",
-        sportok: mockCreatedSport
-      });
+    // Mock transaction
+    sequelize.transaction.mockImplementation(async (callback) => {
+      return await callback({ transaction: 'mock-transaction' });
     });
     
-    it("should return error for missing required fields", async () => {
-      // Arrange
-      req.headers = {
-        authorization: "Bearer token123"
-      };
-      
+    // Mock multer upload
+    const mockUpload = jest.fn().mockImplementation((req, res, callback) => callback());
+    multer.mockReturnValue({
+      single: jest.fn().mockReturnValue(mockUpload)
+    });
+
+    // Mock fs functions
+    fs.existsSync = jest.fn().mockReturnValue(false);
+    fs.mkdirSync = jest.fn();
+    fs.unlinkSync = jest.fn();
+
+    // Mock path functions
+    path.join = jest.fn().mockReturnValue('/mock/path');
+    path.extname = jest.fn().mockReturnValue('.jpg');
+
+    // Mock scheduleEventDeletion
+    scheduleEventDeletion.mockImplementation(() => {});
+
+    // Mock sequelize operators
+    sequelize.literal = jest.fn().mockReturnValue('LITERAL');
+    sequelize.fn = jest.fn().mockReturnValue('COUNT');
+    sequelize.col = jest.fn().mockReturnValue('id');
+    
+    // Mock Op object
+    const Op = {
+      gt: Symbol('gt'),
+      lt: Symbol('lt'),
+      lte: Symbol('lte'),
+      gte: Symbol('gte'),
+      ne: Symbol('ne'),
+      in: Symbol('in'),
+      notIn: Symbol('notIn'),
+      like: Symbol('like'),
+      or: Symbol('or')
+    };
+    
+    // Add Op to sequelize mock
+    sequelize.Op = Op;
+  });
+  
+  describe('createEsemeny', () => {
+    it('should create a new event and add creator as participant', async () => {
+      // Setup
       req.body = {
-        Nev: "Futball"
-        // Missing Leiras
+        helyszinId: 1,
+        sportId: 1,
+        kezdoIdo: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+        zaroIdo: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
+        szint: 'kezdő',
+        minimumEletkor: 18,
+        maximumEletkor: 60,
+        maximumLetszam: 10
       };
       
-      // Act
-      await createSportok(req, res);
+      const mockEvent = {
+        id: 1,
+        ...req.body,
+        userId: 1
+      };
+      
+      const mockParticipant = {
+        id: 1,
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező',
+        státusz: 'elfogadva',
+        csatlakozásDátuma: new Date()
+      };
+      
+      Esemény.create.mockResolvedValue(mockEvent);
+      Résztvevő.create.mockResolvedValue(mockParticipant);
+      
+      // Execute
+      await createEsemeny(req, res);
+      
+      // Assert
+      expect(Esemény.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          helyszinId: 1,
+          sportId: 1,
+          userId: 1
+        }),
+        expect.any(Object)
+      );
+      
+      expect(Résztvevő.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eseményId: 1,
+          userId: 1,
+          szerep: 'szervező',
+          státusz: 'elfogadva'
+        }),
+        expect.any(Object)
+      );
+      
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Event created successfully!"
+        })
+      );
+    });
+    
+    it('should return error if required fields are missing', async () => {
+      // Setup - missing required fields
+      req.body = {
+        helyszinId: 1,
+        // Missing other required fields
+      };
+      
+      // Execute
+      await createEsemeny(req, res);
       
       // Assert
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Missing required fields for creating sport!"
-      });
-    });
-    
-    it("should require authentication token", async () => {
-      // Arrange
-      req.headers = {}; // No token
-      
-      req.body = {
-        Nev: "Futball",
-        Leiras: "Labdarúgás, 11 fős csapatsport"
-      };
-      
-      // Act
-      await createSportok(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Authentication token is required!"
-      });
-    });
-    
-    it("should handle server errors", async () => {
-      // Arrange
-      req.headers = {
-        authorization: "Bearer token123"
-      };
-      
-      req.body = {
-        Nev: "Futball",
-        Leiras: "Labdarúgás, 11 fős csapatsport"
-      };
-      
-      const error = new Error("Database error");
-      Sportok.create.mockRejectedValue(error);
-      
-      // Act
-      await createSportok(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Error creating sport",
-        error: error
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Missing required fields for creating event!"
+        })
+      );
     });
   });
   
-  describe("getAllSportok", () => {
-    it("should get all sports successfully", async () => {
-      // Arrange
-      const mockSports = [
-        { id: 1, Nev: "Futball", Leiras: "Labdarúgás" },
-        { id: 2, Nev: "Kosárlabda", Leiras: "Kosárlabdázás" }
+  describe('getEsemenyById', () => {
+    it('should return event by ID', async () => {
+      // Setup
+      req.params.id = 1;
+      
+      const mockEvent = {
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        kezdoIdo: new Date(),
+        zaroIdo: new Date(),
+        szint: 'kezdő',
+        minimumEletkor: 18,
+        maximumEletkor: 60,
+        maximumLetszam: 10,
+        userId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue(mockEvent);
+      
+      // Execute
+      await getEsemenyById(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(res.json).toHaveBeenCalledWith({ esemeny: mockEvent });
+    });
+    
+    it('should return 404 if event not found', async () => {
+      // Setup
+      req.params.id = 999;
+      Esemény.findByPk.mockResolvedValue(null);
+      
+      // Execute
+      await getEsemenyById(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Event not found!"
+        })
+      );
+    });
+  });
+  
+  describe('getAllEsemeny', () => {
+    it('should return all active events', async () => {
+      // Setup
+      const mockEvents = [
+        {
+          id: 1,
+          helyszinId: 1,
+          sportId: 1,
+          kezdoIdo: new Date(),
+          zaroIdo: new Date(Date.now() + 86400000), // Tomorrow
+          szint: 'kezdő',
+          userId: 1
+        },
+        {
+          id: 2,
+          helyszinId: 2,
+          sportId: 2,
+          kezdoIdo: new Date(),
+          zaroIdo: new Date(Date.now() + 172800000), // Day after tomorrow
+          szint: 'haladó',
+          userId: 2
+        }
       ];
       
-      Sportok.findAll.mockResolvedValue(mockSports);
+      Esemény.findAll.mockResolvedValue(mockEvents);
       
-      // Act
-      await getAllSportok(req, res);
+      // Execute
+      await getAllEsemeny(req, res);
       
       // Assert
-      expect(Sportok.findAll).toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({ sportok: mockSports });
+      expect(Esemény.findAll).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({ events: mockEvents });
     });
     
-    it("should return 404 if no sports found", async () => {
-      // Arrange
-      Sportok.findAll.mockResolvedValue([]);
+    it('should return 404 if no events found', async () => {
+      // Setup
+      Esemény.findAll.mockResolvedValue([]);
       
-      // Act
-      await getAllSportok(req, res);
+      // Execute
+      await getAllEsemeny(req, res);
       
       // Assert
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "No sports found."
-      });
-    });
-    
-    it("should handle server errors", async () => {
-      // Arrange
-      const error = new Error("Database error");
-      Sportok.findAll.mockRejectedValue(error);
-      
-      // Act
-      await getAllSportok(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Error fetching sports",
-        error: error
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "No events found."
+        })
+      );
     });
   });
   
-  describe("getSportokById", () => {
-    it("should get a sport by ID successfully", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      
-      const mockSport = {
-        id: 1,
-        Nev: "Futball",
-        Leiras: "Labdarúgás"
-      };
-      
-      Sportok.findByPk.mockResolvedValue(mockSport);
-      
-      // Act
-      await getSportokById(req, res);
-      
-      // Assert
-      expect(Sportok.findByPk).toHaveBeenCalledWith(1);
-      expect(res.json).toHaveBeenCalledWith({ sportok: mockSport });
-    });
-    
-    it("should return 404 if sport not found", async () => {
-      // Arrange
-      req.params = { id: 999 };
-      
-      Sportok.findByPk.mockResolvedValue(null);
-      
-      // Act
-      await getSportokById(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Sport not found!"
-      });
-    });
-    
-    it("should handle server errors", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      
-      const error = new Error("Database error");
-      Sportok.findByPk.mockRejectedValue(error);
-      
-      // Act
-      await getSportokById(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Error fetching sport",
-        error: error
-      });
-    });
-  });
-  
-  describe("updateSportok", () => {
-    it("should update a sport successfully", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {
-        authorization: "Bearer token123"
-      };
+  describe('updateEsemeny', () => {
+    it('should update an event if user is organizer', async () => {
+      // Setup
+      req.params.id = 1;
       req.body = {
-        Nev: "Futball - frissítve",
-        Leiras: "Labdarúgás, frissített leírás"
+        helyszinId: 1,
+        sportId: 1,
+        kezdoIdo: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+        zaroIdo: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
+        szint: 'haladó',
+        minimumEletkor: 20,
+        maximumEletkor: 50,
+        maximumLetszam: 15,
+        leiras: 'Updated description'
       };
       
-      const mockSport = {
+      const mockEvent = {
         id: 1,
-        Nev: "Futball",
-        Leiras: "Labdarúgás",
+        helyszinId: 1,
+        sportId: 1,
+        kezdoIdo: new Date(),
+        zaroIdo: new Date(),
+        szint: 'kezdő',
+        minimumEletkor: 18,
+        maximumEletkor: 60,
+        maximumLetszam: 10,
         userId: 1,
         update: jest.fn().mockResolvedValue(true)
       };
       
-      Sportok.findByPk.mockResolvedValue(mockSport);
+      const mockUpdatedEvent = {
+        ...mockEvent,
+        ...req.body
+      };
       
-      // Act
-      await updateSportok(req, res);
+      Esemény.findByPk.mockResolvedValueOnce(mockEvent).mockResolvedValueOnce(mockUpdatedEvent);
+      
+      Résztvevő.findOne.mockResolvedValue({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
+      
+      // Execute
+      await updateEsemeny(req, res);
       
       // Assert
-      expect(jwt.verify).toHaveBeenCalledWith("token123", "secretkey");
-      expect(Sportok.findByPk).toHaveBeenCalledWith(1);
-      expect(mockSport.update).toHaveBeenCalledWith({
-        Nev: "Futball - frissítve",
-        Leiras: "Labdarúgás, frissített leírás"
-      });
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            szerep: 'szervező'
+          }
+        })
+      );
+      expect(mockEvent.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          szint: 'haladó',
+          minimumEletkor: 20,
+          maximumEletkor: 50,
+          maximumLetszam: 15,
+          leiras: 'Updated description'
+        })
+      );
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Sport updated successfully!",
-        sportok: mockSport
-      });
     });
     
-    it("should return 404 if sport not found", async () => {
-      // Arrange
-      req.params = { id: 999 };
-      req.headers = {
-        authorization: "Bearer token123"
-      };
+    it('should return 403 if user is not organizer', async () => {
+      // Setup
+      req.params.id = 1;
       req.body = {
-        Nev: "Futball - frissítve"
+        helyszinId: 1,
+        sportId: 1,
+        kezdoIdo: new Date(Date.now() + 86400000).toISOString(),
+        zaroIdo: new Date(Date.now() + 172800000).toISOString(),
+        szint: 'haladó',
+        minimumEletkor: 20,
+        maximumEletkor: 50,
+        maximumLetszam: 15
       };
       
-      Sportok.findByPk.mockResolvedValue(null);
-      
-      // Act
-      await updateSportok(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Sport not found!"
-      });
-    });
-    
-    it("should not allow updating sports created by other users", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {
-        authorization: "Bearer token123"
-      };
-      req.body = {
-        Nev: "Futball - frissítve"
-      };
-      
-      jwt.verify.mockReturnValue({ userId: 2 }); // Different user
-      
-      const mockSport = {
+      Esemény.findByPk.mockResolvedValue({
         id: 1,
-        Nev: "Futball",
-        Leiras: "Labdarúgás",
-        userId: 1 // Created by user 1
-      };
+        helyszinId: 1,
+        sportId: 1,
+        kezdoIdo: new Date(),
+        zaroIdo: new Date(),
+        userId: 2 // Different user
+      });
       
-      Sportok.findByPk.mockResolvedValue(mockSport);
+      Résztvevő.findOne.mockResolvedValue(null); // User is not organizer
       
-      // Act
-      await updateSportok(req, res);
+      // Execute
+      await updateEsemeny(req, res);
       
       // Assert
       expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "You can only edit events where you are the organizer!"
+        })
+      );
+    });
+  });
+  
+  describe('deleteEsemeny', () => {
+    it('should delete an event if user is organizer', async () => {
+      // Setup
+      req.params.id = 1;
+      
+      const mockEvent = {
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        userId: 1,
+        imageUrl: null,
+        destroy: jest.fn().mockResolvedValue(true)
+      };
+      
+      Esemény.findByPk.mockResolvedValue(mockEvent);
+      
+      Résztvevő.findOne.mockResolvedValue({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
+      
+      Résztvevő.destroy.mockResolvedValue(true);
+      
+      // Execute
+      await deleteEsemeny(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            szerep: 'szervező'
+          }
+        })
+      );
+      expect(Résztvevő.destroy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1
+          }
+        })
+      );
+      expect(mockEvent.destroy).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Event deleted successfully!"
+        })
+      );
+    });
+    
+    it('should return 403 if user is not organizer', async () => {
+      // Setup
+      req.params.id = 1;
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        userId: 2 // Different user
+      });
+      
+      Résztvevő.findOne.mockResolvedValue(null); // User is not organizer
+      
+      // Execute
+      await deleteEsemeny(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "You can only delete events where you are the organizer!"
+        })
+      );
+    });
+  });
+  
+  describe('getEventParticipants', () => {
+    it('should return all participants for an event', async () => {
+      // Setup
+      req.params.id = 1;
+      
+      const mockEvent = {
+        id: 1,
+        maximumLetszam: 10
+      };
+      
+      const mockParticipants = [
+        {
+          userId: 1,
+          szerep: 'szervező',
+          csatlakozásDátuma: new Date(),
+          User: {
+            id: 1,
+            username: 'organizer',
+            email: 'organizer@example.com',
+            profilePicture: 'profile1.jpg',
+            birthDate: '1990-01-01'
+          }
+        },
+        {
+          userId: 2,
+          szerep: 'játékos',
+          csatlakozásDátuma: new Date(),
+          User: {
+            id: 2,
+            username: 'player1',
+            email: 'player1@example.com',
+            profilePicture: 'profile2.jpg',
+            birthDate: '1995-05-05'
+          }
+        }
+      ];
+      
+      Esemény.findByPk.mockResolvedValue(mockEvent);
+      Résztvevő.findAll.mockResolvedValue(mockParticipants);
+      
+      // Execute
+      await getEventParticipants(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            státusz: 'elfogadva'
+          }
+        })
+      );
+      
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participants: expect.any(Array),
+          count: 2,
+          maxParticipants: 10
+        })
+      );
+    });
+    
+    it('should return 404 if event not found', async () => {
+      // Setup
+      req.params.id = 999;
+      Esemény.findByPk.mockResolvedValue(null);
+      
+      // Execute
+      await getEventParticipants(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Event not found!"
+        })
+      );
+    });
+  });
+  
+  describe('leaveEsemeny', () => {
+    it('should allow a player to leave an event', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      const mockParticipant = {
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        destroy: jest.fn().mockResolvedValue(true)
+      };
+      
+      Résztvevő.findOne.mockResolvedValue(mockParticipant);
+      
+      // Execute
+      await leaveEsemeny(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1
+          }
+        })
+      );
+      expect(mockParticipant.destroy).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "You have successfully left the event!"
+        })
+      );
+    });
+    
+    it('should not allow organizers to leave an event', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      Résztvevő.findOne.mockResolvedValue({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
+      
+      // Execute
+      await leaveEsemeny(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Only players can leave an event. Organizers must delete the event instead."
+        })
+      );
+    });
+  });
+  
+  describe('joinEsemeny', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should create a pending join request', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        maximumLetszam: 10
+      });
+      
+      Résztvevő.findOne.mockResolvedValue(null); // User is not a participant yet
+      
+      const mockNewParticipant = {
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        státusz: 'függőben',
+        csatlakozásDátuma: new Date()
+      };
+      
+      Résztvevő.create.mockResolvedValue(mockNewParticipant);
+      
+      User.findByPk.mockResolvedValue({
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com'
+      });
+      
+      // Execute
+      await joinEsemeny(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { eseményId: 1, userId: 1 }
+        })
+      );
+      expect(Résztvevő.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eseményId: 1,
+          userId: 1,
+          szerep: 'játékos',
+          státusz: 'függőben'
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Csatlakozási kérelem elküldve"
+        })
+      );
+    });
+    
+    it('should return error if user is already a participant', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      Résztvevő.findOne.mockResolvedValue({
+        eseményId: 1,
+        userId: 1,
+        státusz: 'elfogadva'
+      });
+      
+      // Execute
+      await joinEsemeny(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "A felhasználó már résztvevője az eseménynek"
+        })
+      );
+    });
+  });
+  
+  describe('approveParticipant', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should approve a pending participant', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        userId: 2 // Participant to approve
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        maximumLetszam: 10
+      });
+      
+      // Current user is organizer
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
+      
+      // Participant to approve
+      const mockPendingParticipant = {
+        eseményId: 1,
+        userId: 2,
+        szerep: 'játékos',
+        státusz: 'függőben',
+        csatlakozásDátuma: new Date(),
+        update: jest.fn().mockResolvedValue(true)
+      };
+      
+      Résztvevő.findOne.mockResolvedValueOnce(mockPendingParticipant);
+      
+      // Current participant count
+      Résztvevő.count.mockResolvedValue(5); // 5 < maximumLetszam (10)
+      
+      User.findByPk.mockResolvedValue({
+        id: 2,
+        username: 'player',
+        email: 'player@example.com',
+        birthDate: '1990-01-01'
+      });
+      
+      // Execute
+      await approveParticipant(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            szerep: 'szervező'
+          }
+        })
+      );
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 2,
+            státusz: 'függőben'
+          }
+        })
+      );
+      expect(mockPendingParticipant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          státusz: 'elfogadva'
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Participant approved successfully!"
+        })
+      );
+    });
+    
+    it('should not approve if event is full', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        userId: 2 // Participant to approve
+      };
+      
+      const mockEvent = {
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        maximumLetszam: 10
+      };
+      
+      Esemény.findByPk.mockResolvedValue(mockEvent);
+      
+      // Current user is organizer
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
+      
+      // Participant to approve
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 2,
+        szerep: 'játékos',
+        státusz: 'függőben'
+      });
+      
+      // Current participant count equals maximum
+      Résztvevő.count.mockResolvedValue(10); // 10 = maximumLetszam (10)
+      
+      // Execute
+      await approveParticipant(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Cannot approve participant: maximum number of participants reached!"
+        })
+      );
+    });
+  });
+  
+  describe('rejectParticipant', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should reject a pending participant', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        userId: 2 // Participant to reject
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // Current user is organizer
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
+      
+      // Participant to reject
+      const mockPendingParticipant = {
+        eseményId: 1,
+        userId: 2,
+        szerep: 'játékos',
+        státusz: 'függőben',
+        update: jest.fn().mockResolvedValue(true)
+      };
+      
+      Résztvevő.findOne.mockResolvedValueOnce(mockPendingParticipant);
+      
+      // Execute
+      await rejectParticipant(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            szerep: 'szervező'
+          }
+        })
+      );
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 2,
+            státusz: 'függőben'
+          }
+        })
+      );
+      expect(mockPendingParticipant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          státusz: 'elutasítva'
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Participant rejected successfully!"
+        })
+      );
+    });
+  });
+  
+  describe('getEsemenyekByTelepulesAndSportNev', () => {
+    it('should return events filtered by city and sport', async () => {
+      // Setup
+      req.params = {
+        telepules: 'Budapest',
+        sportNev: 'Futball'
+      };
+      
+      const mockEvents = [
+        {
+          id: 1,
+          helyszinId: 1,
+          sportId: 1,
+          kezdoIdo: new Date(),
+          zaroIdo: new Date(Date.now() + 86400000), // Tomorrow
+          Helyszin: {
+            Id: 1,
+            Nev: 'Sport Center',
+            Telepules: 'Budapest'
+          },
+          Sportok: {
+            Id: 1,
+            Nev: 'Futball',
+            KepUrl: 'football.jpg'
+          }
+        }
+      ];
+      
+      Esemény.findAll.mockResolvedValue(mockEvents);
+      
+      // Execute
+      await getEsemenyekByTelepulesAndSportNev(req, res);
+      
+      // Assert
+      expect(Esemény.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: [
+            expect.objectContaining({
+              model: Helyszin,
+              where: { Telepules: 'Budapest' }
+            }),
+            expect.objectContaining({
+              model: Sportok,
+              where: { Nev: 'Futball' }
+            })
+          ]
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({ events: mockEvents });
+    });
+    
+    it('should return 404 if no events found', async () => {
+      // Setup
+      req.params = {
+        telepules: 'SmallTown',
+        sportNev: 'RareSport'
+      };
+      
+      Esemény.findAll.mockResolvedValue([]);
+      
+      // Execute
+      await getEsemenyekByTelepulesAndSportNev(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "No events found for the specified city and sport."
+        })
+      );
+    });
+  });
+  
+  describe('getOrganizedEvents', () => {
+    it('should return events where user is organizer', async () => {
+      // Setup
+      const mockEvents = [
+        {
+          id: 1,
+          helyszinId: 1,
+          sportId: 1,
+          kezdoIdo: new Date(),
+          zaroIdo: new Date(Date.now() + 86400000), // Tomorrow
+          Helyszin: {
+            Telepules: 'Budapest',
+            Nev: 'Sport Center'
+          },
+          Sportok: {
+            Nev: 'Futball',
+            KepUrl: 'football.jpg'
+          },
+          résztvevőkSzáma: 5
+        }
+      ];
+      
+      Esemény.findAll.mockResolvedValue(mockEvents);
+      
+      // Execute
+      await getOrganizedEvents(req, res);
+      
+      // Assert
+      expect(Esemény.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: [
+            expect.objectContaining({
+              model: Résztvevő,
+              where: {
+                userId: 1,
+                szerep: 'szervező'
+              }
+            })
+          ]
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({ events: mockEvents });
+    });
+    
+    it('should return 404 if no organized events found', async () => {
+      // Setup
+      Esemény.findAll.mockResolvedValue([]);
+      
+      // Execute
+      await getOrganizedEvents(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Nem találhatók szervezett események."
+        })
+      );
+    });
+  });
+  
+  describe('getParticipatedEvents', () => {
+    it('should return events where user is a player', async () => {
+      // Setup
+      const mockEvents = [
+        {
+          id: 1,
+          helyszinId: 1,
+          sportId: 1,
+          kezdoIdo: new Date(),
+          zaroIdo: new Date(Date.now() + 86400000), // Tomorrow
+          Helyszin: {
+            Telepules: 'Budapest',
+            Nev: 'Sport Center'
+          },
+          Sportok: {
+            Nev: 'Futball',
+            KepUrl: 'football.jpg'
+          },
+          résztvevőkSzáma: 5
+        }
+      ];
+      
+      Esemény.findAll.mockResolvedValue(mockEvents);
+      
+      // Execute
+      await getParticipatedEvents(req, res);
+      
+      // Assert
+      expect(Esemény.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: [
+            expect.objectContaining({
+              model: Résztvevő,
+              where: {
+                userId: 1,
+                szerep: 'játékos',
+                státusz: 'elfogadva'
+              }
+            })
+          ]
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith({ events: mockEvents });
+    });
+    
+    it('should return 404 if no participated events found', async () => {
+      // Setup
+      Esemény.findAll.mockResolvedValue([]);
+      
+      // Execute
+      await getParticipatedEvents(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Nem találhatók események, ahol játékosként veszel részt."
+        })
+      );
+    });
+  });
+  
+  describe('inviteUserToEvent', () => {
+    it('should invite a user to an event', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        invitedUserId: 2
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // Current user is a participant
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 1,
+        státusz: 'elfogadva'
+      });
+      
+      // Invited user exists
+      User.findByPk.mockResolvedValue({
+        id: 2,
+        username: 'inviteduser'
+      });
+      
+      // Invited user is not already a participant
+      Résztvevő.findOne.mockResolvedValueOnce(null);
+      
+      const mockInvitation = {
+        eseményId: 1,
+        userId: 2,
+        szerep: 'játékos',
+        státusz: 'függőben',
+        csatlakozásDátuma: new Date()
+      };
+      
+      Résztvevő.create.mockResolvedValue(mockInvitation);
+      
+      // Execute
+      await inviteUserToEvent(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            státusz: 'elfogadva'
+          }
+        })
+      );
+      expect(User.findByPk).toHaveBeenCalledWith(2);
+      expect(Résztvevő.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eseményId: 1,
+          userId: 2,
+          szerep: 'játékos',
+          státusz: 'függőben'
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Invitation sent successfully!"
+        })
+      );
+    });
+    
+    it('should return error if user is already a participant', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        invitedUserId: 2
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // Current user is a participant
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 1,
+        státusz: 'elfogadva'
+      });
+      
+      // Invited user exists
+      User.findByPk.mockResolvedValue({
+        id: 2,
+        username: 'inviteduser'
+      });
+      
+      // Invited user is already a participant
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 2,
+        státusz: 'elfogadva'
+      });
+      
+      // Execute
+      await inviteUserToEvent(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "User is already a participant in this event!"
+        })
+      );
+    });
+  });
+  
+  describe('acceptInvitation', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should accept an invitation and set status to pending', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        maximumLetszam: 10
+      });
+      
+      // User has an invitation
+      const mockInvitation = {
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        státusz: 'meghívott',
+        update: jest.fn().mockResolvedValue(true)
+      };
+      
+      Résztvevő.findOne.mockResolvedValue(mockInvitation);
+      
+      // Execute
+      await acceptInvitation(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            státusz: 'meghívott'
+          }
+        })
+      );
+      expect(mockInvitation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          státusz: 'függőben'
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Csatlakozási kérelem elküldve"
+        })
+      );
+    });
+    
+    it('should create a new pending request if no invitation exists', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1,
+        maximumLetszam: 10
+      });
+      
+      // User has no invitation
+      Résztvevő.findOne.mockResolvedValue(null);
+      
+      const mockNewParticipant = {
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        státusz: 'függőben',
+        csatlakozásDátuma: new Date()
+      };
+      
+      Résztvevő.create.mockResolvedValue(mockNewParticipant);
+      
+      // Execute
+      await acceptInvitation(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eseményId: 1,
+          userId: 1,
+          szerep: 'játékos',
+          státusz: 'függőben'
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Csatlakozási kérelem elküldve"
+        })
+      );
+    });
+  });
+  
+  describe('rejectInvitation', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should reject an invitation by removing it', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // User has an invitation
+      const mockInvitation = {
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        státusz: 'meghívott',
+        destroy: jest.fn().mockResolvedValue(true)
+      };
+      
+      Résztvevő.findOne.mockResolvedValue(mockInvitation);
+      
+      // Execute
+      await rejectInvitation(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+            expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1
+          }
+        })
+      );
+      expect(mockInvitation.destroy).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Invitation rejected successfully!"
+        })
+      );
+    });
+    
+    it('should return 404 if no invitation found', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // User has no invitation
+      Résztvevő.findOne.mockResolvedValue(null);
+      
+      // Execute
+      await rejectInvitation(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Invitation not found!"
+        })
+      );
+    });
+  });
+  
+  describe('checkParticipation', () => {
+    it('should return participation status for a user', async () => {
+      // Setup
+      req.params.id = 1;
+      
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // User is a participant
+      Résztvevő.findOne.mockResolvedValue({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        státusz: 'elfogadva'
+      });
+      
+      // Execute
+      await checkParticipation(req, res);
+      
+      // Assert
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1
+          }
+        })
+      );
       expect(res.json).toHaveBeenCalledWith({
-        message: "You can only update your own sports!"
+        isParticipant: true,
+        status: 'elfogadva',
+        role: 'játékos'
       });
     });
     
-    it("should require authentication token", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {}; // No token
-      req.body = {
-        Nev: "Futball - frissítve"
-      };
+    it('should return false if user is not a participant', async () => {
+      // Setup
+      req.params.id = 1;
       
-      // Act
-      await updateSportok(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Authentication token is required!"
+      Esemény.findByPk.mockResolvedValue({
+        id: 1,
+        helyszinId: 1,
+        sportId: 1
       });
-    });
-    
-    it("should handle server errors", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {
-        authorization: "Bearer token123"
-      };
-      req.body = {
-        Nev: "Futball - frissítve"
-      };
       
-      const error = new Error("Database error");
-      Sportok.findByPk.mockRejectedValue(error);
+      // User is not a participant
+      Résztvevő.findOne.mockResolvedValue(null);
       
-      // Act
-      await updateSportok(req, res);
+      // Execute
+      await checkParticipation(req, res);
       
       // Assert
-      expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
-        message: "Error updating sport",
-        error: error
+        isParticipant: false,
+        status: '',
+        role: ''
       });
     });
   });
   
-  describe("deleteSportok", () => {
-    it("should delete a sport successfully", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {
-        authorization: "Bearer token123"
+  describe('removeParticipant', () => {
+    it('should allow an organizer to remove a player', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        userId: 2 // Player to remove
       };
       
-      const mockSport = {
+      Esemény.findByPk.mockResolvedValue({
         id: 1,
-        Nev: "Futball",
+        helyszinId: 1,
+        sportId: 1
+      });
+      
+      // Current user is organizer
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
         userId: 1,
+        szerep: 'szervező'
+      });
+      
+      // Player to remove
+      const mockPlayerParticipant = {
+        eseményId: 1,
+        userId: 2,
+        szerep: 'játékos',
         destroy: jest.fn().mockResolvedValue(true)
       };
       
-      Sportok.findByPk.mockResolvedValue(mockSport);
+      Résztvevő.findOne.mockResolvedValueOnce(mockPlayerParticipant);
       
-      // Act
-      await deleteSportok(req, res);
+      // Execute
+      await removeParticipant(req, res);
       
       // Assert
-      expect(jwt.verify).toHaveBeenCalledWith("token123", "secretkey");
-      expect(Sportok.findByPk).toHaveBeenCalledWith(1);
-      expect(mockSport.destroy).toHaveBeenCalled();
+      expect(Esemény.findByPk).toHaveBeenCalledWith(1);
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 1,
+            szerep: 'szervező'
+          }
+        })
+      );
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            eseményId: 1,
+            userId: 2
+          }
+        })
+      );
+      expect(mockPlayerParticipant.destroy).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Sport deleted successfully!"
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Participant successfully removed from the event!"
+        })
+      );
     });
     
-    it("should return 404 if sport not found", async () => {
-      // Arrange
-      req.params = { id: 999 };
-      req.headers = {
-        authorization: "Bearer token123"
+    it('should not allow removing an organizer', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1,
+        userId: 2 // Organizer to remove
       };
       
-      Sportok.findByPk.mockResolvedValue(null);
-      
-      // Act
-      await deleteSportok(req, res);
-      
-      // Assert
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "Sport not found!"
-      });
-    });
-    
-    it("should not allow deleting sports created by other users", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {
-        authorization: "Bearer token123"
-      };
-      
-      jwt.verify.mockReturnValue({ userId: 2 }); // Different user
-      
-      const mockSport = {
+      Esemény.findByPk.mockResolvedValue({
         id: 1,
-        Nev: "Futball",
-        userId: 1 // Created by user 1
-      };
+        helyszinId: 1,
+        sportId: 1
+      });
       
-      Sportok.findByPk.mockResolvedValue(mockSport);
+      // Current user is organizer
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 1,
+        szerep: 'szervező'
+      });
       
-      // Act
-      await deleteSportok(req, res);
+      // Participant to remove is also an organizer
+      Résztvevő.findOne.mockResolvedValueOnce({
+        eseményId: 1,
+        userId: 2,
+        szerep: 'szervező'
+      });
+      
+      // Execute
+      await removeParticipant(req, res);
       
       // Assert
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        message: "You can only delete your own sports!"
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Organizers cannot be removed from the event!"
+        })
+      );
+    });
+  });
+  
+  describe('getEsemenyekFilteredByUserAge', () => {
+    it('should return events filtered by user age', async () => {
+      // Setup
+      req.params = {
+        telepules: 'Budapest',
+        sportNev: 'Futball'
+      };
+      
+      // Mock user with age 30
+      User.findByPk.mockResolvedValue({
+        id: 1,
+        username: 'testuser',
+        birthDate: new Date(new Date().getFullYear() - 30, 0, 1) // 30 years old
       });
+      
+      const mockEvents = [
+        {
+          id: 1,
+          helyszinId: 1,
+          sportId: 1,
+          kezdoIdo: new Date(),
+          zaroIdo: new Date(Date.now() + 86400000), // Tomorrow
+          minimumEletkor: 18,
+          maximumEletkor: 40,
+          Helyszin: {
+            Id: 1,
+            Nev: 'Sport Center',
+            Telepules: 'Budapest'
+          },
+          Sportok: {
+            Id: 1,
+            Nev: 'Futball',
+            KepUrl: 'football.jpg'
+          }
+        }
+      ];
+      
+      Esemény.findAll.mockResolvedValue(mockEvents);
+      
+      // Execute
+      await getEsemenyekFilteredByUserAge(req, res);
+      
+      // Assert
+      expect(User.findByPk).toHaveBeenCalledWith(1);
+      expect(Esemény.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            minimumEletkor: expect.any(Object),
+            maximumEletkor: expect.any(Object),
+            zaroIdo: expect.any(Object)
+          },
+          include: [
+            expect.objectContaining({
+              model: Helyszin,
+              where: { Telepules: 'Budapest' }
+            }),
+            expect.objectContaining({
+              model: Sportok,
+              where: { Nev: 'Futball' }
+            })
+          ]
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          events: mockEvents,
+          userAge: 30
+        })
+      );
     });
     
-    it("should require authentication token", async () => {
-      // Arrange
-      req.params = { id: 1 };
-      req.headers = {}; // No token
+    it('should return 404 if no events match age criteria', async () => {
+      // Setup
+      req.params = {
+        telepules: 'Budapest',
+        sportNev: 'Futball'
+      };
       
-            // Act
-            await deleteSportok(req, res);
-      
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(401);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Authentication token is required!"
-            });
-          });
-          
-          it("should handle server errors", async () => {
-            // Arrange
-            req.params = { id: 1 };
-            req.headers = {
-              authorization: "Bearer token123"
-            };
-            
-            const error = new Error("Database error");
-            Sportok.findByPk.mockRejectedValue(error);
-            
-            // Act
-            await deleteSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Error deleting sport",
-              error: error
-            });
-          });
-        });
-        
-        describe("JWT verification errors", () => {
-          it("should handle invalid tokens in createSportok", async () => {
-            // Arrange
-            req.headers = {
-              authorization: "Bearer invalidtoken"
-            };
-            
-            req.body = {
-              Nev: "Futball",
-              Leiras: "Labdarúgás"
-            };
-            
-            // This is the key part - mock jwt.verify to throw an error
-            const error = new Error("Invalid token");
-            jwt.verify.mockImplementation(() => {
-              throw error;
-            });
-            
-            // Act
-            await createSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Error creating sport",
-              error: error
-            });
-          });
-          
-          it("should handle invalid tokens in updateSportok", async () => {
-            // Arrange
-            req.params = { id: 1 };
-            req.headers = {
-              authorization: "Bearer invalidtoken"
-            };
-            
-            req.body = {
-              Nev: "Futball - frissítve"
-            };
-            
-            // Mock jwt.verify to throw an error
-            const error = new Error("Invalid token");
-            jwt.verify.mockImplementation(() => {
-              throw error;
-            });
-            
-            // Act
-            await updateSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Error updating sport",
-              error: error
-            });
-          });
-          
-          it("should handle invalid tokens in deleteSportok", async () => {
-            // Arrange
-            req.params = { id: 1 };
-            req.headers = {
-              authorization: "Bearer invalidtoken"
-            };
-            
-            // Mock jwt.verify to throw an error
-            const error = new Error("Invalid token");
-            jwt.verify.mockImplementation(() => {
-              throw error;
-            });
-            
-            // Act
-            await deleteSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Error deleting sport",
-              error: error
-            });
-          });
-        });
-        
-        describe("Edge cases", () => {
-          it("should handle malformed authorization header", async () => {
-            // Arrange
-            req.headers = {
-              authorization: "Malformed" // Not in the format "Bearer token"
-            };
-            
-            req.body = {
-              Nev: "Futball",
-              Leiras: "Labdarúgás"
-            };
-            
-            // Act
-            await createSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(401);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Authentication token is required!"
-            });
-          });
-          
-          it("should handle empty sport name in create request", async () => {
-            // Arrange
-            req.headers = {
-              authorization: "Bearer token123"
-            };
-            
-            req.body = {
-              Nev: "", // Empty name
-              Leiras: "Labdarúgás"
-            };
-            
-            // Act
-            await createSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Missing required fields for creating sport!"
-            });
-          });
-          
-          it("should handle empty sport description in create request", async () => {
-            // Arrange
-            req.headers = {
-              authorization: "Bearer token123"
-            };
-            
-            req.body = {
-              Nev: "Futball",
-              Leiras: "" // Empty description
-            };
-            
-            // Act
-            await createSportok(req, res);
-            
-            // Assert
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Missing required fields for creating sport!"
-            });
-          });
-        });
-        
-        describe("Integration scenarios", () => {
-          it("should handle the complete flow of creating, updating, and deleting a sport", async () => {
-            // This is a more complex test that simulates a full lifecycle
-            
-            // Setup
-            const userId = 1;
-            const sportId = 1;
-            const token = "token123";
-            
-            jwt.verify.mockReturnValue({ userId });
-            
-            // 1. Create a sport
-            req.headers = {
-              authorization: `Bearer ${token}`
-            };
-            
-            req.body = {
-              Nev: "Futball",
-              Leiras: "Labdarúgás, 11 fős csapatsport"
-            };
-            
-            const createdSport = {
-              id: sportId,
-              Nev: "Futball",
-              Leiras: "Labdarúgás, 11 fős csapatsport",
-              userId
-            };
-            
-            Sportok.create.mockResolvedValue(createdSport);
-            
-            await createSportok(req, res);
-            
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Sport created successfully!",
-              sportok: createdSport
-            });
-            
-            // Reset mocks for next call
-            res.status.mockClear();
-            res.json.mockClear();
-            
-            // 2. Update the sport
-            req.params = { id: sportId };
-            req.body = {
-              Nev: "Futball - frissítve",
-              Leiras: "Labdarúgás, frissített leírás"
-            };
-            
-            const sportToUpdate = {
-              id: sportId,
-              Nev: "Futball",
-              Leiras: "Labdarúgás, 11 fős csapatsport",
-              userId,
-              update: jest.fn().mockResolvedValue(true)
-            };
-            
-            Sportok.findByPk.mockResolvedValue(sportToUpdate);
-            
-            await updateSportok(req, res);
-            
-            expect(sportToUpdate.update).toHaveBeenCalledWith({
-              Nev: "Futball - frissítve",
-              Leiras: "Labdarúgás, frissített leírás"
-            });
-            expect(res.status).toHaveBeenCalledWith(200);
-            
-            // Reset mocks for next call
-            res.status.mockClear();
-            res.json.mockClear();
-            
-            // 3. Delete the sport
-            const sportToDelete = {
-              id: sportId,
-              Nev: "Futball - frissítve",
-              Leiras: "Labdarúgás, frissített leírás",
-              userId,
-              destroy: jest.fn().mockResolvedValue(true)
-            };
-            
-            Sportok.findByPk.mockResolvedValue(sportToDelete);
-            
-            await deleteSportok(req, res);
-            
-            expect(sportToDelete.destroy).toHaveBeenCalled();
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalledWith({
-              message: "Sport deleted successfully!"
-            });
-          });
-        });
-        
-        // Clean up after all tests
-        afterAll(() => {
-          jest.restoreAllMocks();
-        });
+      // Mock user with age 15
+      User.findByPk.mockResolvedValue({
+        id: 1,
+        username: 'testuser',
+        birthDate: new Date(new Date().getFullYear() - 15, 0, 1) // 15 years old
       });
       
+      // No events match the age criteria
+      Esemény.findAll.mockResolvedValue([]);
+      
+      // Execute
+      await getEsemenyekFilteredByUserAge(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "No events found for the specified city, sport, and your age range.",
+          userAge: 15
+        })
+      );
+    });
+  });
+  
+  describe('getPendingEvents', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should return pending events for the user', async () => {
+      // Setup
+      const mockPendingEvents = [
+        {
+          Esemény: {
+            id: 1,
+            kezdoIdo: new Date(),
+            zaroIdo: new Date(Date.now() + 86400000), // Tomorrow
+            szint: 'kezdő',
+            minimumEletkor: 18,
+            maximumEletkor: 60,
+            maximumLetszam: 10,
+            Helyszin: {
+              Id: 1,
+              Nev: 'Sport Center',
+              Telepules: 'Budapest'
+            },
+            Sportok: {
+              Id: 1,
+              Nev: 'Futball',
+              KepUrl: 'football.jpg'
+            }
+          },
+          státusz: 'függőben',
+          szerep: 'játékos'
+        }
+      ];
+      
+      Résztvevő.findAll.mockResolvedValue(mockPendingEvents);
+      
+      // Mock participant count
+      sequelize.fn = jest.fn().mockReturnValue('COUNT');
+      sequelize.col = jest.fn().mockReturnValue('id');
+      Résztvevő.findAll.mockResolvedValueOnce([
+        {
+          eseményId: 1,
+          getDataValue: jest.fn().mockReturnValue(5)
+        }
+      ]);
+      
+      // Execute
+      await getPendingEvents(req, res);
+      
+      // Assert
+      expect(Résztvevő.findAll).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId: 1,
+            státusz: 'függőben'
+          }
+        })
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          events: expect.any(Array)
+        })
+      );
+    });
+    
+    it('should return 404 if no pending events found', async () => {
+      // Setup
+      Résztvevő.findAll.mockResolvedValue([]);
+      
+      // Execute
+      await getPendingEvents(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Nincsenek függőben lévő eseményeid."
+        })
+      );
+    });
+  });
+  
+  describe('cancelPendingRequest', () => {
+    beforeEach(() => {
+      // Add user to request object
+      req.user = { userId: 1 };
+    });
+    
+    it('should cancel a pending request', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      // User has a pending request
+      const mockPendingRequest = {
+        eseményId: 1,
+        userId: 1,
+        szerep: 'játékos',
+        státusz: 'függőben',
+        destroy: jest.fn().mockResolvedValue(true)
+      };
+      
+      Résztvevő.findOne.mockResolvedValue(mockPendingRequest);
+      
+      // Execute
+      await cancelPendingRequest(req, res);
+      
+      // Assert
+      expect(Résztvevő.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId: 1,
+            eseményId: 1,
+            státusz: 'függőben'
+          }
+        })
+      );
+      expect(mockPendingRequest.destroy).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Jelentkezés sikeresen visszavonva"
+        })
+      );
+    });
+    
+    it('should return 404 if no pending request found', async () => {
+      // Setup
+      req.body = {
+        eseményId: 1
+      };
+      
+      // User has no pending request
+      Résztvevő.findOne.mockResolvedValue(null);
+      
+      // Execute
+      await cancelPendingRequest(req, res);
+      
+      // Assert
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Nem található függőben lévő kérelem ehhez az eseményhez"
+        })
+      );
+    });
+  });
+});
+
+
+
