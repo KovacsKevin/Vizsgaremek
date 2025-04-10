@@ -15,7 +15,7 @@ const createUser = async (req, res) => {
 
         // Ellenőrizzük a kötelező mezőket
         if (!email || !password || !username) {
-            return res.status(400).json({ message: "Missing required fields!" });
+            return res.status(400).json({ message: "Hiányoznak a kötelező mezők!" });
         }
 
         // Email validáció
@@ -141,13 +141,13 @@ const createUser = async (req, res) => {
             profilePicture: defaultProfilePicture // Add default profile picture here
         });
 
-        res.status(201).json({ message: "User created successfully!", user: newUser });
+        res.status(201).json({ message: "Felhasználó sikeresen létrehozva!", user: newUser });
     } catch (error) {
         // Sequelize validációs hibák kezelése
         if (error.name === 'SequelizeValidationError') {
             const validationErrors = error.errors.map(err => err.message);
             return res.status(400).json({
-                message: "Validation error",
+                message: "Érvényesítési hiba",
                 errors: validationErrors
             });
         }
@@ -159,7 +159,7 @@ const createUser = async (req, res) => {
             });
         }
 
-        res.status(500).json({ message: "Error creating user", error: error.message });
+        res.status(500).json({ message: "Hiba történt a felhasználó létrehozásakor", error: error.message });
     }
 };
 
@@ -172,13 +172,13 @@ const createUser = async (req, res) => {
 const authenticateUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) return res.status(400).json({ message: "Missing credentials!" });
+        if (!email || !password) return res.status(400).json({ message: "Hiányzó adatok!" });
 
         const user = await User.findOne({ where: { email } });
-        if (!user) return res.status(401).json({ message: "Invalid email or password!" });
+        if (!user) return res.status(401).json({ message: "Érvénytelen e-mail cím vagy jelszó!" });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ message: "Invalid email or password!" });
+        if (!isMatch) return res.status(401).json({ message: "Érvénytelen e-mail cím vagy jelszó!" });
 
         const token = jwt.sign({
             userId: user.id,
@@ -187,7 +187,7 @@ const authenticateUser = async (req, res) => {
         }, "secretkey", { expiresIn: "1h" });
 
         res.json({
-            message: "Login successful!",
+            message: "Sikeres bejelentkezés!",
             token,
             user: {
                 id: user.id,
@@ -356,7 +356,7 @@ const createEsemeny = async (req, res) => {
         const { helyszinId, sportId, kezdoIdo, zaroIdo, szint, minimumEletkor, maximumEletkor, maximumLetszam } = req.body;
 
         if (!helyszinId || !sportId || !kezdoIdo || !zaroIdo || !szint || !minimumEletkor || !maximumEletkor || !maximumLetszam) {
-            return res.status(400).json({ message: "Missing required fields for creating event!" });
+            return res.status(400).json({ message: "Hiányoznak a kötelező mezők az esemény létrehozásához!" });
         }
 
         // Create a new event (Esemény) and associate it with the userId from the token
@@ -557,7 +557,7 @@ const searchUsers = async (req, res) => {
         const { query, limit = 10, page = 1, excludeEvent, minAge, maxAge } = req.query;
 
         if (!query || query.length < 2) {
-            return res.status(400).json({ message: "Search query must be at least 2 characters long" });
+            return res.status(400).json({ message: "A keresésnek legalább 2 karakter hosszúnak kell lennie!" });
         }
 
         // Számítsuk ki az offset-et a lapozáshoz
