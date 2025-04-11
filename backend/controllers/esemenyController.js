@@ -27,8 +27,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 }, 
     fileFilter: function (req, file, cb) {
+
         const filetypes = /jpeg|jpg|png|gif/;
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -243,7 +244,6 @@ const updateEsemeny = async (req, res) => {
                         fs.unlinkSync(oldImagePath);
                     }
                 }
-
                 imageUrl = `/uploads/${req.file.filename}`;
             }
 
@@ -338,7 +338,6 @@ const leaveEsemeny = async (req, res) => {
     }
 };
 
-
 const getEsemenyById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -362,7 +361,7 @@ const getAllEsemeny = async (req, res) => {
 
         const events = await Esemény.findAll({
             where: {
-                zaroIdo: { [Op.gt]: currentTime }
+                zaroIdo: { [Op.gt]: currentTime } 
             }
         });
 
@@ -429,15 +428,15 @@ const getEsemenyekByTelepulesAndSportNev = async (req, res) => {
             include: [
                 {
                     model: Helyszin,
-                    where: { Telepules: telepules }, 
+                    where: { Telepules: telepules },  
                     attributes: [
                         'Id', 'Nev', 'Telepules', 'Cim', 'Iranyitoszam', 'Fedett', 'Oltozo',
                         'Parkolas', 'Leiras', 'Berles', 'userId'
-                    ] 
+                    ]  
                 },
                 {
                     model: Sportok,
-                    where: { Nev: sportNev },  
+                    where: { Nev: sportNev },
                     attributes: ['Id', 'Nev', 'Leiras', 'KepUrl'] 
                 }
             ]
@@ -488,7 +487,7 @@ const getEsemenyekFilteredByUserAge = async (req, res) => {
             where: {
                 minimumEletkor: { [Op.lte]: age },
                 maximumEletkor: { [Op.gte]: age },
-                zaroIdo: { [Op.gt]: currentTime }
+                zaroIdo: { [Op.gt]: currentTime } 
             },
             include: [
                 {
@@ -529,6 +528,7 @@ const joinEsemeny = async (req, res) => {
         const { eseményId } = req.body;
         const userId = req.user.userId;
 
+        
 
         const event = await Esemény.findByPk(eseményId);
         if (!event) {
@@ -588,7 +588,7 @@ const getEsemenyMinimal = async (req, res) => {
         const { id } = req.params;
 
         const esemeny = await Esemény.findByPk(id, {
-            attributes: ['id'] 
+            attributes: ['id']
         });
 
         if (esemeny) {
@@ -604,7 +604,6 @@ const getEsemenyMinimal = async (req, res) => {
         });
     }
 };
-
 
 const getEventParticipants = async (req, res) => {
     try {
@@ -627,7 +626,6 @@ const getEventParticipants = async (req, res) => {
                 }
             ]
         });
-
 
         const formattedParticipants = participants.map(participant => {
             let age = null;
@@ -725,7 +723,7 @@ const getOrganizedEvents = async (req, res) => {
                                         Résztvevős.eseményId = Esemény.id
                                         AND Résztvevős.státusz = 'elfogadva'
                                 )`),
-                        'résztvevőkSzáma'
+                        'résztvevőkSzáma' 
                     ]
                 ]
             }
@@ -886,7 +884,7 @@ const getAllEsemenyWithDetails = async (req, res) => {
                 },
                 {
                     model: Sportok,
-                    attributes: ['Nev', 'KepUrl'] 
+                    attributes: ['Nev', 'KepUrl']
                 }
             ],
             attributes: ['id', 'kezdoIdo', 'zaroIdo', 'maximumLetszam', 'imageUrl'], 
@@ -1022,7 +1020,6 @@ const getEventSearchData = async (req, res) => {
             });
         }
 
-
         res.status(200).json({
             success: true,
             telepules: event.Helyszin.Telepules,
@@ -1085,14 +1082,12 @@ const getAllEsemenyekFilteredByUserAge = async (req, res) => {
             ]
         });
 
-
         if (events.length === 0) {
             return res.status(404).json({
                 message: "No events found for your age range.",
                 userAge: age
             });
         }
-
 
         res.json({
             events,
@@ -1218,7 +1213,7 @@ const getEsemenyekByTelepulesAndAge = async (req, res) => {
             where: {
                 minimumEletkor: { [Op.lte]: age },
                 maximumEletkor: { [Op.gte]: age },
-                zaroIdo: { [Op.gt]: currentTime }
+                zaroIdo: { [Op.gt]: currentTime } 
             },
             include: [
                 {
@@ -1619,11 +1614,10 @@ const getUserInvitations = async (req, res) => {
     try {
         const userId = req.user.userId;
 
-
         const pendingInvitations = await Résztvevő.findAll({
             where: {
                 userId: userId,
-                státusz: 'meghívott'
+                státusz: 'meghívott' 
             },
             include: [
                 {
@@ -1655,7 +1649,7 @@ const getUserInvitations = async (req, res) => {
             ],
             where: {
                 eseményId: { [Op.in]: eventIds },
-                státusz: 'elfogadva'
+                státusz: 'elfogadva' 
             },
             group: ['eseményId']
         });
@@ -1691,12 +1685,12 @@ const getUserInvitations = async (req, res) => {
     }
 };
 
-
 const acceptInvitation = async (req, res) => {
     try {
         const { eseményId } = req.body;
         const userId = req.user.userId;
 
+        
 
         if (!eseményId) {
             return res.status(400).json({ message: "Event ID is required!" });
@@ -1704,8 +1698,11 @@ const acceptInvitation = async (req, res) => {
 
         const esemény = await Esemény.findByPk(eseményId);
         if (!esemény) {
+            
             return res.status(404).json({ message: "Event not found!" });
         }
+
+        
 
         let invitation = await Résztvevő.findOne({
             where: {
@@ -1716,6 +1713,7 @@ const acceptInvitation = async (req, res) => {
         });
 
         if (!invitation) {
+           
             invitation = await Résztvevő.findOne({
                 where: {
                     eseményId: eseményId,
@@ -1724,7 +1722,7 @@ const acceptInvitation = async (req, res) => {
             });
 
             if (invitation) {
-
+                
                 if (invitation.státusz === 'elfogadva') {
                     return res.status(200).json({
                         message: "You are already a participant of this event!",
@@ -1735,15 +1733,18 @@ const acceptInvitation = async (req, res) => {
         }
 
         if (!invitation) {
+            
 
             const eventExists = await Esemény.findByPk(eseményId);
             const userExists = await User.findByPk(userId);
 
+            
 
             const anyParticipants = await Résztvevő.findAll({
                 where: { eseményId: eseményId }
             });
 
+            
 
             const newParticipant = await Résztvevő.create({
                 eseményId,
@@ -1753,7 +1754,7 @@ const acceptInvitation = async (req, res) => {
                 csatlakozásDátuma: new Date()
             });
 
-
+            
             return res.status(201).json({
                 message: "Csatlakozási kérelem elküldve",
                 participant: {
@@ -1765,6 +1766,7 @@ const acceptInvitation = async (req, res) => {
             });
         }
 
+        
 
         const currentParticipantCount = await Résztvevő.count({
             where: {
@@ -1773,6 +1775,7 @@ const acceptInvitation = async (req, res) => {
             }
         });
 
+        
 
         if (currentParticipantCount >= esemény.maximumLetszam) {
             return res.status(400).json({ message: "Event is already full!" });
@@ -1780,6 +1783,7 @@ const acceptInvitation = async (req, res) => {
 
         if (invitation.státusz === 'meghívott') {
             await invitation.update({ státusz: 'függőben' });
+            
 
             return res.status(200).json({
                 message: "Csatlakozási kérelem elküldve",
@@ -1797,12 +1801,14 @@ const acceptInvitation = async (req, res) => {
 
         if (isOrganizer) {
             await invitation.update({ státusz: 'elfogadva' });
+            
 
             return res.status(200).json({
                 message: "Invitation accepted successfully!",
                 status: 'elfogadva'
             });
         } else {
+            
 
             return res.status(200).json({
                 message: "Csatlakozási kérelem elküldve",
@@ -1815,10 +1821,13 @@ const acceptInvitation = async (req, res) => {
     }
 };
 
+
 const rejectInvitation = async (req, res) => {
     try {
         const { eseményId } = req.body;
         const userId = req.user.userId;
+
+        
 
         if (!eseményId) {
             return res.status(400).json({ message: "Event ID is required!" });
@@ -1826,8 +1835,11 @@ const rejectInvitation = async (req, res) => {
 
         const esemény = await Esemény.findByPk(eseményId);
         if (!esemény) {
+            
             return res.status(404).json({ message: "Event not found!" });
         }
+
+        
 
         let invitation = await Résztvevő.findOne({
             where: {
@@ -1837,14 +1849,19 @@ const rejectInvitation = async (req, res) => {
         });
 
         if (!invitation) {
-
+           
             const eventExists = await Esemény.findByPk(eseményId);
             const userExists = await User.findByPk(userId);
+
+           
 
             return res.status(404).json({ message: "Invitation not found!" });
         }
 
+        
+
         await invitation.destroy();
+        
 
         res.status(200).json({
             message: "Invitation rejected successfully!"
@@ -1867,6 +1884,8 @@ const inviteUsersToEvent = async (req, res) => {
 
         const { eseményId, userIds, status } = req.body;
 
+        
+
         if (!eseményId || !userIds || !Array.isArray(userIds) || userIds.length === 0) {
             return res.status(400).json({ message: "Event ID and at least one user ID are required!" });
         }
@@ -1880,7 +1899,7 @@ const inviteUsersToEvent = async (req, res) => {
             where: {
                 eseményId: eseményId,
                 userId: inviterId,
-                státusz: 'elfogadva' 
+                státusz: 'elfogadva'
             }
         });
 
@@ -1936,7 +1955,7 @@ const inviteUsersToEvent = async (req, res) => {
                     eseményId: eseményId,
                     userId: invitedUserId,
                     szerep: 'játékos',
-                    státusz: 'meghívott',
+                    státusz: 'meghívott', // Changed from 'függőben' to 'meghívott'
                     csatlakozásDátuma: new Date()
                 });
 
@@ -1961,10 +1980,13 @@ const inviteUsersToEvent = async (req, res) => {
 };
 
 
+
+// New function to get all invitations for an event (including pending and invited)
 const getAllEventInvitations = async (req, res) => {
     try {
         const { id: eseményId } = req.params;
         const userId = req.user.userId;
+
 
         const esemény = await Esemény.findByPk(eseményId);
         if (!esemény) {
@@ -2212,7 +2234,6 @@ const getPendingEvents = async (req, res) => {
         }
 
         const eventIds = pendingEvents.map(pending => pending.Esemény.id);
-        
         const participantCounts = await Résztvevő.findAll({
             attributes: [
                 'eseményId',
@@ -2224,12 +2245,12 @@ const getPendingEvents = async (req, res) => {
             },
             group: ['eseményId']
         });
-        
+
         const countMap = {};
         participantCounts.forEach(item => {
             countMap[item.eseményId] = parseInt(item.getDataValue('count'));
         });
-
+a
         const events = pendingEvents.map(pending => {
             const event = pending.Esemény;
             return {
@@ -2288,13 +2309,13 @@ const cancelPendingRequest = async (req, res) => {
 
 const addPendingEventId = (eventId) => {
     const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
-    
+
     if (!pendingEvents.includes(eventId)) {
       pendingEvents.push(eventId);
       sessionStorage.setItem('pendingEvents', JSON.stringify(pendingEvents));
     }
   };
-  
+
   const removePendingEventId = (eventId) => {
     const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
     
@@ -2307,7 +2328,6 @@ const addPendingEventId = (eventId) => {
     return pendingEvents.includes(eventId);
   };
 
-
 const getEsemenyekFilteredByUserAgeOrOrganizer = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -2318,7 +2338,7 @@ const getEsemenyekFilteredByUserAgeOrOrganizer = async (req, res) => {
         const decoded = jwt.verify(token, "secretkey");
         const userId = decoded.userId;
         const currentTime = new Date();
-e
+
         const user = await User.findByPk(userId);
         if (!user || !user.birthDate) {
             return res.status(400).json({ message: "User birth date is not available!" });
@@ -2331,7 +2351,6 @@ e
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
             age--;
         }
-
 
         const organizerEvents = await Résztvevő.findAll({
             where: {
@@ -2367,7 +2386,7 @@ e
             if (organizerEventIds.includes(event.id)) {
                 return true;
             }
-            
+
             return age >= event.minimumEletkor && age <= event.maximumEletkor;
         });
 
@@ -2454,7 +2473,7 @@ const getEsemenyekByTelepulesAndSportNevAndAgeOrOrganizer = async (req, res) => 
             if (organizerEventIds.includes(event.id)) {
                 return true;
             }
-            
+
             return age >= event.minimumEletkor && age <= event.maximumEletkor;
         });
 
@@ -2540,7 +2559,7 @@ const getEsemenyekByTelepulesAndAgeOrOrganizer = async (req, res) => {
             if (organizerEventIds.includes(event.id)) {
                 return true;
             }
-            
+
             return age >= event.minimumEletkor && age <= event.maximumEletkor;
         });
 
@@ -2694,5 +2713,3 @@ module.exports = {
     getEsemenyekByTelepulesAndAgeOrOrganizer,
     getEsemenyekBySportNevAndAgeOrOrganizer
 };
-
-

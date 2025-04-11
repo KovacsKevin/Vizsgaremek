@@ -102,6 +102,10 @@ cd backend
 npm i
 ```
 
+```bash
+npm schedule
+```
+
 - Backend elindítása
 ```bash
 npm run dev
@@ -115,6 +119,14 @@ cd frontend
 - Modulok telepítése
 ```bash
 npm i
+```
+
+```bash
+npm vite
+```
+
+```bash
+npm i react-hot-toast
 ```
 
 - Frontend elindítása
