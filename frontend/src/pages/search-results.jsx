@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Search, Star, Heart, MapPin, Info, Calendar, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// Placeholder Image component
+
 const Image = ({ src, alt, className }) => <img src={src || "/placeholder.svg"} alt={alt} className={className} />
 
 const SearchResults = () => {
@@ -69,12 +69,12 @@ const SearchResults = () => {
         <h1 className="text-3xl font-bold mb-8 text-center">Szálláshelyek keresése</h1>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Search Filters Sidebar */}
+          
           <div className="w-full lg:w-80 flex-shrink-0">
             <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 sticky top-4">
               <h2 className="text-xl font-bold mb-4">Keresés</h2>
 
-              {/* Search Input */}
+              
               <div className="space-y-4 mb-6">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
@@ -85,7 +85,7 @@ const SearchResults = () => {
                   />
                 </div>
 
-                {/* Date Inputs */}
+                
                 <div className="space-y-2">
                   <div className="relative">
                     <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
@@ -105,7 +105,7 @@ const SearchResults = () => {
                   </div>
                 </div>
 
-                {/* Guests Input */}
+               
                 <div className="relative">
                   <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
                   <input
@@ -116,7 +116,7 @@ const SearchResults = () => {
                 </div>
               </div>
 
-              {/* Price Range */}
+              
               <div className="mb-6">
                 <h3 className="font-semibold mb-2">Szűrés:</h3>
                 <p className="text-white/80 text-sm mb-2">Szállása szűrt költségkeret (egy éj)</p>
@@ -136,7 +136,7 @@ const SearchResults = () => {
                 </div>
               </div>
 
-              {/* Popular Filters */}
+              
               <div>
                 <h3 className="font-semibold mb-3">Népszerű szűrők</h3>
                 <div className="space-y-2">
@@ -160,7 +160,7 @@ const SearchResults = () => {
             </div>
           </div>
 
-          {/* Search Results */}
+          
           <div className="flex-1">
             <div className="space-y-6">
               {hotels.map((hotel) => (

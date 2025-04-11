@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom"; // Redirect user if unauthorized
+import { useNavigate } from "react-router-dom"; 
 
 const Protected = () => {
   const [user, setUser] = useState(null);
@@ -12,17 +12,17 @@ const Protected = () => {
 
     if (!token) {
       setError("Nincs jogosultságod az oldal megtekintéséhez!");
-      setTimeout(() => navigate("/login"), 2000); // Redirect after 2 seconds
+      setTimeout(() => navigate("/login"), 2000); 
       return;
     }
 
-    // Validate token with backend
+    
     const fetchProtectedData = async () => {
       try {
         const response = await fetch("http://localhost:8081/api/v1/protected", {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`, // Send token in Authorization header
+            Authorization: `Bearer ${token}`, 
           },
         });
 
@@ -32,7 +32,7 @@ const Protected = () => {
           setError(data.message || "Hiba történt az adatok lekérésekor!");
           setTimeout(() => navigate("/login"), 2000);
         } else {
-          setUser(data.user); // Store user details from response
+          setUser(data.user); 
         }
       } catch (err) {
         setError("Hiba történt az adatok lekérésekor!");

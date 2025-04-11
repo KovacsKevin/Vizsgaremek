@@ -2,21 +2,21 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { User, Mail, Phone, Calendar, Edit, Save, Trash2, AlertTriangle, X, Upload, FileText, RefreshCw } from "lucide-react";
-import Header from "../Main/Header"; // Import the Header component
+import Header from "../Main/Header"; 
 
-// Import the ImageWithFallback component from Header.jsx
+
 const ImageWithFallback = ({ src, alt, className, defaultSrc }) => {
     const [error, setError] = useState(false);
 
     const formatImageUrl = (url) => {
         if (!url || error) return defaultSrc;
-        // If src is already a full URL (starting with http://localhost:8081), don't modify it
+        
         if (url.startsWith('http://localhost:8081')) return url;
-        // If it's a Base64 encoded image, return it directly
+        
         if (url.startsWith('data:image/')) return url;
-        // If it's an external URL (https://), return it directly
+        
         if (url.startsWith('https://')) return url;
-        // Otherwise, add the server URL
+        
         return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
     };
 
@@ -42,7 +42,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [activeTab, setActiveTab] = useState("profile"); // Add state for active tab
+    const [activeTab, setActiveTab] = useState("profile"); 
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -50,23 +50,23 @@ const Profile = () => {
         lastName: "",
         phone: "",
         birthDate: "",
-        bio: "", // Új mező a bemutatkozáshoz
+        bio: "", 
     });
 
-    // Default profile picture URL - this is used as default
+    
     const [defaultProfilePicture, setDefaultProfilePicture] = useState("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
 
-    // Custom profile picture - if null, we use the default
+   
     const [profilePicture, setProfilePicture] = useState(null);
     const profilePicInputRef = useRef(null);
 
-    // Statisztikák
+   
     const [stats, setStats] = useState({
         createdEvents: 0,
         participatedEvents: 0
     });
 
-    // Helper function to get profile picture source
+    
     const getProfilePicSrc = () => {
         if (profilePicture) {
             return profilePicture;
@@ -74,13 +74,13 @@ const Profile = () => {
         return defaultProfilePicture;
     };
 
-    // Fetch default images from server
+    
     const fetchDefaultImages = async () => {
         try {
-            // Set fallback values
+           
             setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
 
-            // Try to load default images from server
+            
             const response = await fetch("http://localhost:8081/api/v1/defaults");
             if (response.ok) {
                 const data = await response.json();
@@ -88,18 +88,18 @@ const Profile = () => {
                     setDefaultProfilePicture(data.defaultProfilePicture);
                 }
             } else {
-                console.log("Alapértelmezett képek betöltése sikertelen, fallback értékek használata");
+                
             }
         } catch (error) {
             console.error("Hiba az alapértelmezett képek betöltésekor:", error);
-            // Set fallback values
+           
             setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
         }
     };
 
-    // Felhasználói adatok betöltése
+    
     useEffect(() => {
-        // First load default images
+        
         fetchDefaultImages();
 
         const fetchUserData = async () => {
@@ -110,7 +110,7 @@ const Profile = () => {
                     return;
                 }
 
-                // Token ellenőrzése
+                
                 const authResponse = await fetch("http://localhost:8081/api/v1/login", {
                     method: "GET",
                     headers: { Authorization: `Bearer ${token}` }
@@ -123,7 +123,7 @@ const Profile = () => {
                 const authData = await authResponse.json();
                 const userId = authData.user.userId;
 
-                // Felhasználói adatok lekérése
+               
                 const userResponse = await fetch(`http://localhost:8081/api/v1/getUser/${userId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -135,7 +135,7 @@ const Profile = () => {
                 const userData = await userResponse.json();
                 setUser(userData);
 
-                // Form adatok inicializálása
+                
                 setFormData({
                     username: userData.username || "",
                     email: userData.email || "",
@@ -143,14 +143,14 @@ const Profile = () => {
                     lastName: userData.lastName || "",
                     phone: userData.phone || "",
                     birthDate: userData.birthDate ? new Date(userData.birthDate).toISOString().split('T')[0] : "",
-                    bio: userData.bio || "", // Bemutatkozás inicializálása
+                    bio: userData.bio || "", 
                 });
 
                 if (userData.profilePicture) {
                     setProfilePicture(userData.profilePicture);
                 }
 
-                // Statisztikák lekérése
+               
                 fetchUserStats(userId, token);
 
                 setLoading(false);
@@ -164,7 +164,7 @@ const Profile = () => {
         fetchUserData();
     }, [navigate]);
 
-    // Felhasználói statisztikák lekérése
+   
     const fetchUserStats = async (userId, token) => {
         try {
             const statsResponse = await fetch(`http://localhost:8081/api/v1/user-stats/${userId}`, {
@@ -183,7 +183,7 @@ const Profile = () => {
         }
     };
 
-    // Űrlap mezők változásának kezelése
+    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData({
@@ -192,7 +192,7 @@ const Profile = () => {
         });
     };
 
-    // Add image compression before upload - same as in Header.jsx
+    
     const compressImage = (imageDataUrl, maxWidth = 400) => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -202,7 +202,7 @@ const Profile = () => {
                 let width = img.width;
                 let height = img.height;
 
-                // Calculate new dimensions
+               
                 if (width > maxWidth) {
                     height = Math.round((height * maxWidth) / width);
                     width = maxWidth;
@@ -214,13 +214,13 @@ const Profile = () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Get compressed image data (adjust quality as needed)
+                
                 resolve(canvas.toDataURL('image/jpeg', 0.7));
             };
         });
     };
 
-    // Handle file upload for profile picture - updated to match Header.jsx logic and refresh page
+    
     const handleProfilePicUpload = async (event) => {
         const file = event.target.files[0];
         if (file) {
@@ -229,13 +229,13 @@ const Profile = () => {
                 try {
                     const imageDataUrl = e.target.result;
 
-                    // Compress the image before setting and saving
+                    
                     const compressedImage = await compressImage(imageDataUrl, 400); // Smaller for profile pics
 
-                    // Update local state
+                   
                     setProfilePicture(compressedImage);
 
-                    // Save to database immediately
+                   
                     const token = Cookies.get("token");
                     if (!token || !user) return;
 
@@ -244,9 +244,9 @@ const Profile = () => {
                     });
 
                     if (success) {
-                        console.log("Profilkép sikeresen frissítve");
+                        
 
-                        // Refresh the page to show the updated profile picture everywhere
+                        
                         window.location.reload();
                     } else {
                         throw new Error("Nem sikerült menteni a profilképet");
@@ -261,7 +261,7 @@ const Profile = () => {
     };
 
 
-    // Save user settings - helper function for all settings updates
+    
     const saveUserSettings = async (settings) => {
         try {
             const token = Cookies.get("token");
@@ -270,9 +270,9 @@ const Profile = () => {
                 return false;
             }
 
-            console.log("Beállítások mentése:", settings);
+            
 
-            // Save settings to database
+            
             const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
                 method: "PUT",
                 headers: {
@@ -283,7 +283,7 @@ const Profile = () => {
             });
 
             if (response.ok) {
-                console.log("Beállítások sikeresen mentve");
+                
                 return true;
             } else {
                 console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text());
@@ -295,31 +295,31 @@ const Profile = () => {
         }
     };
 
-    // Trigger profile picture file input click
+    
     const handleProfilePicClick = () => {
         profilePicInputRef.current.click();
     };
 
-    // Reset profile picture to default - updated to match Header.jsx logic and refresh page
+   
     const resetProfilePicture = async (e) => {
         if (e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevent click from reaching parent
+            e.stopPropagation(); 
         }
 
-        // Update local state
+        
         setProfilePicture(null);
 
-        // Save to database
+        
         try {
             const success = await saveUserSettings({
                 profilePicture: null
             });
 
             if (success) {
-                console.log("Profilkép sikeresen visszaállítva az alapértelmezettre");
+                
 
-                // Refresh the page to show the updated profile picture everywhere
+                
                 window.location.reload();
             } else {
                 throw new Error("Nem sikerült visszaállítani a profilképet");
@@ -331,19 +331,19 @@ const Profile = () => {
     };
 
 
-    // Felhasználói adatok mentése
+    
     const handleSaveProfile = async () => {
         try {
             const token = Cookies.get("token");
             if (!token || !user) return;
 
-            // Adatok előkészítése
+            
             const updatedData = {
                 ...formData,
                 profilePicture: profilePicture
             };
 
-            // API hívás a felhasználói adatok frissítéséhez
+            
             const response = await fetch(`http://localhost:8081/api/v1/updateUser/${user.id}`, {
                 method: "PUT",
                 headers: {
@@ -357,7 +357,7 @@ const Profile = () => {
                 throw new Error("Nem sikerült frissíteni a felhasználói adatokat");
             }
 
-            // Sikeres mentés után frissítjük a user állapotot
+            
             setUser({
                 ...user,
                 ...updatedData
@@ -365,14 +365,14 @@ const Profile = () => {
 
             setIsEditing(false);
 
-            // Sikeres mentés üzenet megjelenítése
+            
             alert("A profil adatok sikeresen frissítve!");
 
-            // Felhasználó kijelentkeztetése
+            
             Cookies.remove("token");
             localStorage.removeItem("user");
 
-            // Átirányítás a bejelentkezési oldalra késleltetéssel
+           
             setTimeout(() => {
                 navigate("/login");
             }, 1000);
@@ -383,16 +383,16 @@ const Profile = () => {
         }
     };
 
-    // Profil törlése
+   
     const handleDeleteProfile = async () => {
         try {
             const token = Cookies.get("token");
             if (!token || !user) return;
 
-            // Set loading state
+            
             setIsDeleting(true);
 
-            // API hívás a felhasználó törléséhez
+            
             const response = await fetch(`http://localhost:8081/api/v1/deleteUser/${user.id}`, {
                 method: "DELETE", headers: {
                     Authorization: `Bearer ${token}`
@@ -405,11 +405,11 @@ const Profile = () => {
                 throw new Error(data.message || "Nem sikerült törölni a felhasználót");
             }
 
-            // Sikeres törlés után kijelentkeztetjük a felhasználót
+            
             Cookies.remove("token");
             localStorage.removeItem("user");
 
-            // Show success message with details
+            
             let successMessage = "A felhasználói fiók sikeresen törölve!";
             if (data.deletedEvents > 0) {
                 successMessage += ` ${data.deletedEvents} létrehozott esemény is törlésre került.`;
@@ -425,7 +425,7 @@ const Profile = () => {
         }
     };
 
-    // Felhasználói inicálék megjelenítése
+    
     const getUserInitials = () => {
         if (!user || !user.username) return "";
         return user.username
@@ -463,16 +463,16 @@ const Profile = () => {
 
     return (
         <>
-            {/* Include the Header component at the top */}
+            
             <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="min-h-screen bg-slate-900 py-12 px-4">
                 <div className="max-w-4xl mx-auto">
                     <div className="bg-slate-800 rounded-2xl overflow-hidden shadow-xl border border-slate-700/50">
-                        {/* Profil fejléc */}
+                        
                         <div className="bg-gradient-to-r from-blue-600/30 to-purple-600/30 p-8 relative">
                             <div className="flex flex-col md:flex-row items-center gap-6">
-                                {/* Profilkép - Updated to use ImageWithFallback */}
+                               
                                 <div
                                     className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-1 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 relative group cursor-pointer"
                                     onClick={handleProfilePicClick}
@@ -489,11 +489,11 @@ const Profile = () => {
                                         </div>
                                     </div>
 
-                                    {/* Reset button - only appears if custom profile picture is set */}
+                                    
                                     {profilePicture && (
                                         <button
                                             onClick={(e) => {
-                                                e.stopPropagation(); // Prevent click from reaching parent
+                                                e.stopPropagation(); 
                                                 resetProfilePicture(e);
                                             }}
                                             className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors shadow-lg"
@@ -511,7 +511,7 @@ const Profile = () => {
                                     className="hidden"
                                 />
 
-                                {/* Felhasználói adatok */}
+                                
                                 <div className="flex-1">
                                     <h1 className="text-3xl font-bold text-white mb-2">
                                         {isEditing ? (
@@ -540,7 +540,7 @@ const Profile = () => {
                                         )}
                                     </p>
 
-                                    {/* Szerkesztés/Mentés gombok */}
+                                    
                                     <div className="flex gap-3">
                                         {isEditing ? (
                                             <button
@@ -582,9 +582,9 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        {/* Profil részletek */}
+                        
                         <div className="p-8">
-                            {/* Bemutatkozás szekció */}
+                           
                             <div className="mb-8">
     <h2 className="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2">Bemutatkozás</h2>
 
@@ -610,7 +610,7 @@ const Profile = () => {
                             <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Személyes adatok</h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Vezetéknév */}
+                                
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Vezetéknév</label>
                                     {isEditing ? (
@@ -629,7 +629,7 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Keresztnév */}
+                                
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Keresztnév</label>
                                     {isEditing ? (
@@ -648,7 +648,7 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Email */}
+                                
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Email cím</label>
                                     {isEditing ? (
@@ -667,7 +667,7 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Telefonszám */}
+                                
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Telefonszám</label>
                                     {isEditing ? (
@@ -686,7 +686,7 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Születési dátum */}
+                                
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Születési dátum</label>
                                     {isEditing ? (
@@ -713,7 +713,7 @@ const Profile = () => {
                                     )}
                                 </div>
 
-                                {/* Felhasználónév */}
+                               
                                 <div>
                                     <label className="block text-sm font-medium text-slate-400 mb-2">Felhasználónév</label>
                                     {isEditing ? (
@@ -732,7 +732,7 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Események statisztikák */}
+                            
                             <div className="mt-10">
                                 <h2 className="text-xl font-bold text-white mb-6 border-b border-slate-700 pb-2">Esemény statisztikák</h2>
 
@@ -753,7 +753,7 @@ const Profile = () => {
                 </div>
             </div>
 
-            {/* Profil törlés megerősítő modal */}
+            
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                     <div className="bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-red-500/30 animate-fadeIn">

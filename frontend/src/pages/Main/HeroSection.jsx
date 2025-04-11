@@ -6,27 +6,27 @@ import { useNavigate } from "react-router-dom";
 const HeroSection = ({ Image }) => {
   const navigate = useNavigate();
 
-  // Esemény létrehozása gombra kattintás kezelése
+  
   const handleCreateEventClick = (e) => {
     e.preventDefault();
 
-    // Megkeressük az event-section elemet
+    
     const section = document.getElementById('event-section');
     if (section) {
-      // Fejléc magassága
+      
       const headerHeight = 120;
 
-      // Kiszámoljuk a pozíciót
+      
       const sectionPosition = section.getBoundingClientRect().top;
       const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
 
-      // Görgetés
+      
       window.scrollTo({
         top: offsetPosition,
         behavior: 'smooth'
       });
     } else {
-      // Ha nem találjuk az elemet, próbáljuk a create-event ID-t
+      
       const element = document.getElementById('create-event');
       if (element) {
         const headerHeight = 120;
@@ -41,18 +41,17 @@ const HeroSection = ({ Image }) => {
     }
   };
 
-  // Események böngészése gombra kattintás kezelése - minden esemény, csak kor szerinti szűrés
+  
   const handleBrowseEventsClick = (e) => {
     e.preventDefault();
 
-    // Átirányítás a sportmate oldalra, ahol az események a felhasználó korának megfelelően lesznek szűrve
-    // Az "all-events" paraméter jelzi, hogy minden eseményt szeretnénk lekérni
+    
     navigate('/sportmate?allEvents=true');
   };
 
   return (
     <section className="relative h-[60vh] sm:h-[65vh] md:h-[70vh] min-h-[400px] sm:min-h-[500px] overflow-hidden">
-      {/* Background image with parallax effect */}
+      
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 transform scale-110 transition-transform duration-10000 animate-slow-zoom">
           <Image
@@ -64,16 +63,16 @@ const HeroSection = ({ Image }) => {
           />
         </div>
 
-        {/* Overlay with gradient */}
+        
         <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 to-slate-900/60"></div>
 
-        {/* Background elements */}
+        
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.2),transparent_40%)]"></div>
           <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(79,70,229,0.2),transparent_40%)]"></div>
         </div>
 
-        {/* Animated particles - csökkentett mennyiség mobilon */}
+        
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(15)].map((_, i) => (
             <div
@@ -125,7 +124,7 @@ const HeroSection = ({ Image }) => {
         }
       `}</style>
 
-      {/* Content */}
+      
       <div className="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center">
         <div className="max-w-3xl animate-fadeInUp" style={{ animationDelay: "0.2s" }}>
           <div className="inline-block px-3 py-1 sm:px-4 sm:py-1 rounded-full bg-gradient-to-r from-purple-600/20 to-indigo-600/20 backdrop-blur-md border border-purple-500/30 text-xs sm:text-sm text-purple-300 font-medium mb-4 sm:mb-6">
@@ -182,7 +181,7 @@ const HeroSection = ({ Image }) => {
         </div>
       </div>
 
-      {/* Bottom wave decoration */}
+      
       <div className="absolute bottom-0 left-0 right-0 h-12 sm:h-16 overflow-hidden z-10">
         <svg
           className="absolute bottom-0 w-full h-16 sm:h-20 fill-slate-900 transform translate-y-1"

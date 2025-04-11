@@ -15,39 +15,39 @@ const MyEvents = () => {
   const [activeTab, setActiveTab] = useState("myevents")
   const [organizedEvents, setOrganizedEvents] = useState([])
   const [participatedEvents, setParticipatedEvents] = useState([])
-  const [archivedEvents, setArchivedEvents] = useState([]) // State for archived events
-  const [invitations, setInvitations] = useState([]) // State for invitations
-  const [pendingEvents, setPendingEvents] = useState([]) // State for pending events
+  const [archivedEvents, setArchivedEvents] = useState([]) 
+  const [invitations, setInvitations] = useState([]) 
+  const [pendingEvents, setPendingEvents] = useState([]) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [activeFilter, setActiveFilter] = useState("all") // Default filter is "all"
+  const [activeFilter, setActiveFilter] = useState("all") 
   const [refreshData, setRefreshData] = useState(0)
-  const [showFilterMenu, setShowFilterMenu] = useState(false) // State for mobile filter menu
+  const [showFilterMenu, setShowFilterMenu] = useState(false) 
 
-  // Modal states
+  
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [isHelyszinModalOpen, setIsHelyszinModalOpen] = useState(false)
   const [isSportModalOpen, setIsSportModalOpen] = useState(false)
 
-  // State for SportEventDetailsModal
+  
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [isSportEventDetailsModalOpen, setIsSportEventDetailsModalOpen] = useState(false)
-  const [isInvitationView, setIsInvitationView] = useState(false) // New state to track if viewing an invitation
-  const [isPendingView, setIsPendingView] = useState(false) // New state to track if viewing a pending event
+  const [isInvitationView, setIsInvitationView] = useState(false)
+  const [isPendingView, setIsPendingView] = useState(false) 
 
-  // Modal content
+ 
   const eventModalContent = {
     title: "Új esemény létrehozása",
     description: "Tölts ki minden mezőt az esemény létrehozásához"
   }
 
-  // Helyszín modal content
+  
   const helyszinModalContent = {
     title: "Új helyszín létrehozása",
     description: "Tölts ki minden mezőt a helyszín létrehozásához"
   }
 
-  // Format full date and time
+  
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("hu-HU", {
@@ -61,7 +61,7 @@ const MyEvents = () => {
     });
   };
 
-  // Format short date and time for mobile
+  
   const formatShortDateTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("hu-HU", {
@@ -98,27 +98,23 @@ const MyEvents = () => {
           fetch("http://localhost:8081/api/v1/invitations", {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          fetch("http://localhost:8081/api/v1/pending-events", { // Új végpont a függőben lévő eseményekhez
+          fetch("http://localhost:8081/api/v1/pending-events", { 
             headers: { Authorization: `Bearer ${token}` }
 
           })
         ]);
 
-        console.log("Organized response status:", organizedResponse.status);
-        console.log("Participated response status:", participatedResponse.status);
-        console.log("Archived response status:", archivedResponse.status);
-        console.log("Invitations response status:", invitationsResponse.status);
-        console.log("Pending response status:", pendingResponse.status);
+       
 
-        // Process organized events
+        
         if (organizedResponse.status === 'fulfilled') {
           if (organizedResponse.value.ok) {
             const data = await organizedResponse.value.json();
-            console.log("Organized events data:", data);
+            
             setOrganizedEvents(data.events || []);
           } else if (organizedResponse.value.status === 404) {
-            // 404 is expected if user has no organized events
-            console.log("No organized events found");
+            
+          
             setOrganizedEvents([]);
           } else {
             console.error("Hiba a szervezett események lekérésekor:", organizedResponse.value.status);
@@ -129,15 +125,15 @@ const MyEvents = () => {
           console.error("Organized events request failed:", organizedResponse.reason);
         }
 
-        // Process participated events
+       
         if (participatedResponse.status === 'fulfilled') {
           if (participatedResponse.value.ok) {
             const data = await participatedResponse.value.json();
-            console.log("Participated events data:", data);
+            
             setParticipatedEvents(data.events || []);
           } else if (participatedResponse.value.status === 404) {
-            // 404 is expected if user has no participated events
-            console.log("No participated events found");
+           
+          
             setParticipatedEvents([]);
           } else {
             console.error("Hiba a résztvevőként szereplő események lekérésekor:", participatedResponse.value.status);
@@ -148,15 +144,15 @@ const MyEvents = () => {
           console.error("Participated events request failed:", participatedResponse.reason);
         }
 
-        // Process archived events
+       
         if (archivedResponse.status === 'fulfilled') {
           if (archivedResponse.value.ok) {
             const data = await archivedResponse.value.json();
-            console.log("Archived events data:", data);
+            
             setArchivedEvents(data.events || []);
           } else if (archivedResponse.value.status === 404) {
-            // 404 is expected if user has no archived events
-            console.log("No archived events found");
+            
+            
             setArchivedEvents([]);
           } else {
             console.error("Hiba az archivált események lekérésekor:", archivedResponse.value.status);
@@ -167,15 +163,15 @@ const MyEvents = () => {
           console.error("Archived events request failed:", archivedResponse.reason);
         }
 
-        // Process invitations
+        
         if (invitationsResponse.status === 'fulfilled') {
           if (invitationsResponse.value.ok) {
             const data = await invitationsResponse.value.json();
-            console.log("Invitations data:", data);
-            setInvitations(data.events || []); // Helyesen kezeli a data.events formátumot
+            
+            setInvitations(data.events || []); 
           } else if (invitationsResponse.value.status === 404) {
-            // 404 is expected if user has no invitations
-            console.log("No invitations found");
+           
+            
             setInvitations([]);
           } else {
             console.error("Hiba a meghívások lekérésekor:", invitationsResponse.value.status);
@@ -186,17 +182,17 @@ const MyEvents = () => {
           console.error("Invitations request failed:", invitationsResponse.reason);
         }
 
-        // Process pending events
+       
         if (pendingResponse.status === 'fulfilled') {
           if (pendingResponse.value.ok) {
             const data = await pendingResponse.value.json();
             const pendingEventId = data.events?.[0]?.id;
-            console.log("Event ID:", pendingEventId);
+            
             setPendingEvents(data.events || []);
             sessionStorage.setItem('pendingEventId', pendingEventId);
           } else if (pendingResponse.value.status === 404) {
-            // 404 is expected if user has no pending events
-            console.log("No pending events found");
+           
+           
             setPendingEvents([]);
           } else {
             console.error("Hiba a függőben lévő események lekérésekor:", pendingResponse.value.status);
@@ -218,23 +214,23 @@ const MyEvents = () => {
     fetchEvents()
   }, [navigate, refreshData])
 
-  // Filter events based on the selected filter
+  
   const filteredEvents = () => {
     if (activeFilter === "organized") return organizedEvents;
     if (activeFilter === "participated") return participatedEvents;
     if (activeFilter === "archived") return archivedEvents;
     if (activeFilter === "invitations") return invitations;
-    if (activeFilter === "pending") return pendingEvents; // Új szűrő a függőben lévő eseményekhez
-    // "all" shows only active events (not archived)
+    if (activeFilter === "pending") return pendingEvents; 
+   
     return [...organizedEvents, ...participatedEvents];
   }
 
-  // Determine event role (organizer or player)
+
   const getEventRole = (eventId) => {
-    // Check if the event is in organized events
+ 
     if (organizedEvents.some(event => event.id === eventId)) return "szervező";
 
-    // Check role in archived events
+   
     const archivedEvent = archivedEvents.find(event => event.id === eventId);
     if (archivedEvent && archivedEvent.Résztvevős && archivedEvent.Résztvevős.length > 0) {
       return archivedEvent.Résztvevős[0].szerep;
@@ -243,19 +239,19 @@ const MyEvents = () => {
     return "játékos";
   }
 
-  // Helper function to get sport name
+
   const getSportName = (event) => {
-    // For invitations or pending events, the structure is different
+    
     if (activeFilter === "invitations" || activeFilter === "pending") {
       return event.Sportok?.Nev || "Esemény";
     }
-    // For regular events
+   
     return event.Sportok?.Nev || event.Sport?.Nev || "Esemény";
   }
 
-  // Helper function to get sport image
+  
   const getSportImage = (event) => {
-    // For invitations or pending events, the structure is different
+   
     if (activeFilter === "invitations" || activeFilter === "pending") {
       if (event.imageUrl) {
         return `http://localhost:8081${event.imageUrl.startsWith('/') ? event.imageUrl : `/${event.imageUrl}`}`;
@@ -263,86 +259,86 @@ const MyEvents = () => {
       return event.Sportok?.KepUrl || "/placeholder.svg";
     }
 
-    // For regular events
+    
     if (event.imageUrl) {
       return `http://localhost:8081${event.imageUrl.startsWith('/') ? event.imageUrl : `/${event.imageUrl}`}`;
     }
     return event.Sport?.KepUrl || event.Sportok?.KepUrl || "/placeholder.svg";
   }
 
-  // Helper function to get location name
+  
   const getLocationName = (event) => {
-    // For invitations or pending events, the structure is different
+    
     if (activeFilter === "invitations" || activeFilter === "pending") {
       return event.Helyszin?.Telepules || "Ismeretlen helyszín";
     }
-    // For regular events
+    
     return event.Helyszin?.Telepules || "Ismeretlen helyszín";
   }
 
-  // Helper function to get event start time
+  
   const getEventStartTime = (event) => {
-    // For invitations or pending events, the structure is different
+    
     if (activeFilter === "invitations" || activeFilter === "pending") {
       return event.kezdoIdo || new Date().toISOString();
     }
-    // For regular events
+    
     return event.kezdoIdo;
   }
 
-  // Helper function to get event end time
+  
   const getEventEndTime = (event) => {
-    // For invitations or pending events, the structure is different
+    
     if (activeFilter === "invitations" || activeFilter === "pending") {
       return event.zaroIdo || new Date().toISOString();
     }
-    // For regular events
+    
     return event.zaroIdo;
   }
 
-  // Helper function to get participant count
+  
   const getParticipantsCount = (event) => {
-    // For invitations or pending events, we might not have this info
+   
     if (activeFilter === "invitations" || activeFilter === "pending") {
-      // Ellenőrizzük az összes lehetséges mezőt a résztvevők számához
+      
       if (event.resztvevoCount !== undefined) return event.resztvevoCount;
       if (event.résztvevőkSzáma !== undefined) return event.résztvevőkSzáma;
       if (event.resztvevok_lista?.length !== undefined) return event.resztvevok_lista.length;
       if (event.Résztvevős?.length !== undefined) return event.Résztvevős.length;
-      return 0; // Ha egyik sem található, akkor 0-t adunk vissza
+      return 0; 
     }
-    // For regular events
+    
     if (event.résztvevőkSzáma !== undefined) return event.résztvevőkSzáma;
     if (event.resztvevoCount !== undefined) return event.resztvevoCount;
     return event.resztvevok_lista?.length || 0;
   }
 
-  // Helper function to get maximum participants
+  
   const getMaxParticipants = (event) => {
-    // For invitations or pending events, we might not have this info
+    
     if (activeFilter === "invitations" || activeFilter === "pending") {
-      return event.maximumLetszam || 10; // Default value if not available
+      return event.maximumLetszam || 10; 
     }
-    // For regular events
+   
     return event.maximumLetszam;
   }
 
-  // Helper function to get event ID
+  
   const getEventId = (event) => {
-    console.log("Getting event ID for event:", event);
+    
 
-        // For invitations or pending events, check all possible properties
+        
         if (activeFilter === "invitations" || activeFilter === "pending") {
           if (event.eseményId !== undefined) return event.eseményId;
           if (event.esemenyId !== undefined) return event.esemenyId;
           if (event.id !== undefined) return event.id;
         }
     
-        // For regular events
+        
         return event.id;
       }
     
-      // Modal handler functions
+      
       const openEventModal = () => {
         setIsEventModalOpen(true);
       }
@@ -357,21 +353,21 @@ const MyEvents = () => {
     
       const closeHelyszinModal = () => {
         setIsHelyszinModalOpen(false);
-        // Reopen event modal
+        
         setIsEventModalOpen(true);
       }
     
       const closeSportModal = () => {
         setIsSportModalOpen(false);
-        // Reopen event modal
+        
         setIsEventModalOpen(true);
       }
     
-      // Functions for SportEventDetailsModal
+      
       const openSportEventDetailsModal = (event) => {
         setSelectedEvent(event);
         setIsInvitationView(activeFilter === "invitations");
-        setIsPendingView(activeFilter === "pending"); // Beállítjuk, ha függőben lévő eseményt nézünk
+        setIsPendingView(activeFilter === "pending"); 
         setIsSportEventDetailsModalOpen(true);
       }
     
@@ -379,18 +375,18 @@ const MyEvents = () => {
         setIsSportEventDetailsModalOpen(false);
         setSelectedEvent(null);
         setIsInvitationView(false);
-        setIsPendingView(false); // Visszaállítjuk az alapértelmezett értéket
+        setIsPendingView(false); 
       }
     
-      // Handle participant updates
+
       const handleParticipantUpdate = (eventId, isJoining, participant) => {
-        console.log(`Participant update for event ${eventId}:`, participant);
+        
     
-        // If this is an event update notification
+        
         if (participant.userId === 'event-updated' && participant.eventData) {
-          console.log("Event was updated, updating local state with:", participant.eventData);
+         
     
-          // Update local state with new event data
+          
           setOrganizedEvents(prev =>
             prev.map(event =>
               event.id === eventId ? { ...event, ...participant.eventData } : event
@@ -406,13 +402,13 @@ const MyEvents = () => {
           return;
         }
     
-        // If this is a participant count update
+        
         if (participant.userId === 'count-update' && participant.fullParticipantsList) {
-          console.log("Participants count updated:", participant.fullParticipantsList.length);
+          
     
           const updatedCount = participant.fullParticipantsList.length;
     
-          // Update both lists because we don't know which one contains the event
+          
           setOrganizedEvents(prev =>
             prev.map(event =>
               event.id === eventId ? { ...event, resztvevoCount: updatedCount } : event
@@ -428,15 +424,15 @@ const MyEvents = () => {
           return;
         }
     
-        // If a user joined or left
+        
         if (participant.userId && participant.userId !== 'event-updated' && participant.userId !== 'count-update') {
-          console.log(`User ${participant.userId} ${isJoining ? 'joined' : 'left'} event ${eventId}`);
+         
     
-          // Update participant count in both lists
+          
           const updateParticipantCount = (events) => {
             return events.map(event => {
               if (event.id === eventId) {
-                // If resztvevoCount exists, update it, otherwise calculate from resztvevok_lista
+                
                 const currentCount = event.resztvevoCount !== undefined
                   ? event.resztvevoCount
                   : (event.resztvevok_lista?.length || 0);
@@ -453,7 +449,7 @@ const MyEvents = () => {
           setOrganizedEvents(prev => updateParticipantCount(prev));
           setParticipatedEvents(prev => updateParticipantCount(prev));
     
-          // If user left an event and we're on the "participated" tab, refresh the list
+          
           if (!isJoining && activeFilter === "participated") {
             setRefreshData(prev => prev + 1);
           }
@@ -461,17 +457,17 @@ const MyEvents = () => {
           return;
         }
     
-        // If we can't handle the change precisely, refresh everything
-        console.log("Unknown participant update, refreshing all data");
+        
+        
         setRefreshData(prev => prev + 1);
       };
     
-      // Handle successful location creation
+      
       const handleHelyszinSuccess = (newLocation) => {
         closeHelyszinModal();
       }
     
-      // Handle invitation acceptance
+      
       const handleAcceptInvitation = async (eventId) => {
         try {
           const token = Cookies.get("token");
@@ -480,10 +476,9 @@ const MyEvents = () => {
             return;
           }
     
-          console.log("Accepting invitation for event ID:", eventId);
-          console.log("Selected event:", selectedEvent);
+         
     
-          // Ellenőrizzük, hogy az eventId megfelelő-e
+          
           if (!eventId) {
             console.error("Invalid event ID:", eventId);
             toast.error("Érvénytelen esemény azonosító");
@@ -491,7 +486,7 @@ const MyEvents = () => {
           }
     
           const requestBody = { eseményId: eventId };
-          console.log("Request body:", requestBody);
+          
     
           const response = await fetch("http://localhost:8081/api/v1/accept-invitation", {
             method: "POST",
@@ -503,8 +498,7 @@ const MyEvents = () => {
           });
     
           const responseText = await response.text();
-          console.log("Response status:", response.status);
-          console.log("Response text:", responseText);
+         
     
           let responseData;
           try {
@@ -540,7 +534,7 @@ const MyEvents = () => {
             return;
           }
     
-          console.log("Rejecting invitation for event ID:", eventId);
+         
     
           const response = await fetch("http://localhost:8081/api/v1/reject-invitation", {
             method: "POST",
@@ -554,10 +548,10 @@ const MyEvents = () => {
           if (response.ok) {
             toast.success("Meghívás elutasítva");
     
-            // Remove from invitations list
+            
             setInvitations(prev => prev.filter(inv => getEventId(inv) !== eventId));
     
-            // Close the modal
+            
             closeSportEventDetailsModal();
           } else {
             const errorData = await response.json();
@@ -569,7 +563,7 @@ const MyEvents = () => {
         }
       };
     
-      // Handle pending request cancellation
+      
       const handleCancelPendingRequest = async (eventId) => {
         try {
           const token = Cookies.get("token");
@@ -578,7 +572,7 @@ const MyEvents = () => {
             return;
           }
     
-          console.log("Canceling pending request for event ID:", eventId);
+          
     
           const response = await fetch("http://localhost:8081/api/esemeny/cancel-pending-request", {
             method: "POST",
@@ -592,10 +586,10 @@ const MyEvents = () => {
           if (response.ok) {
             toast.success("Jelentkezés visszavonva");
     
-            // Remove from pending events list
+            
             setPendingEvents(prev => prev.filter(event => getEventId(event) !== eventId));
     
-            // Close the modal
+           
             closeSportEventDetailsModal();
           } else {
             const errorData = await response.json();
@@ -607,7 +601,7 @@ const MyEvents = () => {
         }
       };
     
-      // Get appropriate empty state message based on active filter
+      
       const getEmptyStateMessage = () => {
         switch (activeFilter) {
           case "organized":
@@ -625,7 +619,7 @@ const MyEvents = () => {
         }
       }
     
-      // Get appropriate empty state description based on active filter
+     
       const getEmptyStateDescription = () => {
         switch (activeFilter) {
           case "organized":
@@ -643,7 +637,7 @@ const MyEvents = () => {
         }
       }
     
-      // Get appropriate action button text based on active filter
+      
       const getActionButtonText = () => {
         switch (activeFilter) {
           case "organized":
@@ -661,7 +655,7 @@ const MyEvents = () => {
         }
       }
     
-      // Handle action button click based on active filter
+      
       const handleActionButtonClick = () => {
         switch (activeFilter) {
           case "organized":
@@ -681,7 +675,7 @@ const MyEvents = () => {
         }
       }
     
-      // Handle filter selection and close mobile menu
+      
       const setFilterAndCloseMenu = (filter) => {
         setActiveFilter(filter);
         setShowFilterMenu(false);
@@ -709,7 +703,7 @@ const MyEvents = () => {
                 )}
               </div>
     
-              {/* Mobile filter button */}
+             
           <div className="sm:hidden mb-4">
             <button
               onClick={() => setShowFilterMenu(!showFilterMenu)}
@@ -728,7 +722,7 @@ const MyEvents = () => {
             </button>
           </div>
     
-                {/* Mobile filter dropdown */}
+                
           {showFilterMenu && (
             <div className="sm:hidden mb-4 relative z-10">
               <div className="absolute top-0 left-0 right-0 bg-slate-700 rounded-lg shadow-lg p-2 space-y-1 border border-slate-600">
@@ -774,7 +768,7 @@ const MyEvents = () => {
             </div>
           )}
                      
-                                {/* Desktop filters - using grid for better spacing */}
+                                
           <div className="hidden sm:grid sm:grid-cols-3 md:grid-cols-6 gap-2 mb-6">
             <button
               onClick={() => setActiveFilter("all")}
@@ -916,7 +910,7 @@ const MyEvents = () => {
                                              <span className="truncate">{getLocationName(event)}</span>
                                            </div>
                                            
-                                           {/* Mobile date/time display */}
+                                           
                                            <div className="sm:hidden flex items-start text-xs text-slate-300">
                                              <Clock size={14} className="mr-1 mt-1 text-slate-400 flex-shrink-0" />
                                              <div className="flex flex-col">
@@ -925,7 +919,7 @@ const MyEvents = () => {
                                              </div>
                                            </div>
                                            
-                                           {/* Desktop date/time display */}
+                                           
                                            <div className="hidden sm:flex items-start text-sm text-slate-300">
                                              <Clock size={16} className="mr-2 mt-1 text-slate-400 flex-shrink-0" />
                                              <div className="flex flex-col">
@@ -983,7 +977,7 @@ const MyEvents = () => {
                              </div>
                            </main>
                      
-                           {/* Modals */}
+                           
                            <EventModal
                              isOpen={isEventModalOpen}
                              onClose={closeEventModal}
@@ -998,7 +992,7 @@ const MyEvents = () => {
                              }}
                            />
                      
-                                 {/* HelyszinModal */}
+                                 
       <HelyszinModal
         isOpen={isHelyszinModalOpen}
         onClose={closeHelyszinModal}
@@ -1006,33 +1000,22 @@ const MyEvents = () => {
         onSuccess={handleHelyszinSuccess}
       />
 
-      {/* SportEventDetailsModal */}
+      
       {isSportEventDetailsModalOpen && selectedEvent && (
         <SportEventDetailsModal
           event={selectedEvent}
           onClose={closeSportEventDetailsModal}
           onParticipantUpdate={handleParticipantUpdate}
-          isArchived={activeFilter === "archived"} // Pass isArchived flag to disable editing for archived events
-          isInvitation={isInvitationView} // Pass isInvitation flag to show special buttons
-          isPending={isPendingView} // Pass isPending flag to show special buttons for pending events
+          isArchived={activeFilter === "archived"} 
+          isInvitation={isInvitationView} 
+          isPending={isPendingView} 
           onAcceptInvitation={() => handleAcceptInvitation(getEventId(selectedEvent))}
           onRejectInvitation={() => handleRejectInvitation(getEventId(selectedEvent))}
-          onCancelPendingRequest={() => handleCancelPendingRequest(getEventId(selectedEvent))} // Add handler for canceling pending requests
+          onCancelPendingRequest={() => handleCancelPendingRequest(getEventId(selectedEvent))} 
         />
       )}
 
-      {/* Here you would implement the SportModal component if needed */}
-      {/* <SportModal
-        isOpen={isSportModalOpen}
-        onClose={closeSportModal}
-        modalContent={{
-          title: "Új sport létrehozása",
-          description: "Tölts ki minden mezőt a sport létrehozásához"
-        }}
-        onSuccess={() => {
-          closeSportModal();
-        }}
-      /> */}
+      
     </div>
   );
 };

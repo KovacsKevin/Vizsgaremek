@@ -19,19 +19,19 @@ import {
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import Cookies from "js-cookie"
 
-// Javított Image komponens hibakezeléssel
+
 const ImageWithFallback = ({ src, alt, className, defaultSrc }) => {
   const [error, setError] = useState(false);
 
   const formatImageUrl = (url) => {
     if (!url || error) return defaultSrc;
-    // Ha a src már teljes URL (http://localhost:8081 kezdetű), akkor nem módosítjuk
+    
     if (url.startsWith('http://localhost:8081')) return url;
-    // Ha Base64 kódolt kép, akkor közvetlenül visszaadjuk
+    
     if (url.startsWith('data:image/')) return url;
-    // Ha külső URL (https://), akkor közvetlenül visszaadjuk
+   
     if (url.startsWith('https://')) return url;
-    // Egyébként hozzáadjuk a szerver URL-t
+    
     return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
   };
 
@@ -61,17 +61,17 @@ const Header = ({ activeTab, setActiveTab }) => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Mobilnézet kezeléséhez
+ 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  // Default profilkép URL - ezt használjuk alapértelmezettként
+  
   const [defaultProfilePicture, setDefaultProfilePicture] = useState("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=")
 
-  // Egyéni profilkép - ha null, akkor a default-ot használjuk
+  
   const [profilePicture, setProfilePicture] = useState(null)
   const profilePicInputRef = useRef(null)
 
-  // Background options
+
   const backgrounds = {
     gradient1: {
       style: "bg-gradient-to-r from-blue-600/30 to-purple-600/30",
@@ -100,7 +100,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     },
   }
 
-  // Navigációs elemek módosítása
+  
   const navigationItems = [
     { id: "home", icon: House, label: "Főoldal", path: "/homepage" },
     { id: "create", icon: Volleyball, label: "Esemény létrehozása", path: "/homepage#create-event" },
@@ -109,7 +109,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     { id: "myevents", icon: Calendar, label: "Eseményeim", path: "/my-events" },
   ];
 
-  // Helper function to get profile picture source
+  
   const getProfilePicSrc = () => {
     if (profilePicture) {
       return profilePicture;
@@ -117,20 +117,20 @@ const Header = ({ activeTab, setActiveTab }) => {
     return defaultProfilePicture;
   }
 
-  // Inicializálás a komponens betöltésekor - javított verzió
+ 
   useEffect(() => {
-    // Először betöltjük az alapértelmezett képeket a szerverről
+    
     fetchDefaultImages();
 
-    // Token ellenőrzése
+    
     const token = Cookies.get("token")
     if (token) {
-      console.log("Token megtalálva, ellenőrzés...")
-      // Verify token with backend
+      
+      
       verifyToken(token)
     } else {
-      console.log("Nincs token, kijelentkezett állapot")
-      // Alapértelmezett beállítások visszaállítása
+      
+      
       setIsLoggedIn(false)
       setUserName("")
       setUserEmail("")
@@ -139,15 +139,15 @@ const Header = ({ activeTab, setActiveTab }) => {
       setCustomBackground(null)
       setProfilePicture(null)
     }
-  }, []) // Csak egyszer fusson le a komponens betöltésekor
+  }, []) 
 
-  // Alapértelmezett képek betöltése a szerverről
+  
   const fetchDefaultImages = async () => {
     try {
-      // Fallback értékek beállítása
+      
       setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
 
-      // Próbáljuk meg betölteni az alapértelmezett képeket a szerverről
+      
       const response = await fetch("http://localhost:8081/api/v1/defaults");
       if (response.ok) {
         const data = await response.json();
@@ -155,19 +155,19 @@ const Header = ({ activeTab, setActiveTab }) => {
           setDefaultProfilePicture(data.defaultProfilePicture);
         }
       } else {
-        console.log("Alapértelmezett képek betöltése sikertelen, fallback értékek használata");
+        
       }
     } catch (error) {
       console.error("Hiba az alapértelmezett képek betöltésekor:", error);
-      // Fallback értékek beállítása
+      
       setDefaultProfilePicture("https://media.istockphoto.com/id/526947869/vector/man-silhouette-profile-picture.jpg?s=612x612&w=0&k=20&c=5I7Vgx_U6UPJe9U2sA2_8JFF4grkP7bNmDnsLXTYlSc=");
     }
   }
 
-  // Egyszerűsített verifyToken függvény
+  
   const verifyToken = async (token) => {
     try {
-      // Először ellenőrizzük a tokent
+      
       const authResponse = await fetch("http://localhost:8081/api/v1/login", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` }
@@ -180,7 +180,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         setUserEmail(authData.user.email);
         setUserId(authData.user.userId);
 
-        // Most közvetlenül lekérjük a felhasználó adatait (beleértve a képeket)
+       
         await loadUserSettings(authData.user.userId);
       } else {
         Cookies.remove("token");
@@ -193,21 +193,21 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Egyszerűsített loadUserSettings függvény
+  
   const loadUserSettings = async (userId) => {
     try {
       const token = Cookies.get("token");
 
-      // Közvetlen API hívás a felhasználói beállítások lekéréséhez
+      
       const response = await fetch(`http://localhost:8081/api/v1/getUser/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.ok) {
         const userData = await response.json();
-        console.log("Felhasználói adatok betöltve:", userData);
+        
 
-        // Közvetlenül a felhasználói objektumból olvassuk ki az adatokat
+        
         if (userData.profileBackground) {
           setSelectedBackground(userData.profileBackground);
         }
@@ -230,7 +230,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Beállítások mentése
+  
   const saveUserSettings = async (settings) => {
     try {
       const token = Cookies.get("token")
@@ -239,9 +239,9 @@ const Header = ({ activeTab, setActiveTab }) => {
         return false;
       }
 
-      console.log("Beállítások mentése:", settings);
+      
 
-      // Adatbázisba mentjük a felhasználó beállításait
+     
       const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
         method: "PUT",
         headers: {
@@ -252,7 +252,7 @@ const Header = ({ activeTab, setActiveTab }) => {
       })
 
       if (response.ok) {
-        console.log("Beállítások sikeresen mentve");
+        
         return true;
       } else {
         console.error("Nem sikerült menteni a beállításokat az adatbázisba", await response.text())
@@ -271,7 +271,6 @@ const Header = ({ activeTab, setActiveTab }) => {
     setUserEmail("")
     setUserId(null)
     setIsProfileOpen(false)
-    // Alapértelmezett beállítások visszaállítása
     setSelectedBackground("gradient1")
     setCustomBackground(null)
     setProfilePicture(null)
@@ -283,13 +282,13 @@ const Header = ({ activeTab, setActiveTab }) => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false)
   }
 
-  // Mobilmenü kezelése
+  
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
     if (isProfileOpen) setIsProfileOpen(false)
   }
 
-  // Function to get user initials for avatar
+ 
   const getUserInitials = () => {
     if (!userName) return ""
     return userName
@@ -300,7 +299,7 @@ const Header = ({ activeTab, setActiveTab }) => {
       .substring(0, 2)
   }
 
-  // Close dropdown if clicked outside
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       const dropdown = document.getElementById("userDropdown")
@@ -321,7 +320,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Animation for profile dropdown
+  
   useEffect(() => {
     const dropdown = document.getElementById("userDropdown")
     if (dropdown) {
@@ -336,7 +335,7 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }, [isProfileOpen])
 
-  // Add image compression before upload
+ 
   const compressImage = (imageDataUrl, maxWidth = 800) => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -346,7 +345,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         let width = img.width;
         let height = img.height;
 
-        // Calculate new dimensions
+        
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -358,13 +357,13 @@ const Header = ({ activeTab, setActiveTab }) => {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Get compressed image data (adjust quality as needed)
+        
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
     });
   };
 
-  // Handle file upload for custom background
+  
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -372,13 +371,13 @@ const Header = ({ activeTab, setActiveTab }) => {
       reader.onload = async (e) => {
         const imageDataUrl = e.target.result;
 
-        // Compress the image before setting and saving
+       
         const compressedImage = await compressImage(imageDataUrl);
 
         setCustomBackground(compressedImage);
         setSelectedBackground("custom");
 
-        // Mentés adatbázisba
+        
         saveUserSettings({
           customBackground: compressedImage,
           profileBackground: "custom",
@@ -388,13 +387,12 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Trigger file input click
+  
   const handleCustomBackgroundClick = () => {
     fileInputRef.current.click()
   }
 
-  // Handle file upload for profile picture
-  // Handle file upload for profile picture
+  
   const handleProfilePicUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -402,18 +400,18 @@ const Header = ({ activeTab, setActiveTab }) => {
       reader.onload = async (e) => {
         const imageDataUrl = e.target.result;
 
-        // Compress the image before setting and saving
+        
         const compressedImage = await compressImage(imageDataUrl, 400); // Smaller for profile pics
 
         setProfilePicture(compressedImage);
 
-        // Mentés adatbázisba
+        
         const success = await saveUserSettings({
           profilePicture: compressedImage,
         });
 
         if (success) {
-          // Oldal frissítése a változtatások megjelenítéséhez
+          
           window.location.reload();
         }
       };
@@ -421,17 +419,16 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Trigger profile picture file input click
   const handleProfilePicClick = () => {
     profilePicInputRef.current.click()
   }
 
-  // Módosított handleBackgroundSelect függvény
+ 
   const handleBackgroundSelect = async (bg) => {
-    // Először frissítjük a helyi állapotot
+    
     setSelectedBackground(bg);
 
-    // Majd mentjük az adatbázisba
+   
     try {
       await saveUserSettings({
         profileBackground: bg
@@ -441,17 +438,16 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Reset profile picture to default
-  // Reset profile picture to default
+  
   const resetProfilePicture = async (e) => {
     if (e) {
       e.preventDefault();
-      e.stopPropagation(); // Megakadályozza, hogy a kattintás a szülőelemre is eljusson
+      e.stopPropagation(); 
     }
 
     setProfilePicture(null);
 
-    // Save to database
+ 
     try {
       const token = Cookies.get("token");
       const response = await fetch(`http://localhost:8081/api/v1/updateUser/${userId}`, {
@@ -466,9 +462,9 @@ const Header = ({ activeTab, setActiveTab }) => {
       });
 
       if (response.ok) {
-        console.log("Profilkép sikeresen visszaállítva az alapértelmezettre");
+        
 
-        // Oldal frissítése a változtatások megjelenítéséhez
+        
         window.location.reload();
       } else {
         console.error("Hiba a profilkép visszaállításakor");
@@ -478,20 +474,20 @@ const Header = ({ activeTab, setActiveTab }) => {
     }
   }
 
-  // Navigáció kezelése - továbbfejlesztett verzió
+ 
   const handleNavigation = (id, path) => {
     setActiveTab(id);
 
-    // Speciális kezelés a "Főoldal" gombra kattintáskor
+  
     if (id === "home" && (path === "/homepage" || path === "/")) {
-      // Ha már a főoldalon vagyunk, csak görgessünk fel
+    
       if (location.pathname === "/" || location.pathname === "/homepage") {
         window.scrollTo({
           top: 0,
           behavior: 'smooth'
         });
       } else {
-        // Ha nem a főoldalon vagyunk, navigáljunk oda, majd görgessünk fel
+        
         navigate("/homepage");
         setTimeout(() => {
           window.scrollTo({
@@ -504,36 +500,36 @@ const Header = ({ activeTab, setActiveTab }) => {
       return;
     }
 
-    // Ellenőrizzük, hogy van-e hash a path-ban
+    
     if (path.includes('#')) {
       const [url, hash] = path.split('#');
 
-      // Nagyobb késleltetés bizonyos oldalakról való navigációnál
+      
       const isFromSpecialPage =
         location.pathname === '/my-events' ||
         location.pathname.includes('/create-event') ||
         location.pathname.includes('/event/');
 
-      const delay = isFromSpecialPage ? 800 : 500; // Nagyobb késleltetés, ha speciális oldalról jövünk
+      const delay = isFromSpecialPage ? 800 : 500; 
 
-      // Ha már a megfelelő oldalon vagyunk, csak görgessünk
+      
       if (location.pathname === url || (url === '/homepage' && (location.pathname === '/' || location.pathname === '/homepage'))) {
         setTimeout(() => {
           scrollToSection(hash);
-        }, 100); // Kis késleltetés a görgetéshez, hogy biztosan betöltődjön minden
+        }, 100); 
       } else {
-        // Különben navigáljunk az oldalra, majd a betöltés után görgessünk
+        
         navigate(url);
 
-        // Tároljuk el a hash-t, hogy tudjuk, hova kell görgetni a betöltés után
+        
         const targetHash = hash;
 
         setTimeout(() => {
           scrollToSection(targetHash);
-        }, delay); // Használjuk a megfelelő késleltetést
+        }, delay); 
       }
     } else {
-      // Ha speciális oldalra navigálunk vagy speciális oldalról jövünk, használjunk nagyobb késleltetést
+      
       const isSpecialPage = path === '/my-events';
       const isFromSpecialPage =
         location.pathname === '/my-events' ||
@@ -549,7 +545,7 @@ const Header = ({ activeTab, setActiveTab }) => {
           });
         }, isFromSpecialPage ? 800 : 100);
       } else {
-        // Ha nincs hash, egyszerűen navigáljunk
+        
         navigate(path);
         window.scrollTo(0, 0);
       }
@@ -559,18 +555,18 @@ const Header = ({ activeTab, setActiveTab }) => {
   };
 
 
-  // Külön függvény a szekcióhoz görgetéshez a kód duplikáció elkerülése érdekében
+  
   const scrollToSection = (hash) => {
-    const headerHeight = 120; // Fejléc magassága
+    const headerHeight = 120; 
 
     const element = document.getElementById(hash);
     if (element) {
-      // Ha az "Esemény létrehozása" szekcióhoz görgetünk, akkor speciális kezelés
+     
       if (hash === 'create-event') {
-        // Megkeressük az event-section elemet
+        
         const section = document.getElementById('event-section');
         if (section) {
-          // Kiszámoljuk a pozíciót úgy, hogy a szekció teteje legyen látható
+         
           const sectionPosition = section.getBoundingClientRect().top;
           const offsetPosition = sectionPosition + window.pageYOffset - headerHeight;
 
@@ -580,17 +576,15 @@ const Header = ({ activeTab, setActiveTab }) => {
           });
         }
       }
-      // Ha a "Legfrissebb sportesemények" szekcióhoz görgetünk, akkor speciális kezelés
+     
       else if (hash === 'latest-events') {
-        // Kiszámoljuk a pozíciót úgy, hogy a cím és a leírás teljes egészében látszódjon
-
-        // Megkeressük a címet tartalmazó div-et (a cím szülőeleme)
+       
         const titleContainer = element.closest('div');
 
-        // Ha megtaláltuk a címet tartalmazó div-et, akkor annak a pozícióját használjuk
+        
         if (titleContainer) {
           const containerPosition = titleContainer.getBoundingClientRect().top;
-          // Kicsit nagyobb offset-et használunk, hogy biztosan látszódjon a teljes szöveg
+          
           const offsetPosition = containerPosition + window.pageYOffset - (headerHeight + 20);
 
           window.scrollTo({
@@ -598,7 +592,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             behavior: 'smooth'
           });
         } else {
-          // Ha nem találtuk meg a címet tartalmazó div-et, akkor az elem pozícióját használjuk
+         
           const elementPosition = element.getBoundingClientRect().top;
           const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
 
@@ -608,7 +602,7 @@ const Header = ({ activeTab, setActiveTab }) => {
           });
         }
       }
-      // Ha az "Elérhetőségek" szekcióhoz görgetünk (contact-section)
+      
       else if (hash === 'contact-section') {
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
@@ -619,7 +613,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         });
       }
       else {
-        // Egyéb elemekhez normál görgetés
+        
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
 
@@ -629,7 +623,6 @@ const Header = ({ activeTab, setActiveTab }) => {
         });
       }
     } else if (hash === 'create-event') {
-      // Ha a create-event nem található, próbáljuk meg a szekciót
       const section = document.getElementById('event-section');
       if (section) {
         const sectionPosition = section.getBoundingClientRect().top;
@@ -641,7 +634,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         });
       }
     } else if (hash === 'latest-events') {
-      // Ha a latest-events nem található, próbáljuk meg a szekciót
+      
       const section = document.getElementById('popular-destinations');
       if (section) {
         const sectionPosition = section.getBoundingClientRect().top;
@@ -653,7 +646,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         });
       }
     } else if (hash === 'contact-section') {
-      // Ha a contact-section nem található, próbáljuk meg a footer-t
+      
       const footer = document.querySelector('footer');
       if (footer) {
         const footerPosition = footer.getBoundingClientRect().top;
@@ -677,7 +670,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
             onClick={() => {
               navigate('/homepage');
-              // Kis késleltetés, hogy biztosan betöltődjön az oldal
+             
               setTimeout(() => {
                 window.scrollTo({
                   top: 0,
@@ -691,14 +684,13 @@ const Header = ({ activeTab, setActiveTab }) => {
           </div>
 
 
-          {/* Jobb oldali elemek */}
           <div className="flex items-center space-x-4">
             {isLoggedIn ? (
               <div className="flex items-center space-x-4">
-                {/* Notification Bell */}
+                
 
 
-                {/* User Profile */}
+                
                 <div className="relative">
                   <button
                     id="avatarButton"
@@ -721,7 +713,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                               100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); }
                             }
                           `}</style>
-                    {/* Avatar megjelenítése */}
+                    
                     <span className="font-bold text-white text-sm group-hover:scale-110 transition-transform duration-300 w-full h-full overflow-hidden rounded-lg">
                       {profilePicture ? (
                         <ImageWithFallback
@@ -755,9 +747,9 @@ const Header = ({ activeTab, setActiveTab }) => {
                           "0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 1px 0 0 rgba(255, 255, 255, 0.1) inset",
                       }}
                     >
-                      {/* Profile Header */}
+                     
                       <div className="relative">
-                        {/* Background Pattern */}
+                      
                         <div
                           className={`h-40 ${selectedBackground === "custom"
                             ? backgrounds.custom.style
@@ -771,7 +763,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                             backgroundSize: selectedBackground === "custom" ? "cover" : "30px 30px",
                           }}
                         >
-                          {/* Overlay with animated gradient */}
+                          
                           <div
                             className={`absolute inset-0 ${selectedBackground === "custom"
                               ? backgrounds.custom.overlay
@@ -779,7 +771,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                               }`}
                           ></div>
 
-                          {/* Animated particles */}
+                          
                           <div className="absolute inset-0 overflow-hidden">
                             {[...Array(20)].map((_, i) => (
                               <div
@@ -805,7 +797,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                                   }
                                 `}</style>
 
-                          {/* Centered Username and Profile Picture */}
+                          
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
                             <div
                               className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-0.5 shadow-lg shadow-purple-500/20 ring-4 ring-slate-900/50 mb-3 relative group cursor-pointer"
@@ -833,11 +825,11 @@ const Header = ({ activeTab, setActiveTab }) => {
                                 </div>
                               </div>
 
-                              {/* Reset gomb - csak akkor jelenik meg, ha egyéni profilkép van beállítva */}
+                              
                               {profilePicture && (
                                 <button
                                   onClick={(e) => {
-                                    e.stopPropagation(); // Megakadályozza, hogy a kattintás a szülőelemre is eljusson
+                                    e.stopPropagation(); 
                                     resetProfilePicture(e);
                                   }}
                                   className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors shadow-lg"
@@ -860,7 +852,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                           </div>
                         </div>
 
-                        {/* Background Selector */}
+                      
                         <div className="px-4 py-2 bg-slate-800/50 flex items-center justify-between">
                           <div className="text-xs text-slate-400 font-medium">Háttér</div>
                           <div className="flex space-x-2">
@@ -904,7 +896,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                         </div>
                       </div>
 
-                      {/* Menu Items - MODIFIED: Removed Kedvencek and changed Foglalásaim to Eseményeim */}
+                     
                       <div className="py-2 px-3">
                         <div className="text-xs uppercase text-slate-400 font-semibold px-3 py-2 mb-1">Fiókom</div>
                         <ul className="space-y-1">
@@ -938,7 +930,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                         </ul>
                       </div>
 
-                      {/* Logout */}
+                     
                       <div className="p-3 border-t border-slate-700/50 mt-2">
                         <a
                           href="#"
@@ -960,7 +952,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                   )}
                 </div>
 
-                {/* Hamburger Menu Button - csak mobilon */}
+
                 <button
                   id="hamburgerButton"
                   className="text-white p-2 rounded-lg hover:bg-white/10 md:hidden"
@@ -975,7 +967,7 @@ const Header = ({ activeTab, setActiveTab }) => {
               </div>
             ) : (
               <>
-                {/* Bejelentkezés/Regisztráció gombok - Mobilon elrejtve */}
+                
                 <div className="hidden md:flex items-center space-x-4">
                   <button className="px-5 py-2 border border-white/20 text-white hover:bg-white/10 rounded-lg transition-all duration-300">
                     <Link to="/register">Regisztráció</Link>
@@ -985,7 +977,7 @@ const Header = ({ activeTab, setActiveTab }) => {
                   </button>
                 </div>
 
-                {/* Hamburger Menu Button - csak mobilon */}
+                
                 <button
                   id="hamburgerButton"
                   className="text-white p-2 rounded-lg hover:bg-white/10 md:hidden"
@@ -1003,14 +995,14 @@ const Header = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
 
-      {/* Mobilmenü - Hamburger menü tartalma */}
+      
       {isMobileMenuOpen && (
         <div
           id="mobileMenu"
           className="md:hidden bg-slate-800/95 backdrop-blur-md border-b border-slate-700/50 animate-fadeIn"
         >
           <div className="px-4 py-3 space-y-3">
-            {/* Navigációs elemek a mobilmenüben */}
+            
             <div className="space-y-1">
               {navigationItems.map((item) => (
                 <button
@@ -1027,7 +1019,7 @@ const Header = ({ activeTab, setActiveTab }) => {
               ))}
             </div>
 
-            {/* Bejelentkezés/Regisztráció gombok a mobilmenüben, ha nincs bejelentkezve */}
+            
             {!isLoggedIn && (
               <div className="flex flex-col space-y-2 pt-3 border-t border-slate-700/50">
                 <Link
@@ -1052,7 +1044,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         </div>
       )}
 
-      {/* Asztali navigáció - csak nagyobb képernyőkön */}
+
       <div className="hidden md:block container mx-auto px-4 pb-4">
         <div className="flex space-x-2 bg-white/5 backdrop-blur-sm border border-white/10 p-1 rounded-lg">
           {navigationItems.map((item) => (

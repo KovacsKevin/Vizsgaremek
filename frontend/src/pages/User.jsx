@@ -87,7 +87,7 @@ function User() {
           </button>
         </div>
 
-        {/* Table start */}
+        
         <div className="overflow-x-auto">
           <table className='min-w-full border border-gray-300'>
             <thead className='bg-gray-800 text-white'>
@@ -135,9 +135,9 @@ function User() {
             </tbody>
           </table>
         </div>
-        {/* Table end */}
+        
 
-        {/* Modal start */}
+        
         {showModal && (
           <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50'>
             <div className='bg-white p-6 rounded-lg shadow-lg w-96'>
@@ -172,7 +172,7 @@ function User() {
             </div>
           </div>
         )}
-        {/* Modal end */}
+        
       </div>
     </div>
   );

@@ -5,20 +5,20 @@ import { getCookie } from "../sport-event-details-modal";
 const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     const safeEvent = event || {};
 
-    // Add this function here
+    
     const formatImageUrl = (url) => {
         if (!url) return "";
-        // If it's already a complete URL, return it
+        
         if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
             return url;
         }
-        // If it's a relative path, prepend the API base URL
+        
         return `http://localhost:8081${url.startsWith('/') ? url : `/${url}`}`;
     };
     const [formData, setFormData] = useState({
         helyszinId: safeEvent.helyszinId || safeEvent.Helyszin?.Id || "",
         sportId: safeEvent.sportId || safeEvent.Sportok?.Id || "",
-        sportSearch: safeEvent.Sportok?.Nev || "", // Új mező a kereséshez
+        sportSearch: safeEvent.Sportok?.Nev || "", 
         kezdoIdo: safeEvent.kezdoIdo ? new Date(safeEvent.kezdoIdo).toISOString().slice(0, 16) : "",
         zaroIdo: safeEvent.zaroIdo ? new Date(safeEvent.zaroIdo).toISOString().slice(0, 16) : "",
         szint: safeEvent.szint || "",
@@ -56,7 +56,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         if (isOpen) {
             fetchLocations();
             fetchSports().then(() => {
-                // Ha van már kiválasztott sportId, akkor állítsuk be a nevét is a keresőmezőbe
+                
                 if (formData.sportId && sports.length > 0) {
                     const selectedSport = sports.find(sport => sport.Id.toString() === formData.sportId.toString());
                     if (selectedSport) {
@@ -67,7 +67,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         }
     }, [isOpen]);
 
-    // Sportok szűrése a keresés alapján
+    
     const filteredSports = sports
         .filter(sport =>
             sport.Nev.toLowerCase().includes((formData.sportSearch || "").toLowerCase()))
@@ -134,7 +134,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
     const handleChange = (e) => {
         const { id, value, type, checked } = e.target;
         const newValue = type === 'checkbox' ? checked : value;
-        console.log(`Field ${id} changed to:`, type === 'checkbox' ? checked : value);
+        
         setFormData((prevState) => ({
             ...prevState,
             [id]: newValue,
@@ -146,7 +146,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
         setFormData(prev => ({ ...prev, sportSearch: searchTerm }));
         setShowSportDropdown(true);
 
-        // Ha üres a keresés, ne állítsuk be a sportId-t
+        
         if (!searchTerm) {
             setFormData(prev => ({ ...prev, sportId: "" }));
         }
@@ -167,7 +167,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             setImageFile(file);
             const previewUrl = URL.createObjectURL(file);
             setImagePreview(previewUrl);
-            console.log("Image preview set to:", previewUrl);
+           
         }
     };
     const startLocationEditing = () => {
@@ -199,11 +199,11 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                 Berles: formData.helyszinBerles === true,
                 Leiras: formData.helyszinLeiras || ""
             };
-            console.log("Sending location update with data:", locationData);
+            
             if (!["ingyenes", "fizetős", "nincs"].includes(locationData.Parkolas)) {
                 locationData.Parkolas = "nincs";
             }
-            console.log("Updating location with data:", locationData);
+            
             const response = await fetch(`http://localhost:8081/api/v1/updateHelyszin/${formData.helyszinId}`, {
                 method: "PUT",
                 headers: {
@@ -217,7 +217,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                 throw new Error(responseData.message || "Failed to save location");
             }
             const responseData = await response.json();
-            console.log("Location updated successfully:", responseData);
+           
             await fetchLocations();
             if (responseData.updatedLocation) {
                 setFormData(prev => ({
@@ -276,7 +276,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                 formDataToSend.append("imageFile", imageFile);
             }
             formDataToSend.append("id", safeEvent.id);
-            console.log("Sending event update with data:", Object.fromEntries(formDataToSend));
+            
             const response = await fetch(`http://localhost:8081/api/v1/updateEsemeny/${safeEvent.id}`, {
                 method: "PUT",
                 headers: {
@@ -288,7 +288,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
             if (!response.ok) {
                 throw new Error(data.message || "Failed to update event");
             }
-            console.log("Event updated successfully:", data);
+            
             setSuccess(true);
             if (onSuccess) {
                 const updatedEvent = {
@@ -325,7 +325,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                         updatedEvent.Sportok = newSport;
                     }
                 }
-                console.log("Updating event with:", updatedEvent);
+                
                 onSuccess(updatedEvent);
             }
             setTimeout(() => {
@@ -771,7 +771,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                                             <input
                                                 type="checkbox"
                                                 id="helyszinFedett"
-                                                className="sr-only" // Hidden but still functional
+                                                className="sr-only" 
                                                 checked={formData.helyszinFedett}
                                                 onChange={handleChange}
                                             />
@@ -781,7 +781,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                                         <label htmlFor="helyszinOltozo" className="flex items-center justify-between cursor-pointer w-full">
                                             <div className="flex items-center">
                                                 <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                                                    {/* Using DoorOpen icon from Lucide which is already imported in the file */}
+                                                    
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-400">
                                                         <path d="M13 4h3a2 2 0 0 1 2 2v14"></path>
                                                         <path d="M2 20h3"></path>
@@ -807,7 +807,7 @@ const EventEditModal = ({ isOpen, onClose, event, onSuccess }) => {
                                             <input
                                                 type="checkbox"
                                                 id="helyszinOltozo"
-                                                className="sr-only" // Hidden but still functional
+                                                className="sr-only" 
                                                 checked={formData.helyszinOltozo}
                                                 onChange={handleChange}
                                             />

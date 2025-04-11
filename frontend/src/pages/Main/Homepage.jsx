@@ -9,12 +9,12 @@ import OffersSection from './OffersSection'
 import PopularDestinations from './PopularDestination'
 import Footer from './Footer'
 
-// Placeholder for Image component
+
 const Image = ({ src, alt, width, height, className }) => (
   <img src={src || "/placeholder.svg"} alt={alt} width={width} height={height} className={className} />
 )
 
-// Placeholder for Link component
+
 const Link = ({ href, children, className }) => (
   <a href={href} className={className}>
     {children}

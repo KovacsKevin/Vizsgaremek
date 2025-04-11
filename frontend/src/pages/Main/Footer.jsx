@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// Importáljuk a modal komponenseket
+
 import Rolunk from "../Footer/Rolunk";
 import AFSZ from "../Footer/AFSZ";
 import AdatvedelmiTajekoztato from "../Footer/AdatvedelmiTajekoztato";
@@ -13,7 +13,7 @@ import Impresszum from "../Footer/Impresszum";
 const Footer = () => {
   const navigate = useNavigate();
   
-  // State-ek a modalok megjelenítéséhez
+  
   const [isRolunkOpen, setIsRolunkOpen] = useState(false);
   const [isAFSZOpen, setIsAFSZOpen] = useState(false);
   const [isAdatvedelemOpen, setIsAdatvedelemOpen] = useState(false);
@@ -21,14 +21,14 @@ const Footer = () => {
 
   return (
     <footer id="contact-section" className="relative overflow-hidden">
-      {/* Background elements */}
+      
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-slate-950 z-0"></div>
       <div className="absolute inset-0 opacity-30 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.15),transparent_40%)]"></div>
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(79,70,229,0.15),transparent_40%)]"></div>
       </div>
 
-      {/* Animated particles */}
+      
       <div className="absolute inset-0 overflow-hidden z-0">
         {[...Array(15)].map((_, i) => (
           <div
@@ -54,7 +54,7 @@ const Footer = () => {
         }
       `}</style>
 
-      {/* Top wave decoration */}
+      
       <div className="absolute top-0 left-0 right-0 h-16 overflow-hidden z-10">
         <svg
           className="absolute bottom-0 w-full h-20 fill-slate-900 transform translate-y-1/2"
@@ -74,10 +74,10 @@ const Footer = () => {
       </div>
 
       <div className="container mx-auto px-4 pt-24 pb-12 relative z-20">
-        {/* Elérhetőségek section */}
+        
         <div className="max-w-4xl mx-auto mb-16">
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 border border-slate-700/50 shadow-xl relative overflow-hidden">
-            {/* Decorative elements */}
+            
             <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full filter blur-3xl -translate-y-1/2 translate-x-1/2"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-600/10 rounded-full filter blur-3xl translate-y-1/2 -translate-x-1/2"></div>
 
@@ -93,7 +93,7 @@ const Footer = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-          {/* Footer columns */}
+          
           <div>
             <h3 className="text-lg font-bold mb-4 text-white relative inline-block">
               Rólunk
@@ -167,7 +167,7 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Contact info */}
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8 border-t border-slate-700/50 mb-8">
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mr-3">
@@ -203,13 +203,13 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom section */}
+        
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-700/50">
           <div
             className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 cursor-pointer"
             onClick={() => {
               navigate('/homepage');
-              // Kis késleltetés, hogy biztosan betöltődjön az oldal
+              
               setTimeout(() => {
                 window.scrollTo({
                   top: 0,
@@ -221,7 +221,7 @@ const Footer = () => {
             Sporthaver
           </div>
 
-          {/* Social icons */}
+          
           <div className="flex space-x-4 mb-6 md:mb-0">
             <a
               href="#"
@@ -253,7 +253,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Modal components */}
+      
       <Rolunk isOpen={isRolunkOpen} onClose={() => setIsRolunkOpen(false)} />
       <AFSZ isOpen={isAFSZOpen} onClose={() => setIsAFSZOpen(false)} />
       <AdatvedelmiTajekoztato isOpen={isAdatvedelemOpen} onClose={() => setIsAdatvedelemOpen(false)} />

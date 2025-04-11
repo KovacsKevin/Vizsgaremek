@@ -8,11 +8,11 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     Cim: "",
     Telepules: "",
     Iranyitoszam: "",
-    Fedett: false, // Default to false (No)
-    Oltozo: false, // Default to false (No)
+    Fedett: false, 
+    Oltozo: false, 
     Parkolas: "",
     Leiras: "",
-    // Removed Berles field
+    
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -27,7 +27,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
       [name]: type === "checkbox" ? checked : value,
     })
 
-    // Clear error for this field when user starts typing
+    
     if (formErrors[name]) {
       setFormErrors({
         ...formErrors,
@@ -52,7 +52,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     if (!formData.Iranyitoszam.trim()) errors.Iranyitoszam = "Irányítószám kötelező"
     if (!formData.Parkolas) errors.Parkolas = "Parkolási lehetőség kötelező"
 
-    // Validate irányítószám is numeric and exactly 4 digits
+    
     if (formData.Iranyitoszam && !/^\d{4}$/.test(formData.Iranyitoszam)) {
       errors.Iranyitoszam = "Az irányítószám pontosan 4 számjegyből kell álljon"
     }
@@ -66,7 +66,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     setError("")
     setSuccess("")
 
-    // Validate form
+    
     if (!validateForm()) {
       return
     }
@@ -74,7 +74,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
     setIsSubmitting(true)
 
     try {
-      // Get the auth token
+      
       const token =
         localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1")
 
@@ -84,23 +84,21 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         return
       }
 
-      // Prepare data to send
+    
       const dataToSend = {
         ...formData,
         Fedett: Boolean(formData.Fedett),
         Oltozo: Boolean(formData.Oltozo),
         Iranyitoszam: formData.Iranyitoszam.toString(),
-        // Ensure Leiras is at least an empty string
+        
         Leiras: formData.Leiras || "",
-        // Set default value for Berles since we removed it from the form
+        
         Berles: false
       }
 
-      console.log("Sending request to:", "http://localhost:8081/api/v1/createHelyszin")
-      console.log("With data:", dataToSend)
-      console.log("Using token:", token.substring(0, 10) + "...")
+     
 
-      // Submit the form data to create a new location
+      
       const response = await fetch("http://localhost:8081/api/v1/createHelyszin", {
         method: "POST",
         headers: {
@@ -110,9 +108,9 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         body: JSON.stringify(dataToSend),
       })
 
-      console.log("Response status:", response.status)
+    
 
-      // Handle non-OK responses
+      
       if (!response.ok) {
         const errorText = await response.text()
         console.error("Server error response:", errorText)
@@ -121,11 +119,10 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         return
       }
 
-      // Try to parse the response as JSON
+     
       let data
       try {
         const responseText = await response.text()
-        console.log("Raw response:", responseText)
         data = JSON.parse(responseText)
       } catch (parseError) {
         console.error("Failed to parse response as JSON:", parseError)
@@ -134,10 +131,10 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         return
       }
 
-      // Success handling
+      
       setSuccess("Helyszín sikeresen létrehozva!");
 
-      // Reset form
+      
       setFormData({
         Nev: "",
         Cim: "",
@@ -147,15 +144,15 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
         Oltozo: false,
         Parkolas: "",
         Leiras: "",
-        // Removed Berles
+        
       });
 
-      // If an onSuccess callback was provided, call it with the new location data
+      
       if (onSuccess && typeof onSuccess === "function") {
         onSuccess(data.helyszin);
       }
 
-      // Close the modal after 2 seconds
+      
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -281,7 +278,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-5">
-              {/* Helyszín neve */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Helyszín neve*</label>
                 <input
@@ -295,7 +292,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Nev && <p className="text-red-400 text-xs mt-1">{formErrors.Nev}</p>}
               </div>
 
-              {/* Település - Moved up before Cím */}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Település*</label>
                 <input
@@ -309,7 +306,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Telepules && <p className="text-red-400 text-xs mt-1">{formErrors.Telepules}</p>}
               </div>
 
-              {/* Cím - Moved down after Település */}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Cím*</label>
                 <input
@@ -323,7 +320,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Cim && <p className="text-red-400 text-xs mt-1">{formErrors.Cim}</p>}
               </div>
 
-              {/* Irányítószám */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Irányítószám*</label>
                 <input
@@ -339,7 +336,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Iranyitoszam && <p className="text-red-400 text-xs mt-1">{formErrors.Iranyitoszam}</p>}
               </div>
 
-              {/* Fedett - X és pipa egymás mellett */}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Fedett helyszín</label>
                 <div className="flex items-center space-x-4">
@@ -401,7 +398,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 </div>
               </div>
 
-              {/* Öltöző - X és pipa egymás mellett */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Öltöző elérhető</label>
                 <div className="flex items-center space-x-4">
@@ -463,7 +460,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 </div>
               </div>
 
-              {/* Parkolás */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Parkolási lehetőség*</label>
                 <select
@@ -480,7 +477,7 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 {formErrors.Parkolas && <p className="text-red-400 text-xs mt-1">{formErrors.Parkolas}</p>}
               </div>
 
-              {/* Leírás - optional */}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Leírás (opcionális)</label>
                 <textarea
@@ -493,9 +490,9 @@ export function HelyszinModal({ isOpen, onClose, modalContent, onSuccess }) {
                 ></textarea>
               </div>
 
-              {/* Bérlési lehetőség section removed */}
+              
 
-              {/* Submit gomb */}
+             
               <div className="pt-4">
                 <button
                   type="submit"

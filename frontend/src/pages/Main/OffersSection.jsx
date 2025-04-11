@@ -17,13 +17,13 @@ export function OffersSection() {
   const [locations, setLocations] = useState([])
   const navigate = useNavigate()
 
-  // Check authentication status when component mounts
+  
   useEffect(() => {
     checkAuthStatus()
     fetchLocations()
   }, [])
 
-  // Function to fetch locations
+  
   const fetchLocations = async () => {
     try {
       const token =
@@ -48,7 +48,7 @@ export function OffersSection() {
     }
   }
 
-  // Function to check if user is authenticated
+  
   const checkAuthStatus = async () => {
     try {
       const token =
@@ -106,12 +106,12 @@ export function OffersSection() {
   };
 
   const handleEventCreation = () => {
-    // JWT token ellenőrzése
+    
     const token =
       localStorage.getItem("token") || document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, "$1")
 
     if (token) {
-      // Ha van token, ellenőrizzük az érvényességét a szerveren
+      
       fetch("http://localhost:8081/api/v1/login", {
         method: "GET",
         headers: {
@@ -123,14 +123,14 @@ export function OffersSection() {
           if (response.ok) {
             return response.json()
           } else {
-            // Ha a token érvénytelen, irányítsuk a felhasználót a bejelentkezési oldalra
+            
             navigate("/login")
             throw new Error("Invalid token")
           }
         })
         .then((data) => {
           if (data.isAuthenticated) {
-            // Ha érvényes a token, nyissuk meg a modált
+            
             openEventModal()
           } else {
             navigate("/login")
@@ -141,26 +141,26 @@ export function OffersSection() {
           navigate("/login")
         })
     } else {
-      // Ha nincs token, irányítsuk a felhasználót a bejelentkezési oldalra
+      
       navigate("/login")
     }
   }
 
-  // Handle successful location creation
+  
   const handleLocationSuccess = (newLocation) => {
-    // Add the new location to the locations state
+    
     setLocations((prevLocations) => [...prevLocations, newLocation])
   }
   return (
     <section id="event-section" className="py-24 pb-32 relative overflow-hidden">
-      {/* Background elements */}
+     
       <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a] to-slate-800 z-0"></div>
       <div className="absolute inset-0 opacity-30 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(147,51,234,0.2),transparent_40%)]"></div>
         <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(79,70,229,0.2),transparent_40%)]"></div>
       </div>
 
-      {/* Animated particles */}
+      
       <div className="absolute inset-0 overflow-hidden z-0">
         {[...Array(20)].map((_, i) => (
           <div
@@ -195,7 +195,7 @@ export function OffersSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-8 max-w-4xl mx-auto">
-          {/* Event Creation Card */}
+          
           <div className="group relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden shadow-xl border border-slate-700/50 hover:border-purple-500/30 transition-all duration-500 hover:shadow-purple-500/10">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -233,17 +233,17 @@ export function OffersSection() {
         </div>
       </div>
 
-      {/* Event Modal for creating events */}
+      
       <EventModal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
         modalContent={modalContent}
         locations={locations}
         openHelyszinModal={openHelyszinModal}
-        openSportModal={() => { }} // Placeholder for sport modal
+        openSportModal={() => { }} 
       />
 
-      {/* Location Modal for creating locations */}
+      
       <HelyszinModal
         isOpen={helyszinModalConfig.isOpen}
         onClose={closeHelyszinModal}

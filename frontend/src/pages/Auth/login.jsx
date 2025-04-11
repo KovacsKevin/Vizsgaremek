@@ -35,7 +35,7 @@ const Login = () => {
             Cookies.set("token", data.token, { expires: 1 });
             setSuccess("Sikeres bejelentkezés!");
 
-            // Változtatás: átirányítás a főoldalra a /protected helyett
+           
             setTimeout(() => navigate("/Homepage"), 1000);
         } else {
             setError(data.message || "Hiba történt a bejelentkezés során!");

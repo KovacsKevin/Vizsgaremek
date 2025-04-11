@@ -14,7 +14,7 @@ const TestImages = () => {
         }
         const data = await response.json();
         
-        // Sort by esemenyId in descending order
+        
         const sortedEvents = [...data.events].sort((a, b) => b.esemenyId - a.esemenyId);
         setEvents(sortedEvents);
       } catch (err) {

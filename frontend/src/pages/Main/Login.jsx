@@ -26,13 +26,13 @@ const Login = () => {
         const data = await response.json();
 
         if (response.ok) {
-            // Store token in cookie
+            
             Cookies.set("token", data.token, { expires: 1 });
             
-            // Store user information in localStorage for display in header
+            
             localStorage.setItem("user", JSON.stringify({
                 email: email,
-                // Add other user info if available in response
+                
                 ...(data.user && { name: data.user.name }),
                 ...(data.userName && { name: data.userName })
             }));

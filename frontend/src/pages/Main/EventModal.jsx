@@ -29,7 +29,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     const [isDeleting, setIsDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState('')
     const [pendingParticipants, setPendingParticipants] = useState([])
-    const [userStatus, setUserStatus] = useState(null) // 'elfogadva', 'elutasítva', 'függőben', 'meghívott'
+    const [userStatus, setUserStatus] = useState(null) 
     const [isApproving, setIsApproving] = useState(false)
     const [isRejecting, setIsRejecting] = useState(false)
     const [approveRejectError, setApproveRejectError] = useState('')
@@ -71,12 +71,12 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       if (!eventId) return;
   
       try {
-        console.log("Fetching participants for event:", eventId);
+        
         const response = await fetch(`http://localhost:8081/api/v1/events/${eventId}/participants`);
   
         if (response.ok) {
           const data = await response.json();
-          console.log("Participants data:", data);
+          
           const newParticipants = data.participants || [];
   
           if (JSON.stringify(newParticipants) !== JSON.stringify(participants)) {
@@ -134,7 +134,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setCurrentUser(user);
   
       if (currentEvent.id) {
-        console.log("Modal opened for event:", currentEvent.id);
+        
         fetchParticipants(currentEvent.id);
   
         if (user) {
@@ -169,7 +169,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   
         if (response.ok) {
           const data = await response.json();
-          console.log("Participation check result:", data);
+          
           setIsParticipant(data.isParticipant || false);
           setUserStatus(data.status || null);
   
@@ -232,7 +232,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setIsJoining(true);
       setJoinError('');
   
-      // When user sends a join request in handleJoinEvent function
+      
       if (!isInvitation) {
         setIsParticipant(true);
         setUserStatus('függőben');
@@ -246,7 +246,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           });
         }
   
-        // Add the event ID to pendingEvents in sessionStorage
+        
         const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
         if (!pendingEvents.includes(currentEvent.id)) {
           pendingEvents.push(currentEvent.id);
@@ -261,7 +261,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a csatlakozáshoz");
         }
   
-        console.log("Sending join request for event:", currentEvent.id);
+        
   
         const endpoint = isInvitation ? "accept-invitation" : "join";
   
@@ -285,7 +285,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   
         if (!response.ok) {
           if (responseData.message && responseData.message.includes("already a participant")) {
-            console.log("User is already a participant, updating UI accordingly");
+            
             fetchParticipants(currentEvent.id);
             return;
           }
@@ -294,7 +294,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           return;
         }
   
-        console.log("Join successful:", responseData);
+       
   
         fetchParticipants(currentEvent.id);
   
@@ -322,10 +322,10 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       setIsCancelling(true);
       setCancelError(null);
   
-      // Get the current event ID
+      
       const eventId = currentEvent.id;
   
-      console.log("Attempting to cancel event with ID:", eventId);
+      
   
       if (!eventId) {
         console.error("No event ID found to cancel");
@@ -337,7 +337,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
       try {
         const token = getCookie('token');
   
-        console.log("Sending cancel request to server...");
+        
         const response = await fetch("http://localhost:8081/api/v1/cancel-pending-request", {
           method: 'POST',
           headers: {
@@ -349,19 +349,19 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           })
         });
   
-        console.log("Response status:", response.status);
+        
   
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Hiba történt a kérelem visszavonása közben');
         }
   
-        // Remove this event ID from pendingEvents
+        
         const pendingEvents = JSON.parse(sessionStorage.getItem('pendingEvents') || '[]');
         const updatedEvents = pendingEvents.filter(id => id !== eventId);
         sessionStorage.setItem('pendingEvents', JSON.stringify(updatedEvents));
   
-        console.log("Request successful, refreshing the page...");
+        
         window.location.reload();
   
       } catch (error) {
@@ -394,7 +394,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a meghívás elfogadásához");
         }
   
-        console.log("Accepting invitation for event:", currentEvent.id);
+        
   
         const response = await fetch(`http://localhost:8081/api/v1/accept-invitation`, {
           method: "POST",
@@ -418,7 +418,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error(responseData.message || "Sikertelen meghívás elfogadás");
         }
   
-        console.log("Invitation acceptance successful:", responseData);
+        
   
         setIsParticipant(true);
         setUserStatus('elfogadva');
@@ -462,7 +462,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a meghívás elutasításához");
         }
   
-        console.log("Rejecting invitation for event:", currentEvent.id);
+        
   
         const response = await fetch(`http://localhost:8081/api/v1/reject-invitation`, {
           method: "POST",
@@ -486,13 +486,13 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error(responseData.message || "Sikertelen meghívás elutasítás");
         }
   
-        console.log("Invitation rejection successful:", responseData);
+        
   
-        // Update local state
+       
         setIsParticipant(false);
         setUserStatus('elutasítva');
   
-        // Notify parent components about the update
+        
         if (onParticipantUpdate && currentUser) {
           onParticipantUpdate(currentEvent.id, false, {
             userId: currentUser.userId,
@@ -501,15 +501,15 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           });
         }
   
-        // Közvetlenül hívjuk meg az onRejectInvitation függvényt
+        
         if (typeof onRejectInvitation === 'function') {
           onRejectInvitation();
         }
   
-        // Bezárjuk a modalt
+       
         onClose();
   
-        // Oldalfrissítés rövid késleltetéssel, hogy a modal bezárása látható legyen
+        
         setTimeout(() => {
           window.location.reload();
         }, 300);
@@ -541,7 +541,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a kilépéshez");
         }
   
-        console.log("Sending leave request for event:", currentEvent.id);
+        
         const response = await fetch("http://localhost:8081/api/v1/leave", {
           method: "POST",
           headers: {
@@ -564,7 +564,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error(responseData.message || "Sikertelen kilépés");
         }
   
-        console.log("Leave successful:", responseData);
+       
   
         setIsParticipant(false);
         setUserStatus(null);
@@ -602,7 +602,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a művelethez");
         }
   
-        console.log(`Removing participant ${participantId} from event ${currentEvent.id}`);
+        
         const response = await fetch("http://localhost:8081/api/v1/remove-participant", {
           method: "POST",
           headers: {
@@ -626,7 +626,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error(responseData.message || "Sikertelen eltávolítás");
         }
   
-        console.log("Participant removal successful:", responseData);
+        
   
         const updatedParticipants = participants.filter(p => p.id !== participantId);
         setParticipants(updatedParticipants);
@@ -742,18 +742,18 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     };
   
     const handleEventUpdate = (updatedEvent) => {
-      console.log("Event updated, new data:", updatedEvent);
+      
   
-      // Update local state first
+      
       setCurrentEvent({
         ...updatedEvent,
         resztvevok_lista: participants
       });
   
-      // Close the modal
+      
       closeEditModal();
   
-      // Notify parent components if needed
+      
       if (onParticipantUpdate) {
         onParticipantUpdate(updatedEvent.id, true, {
           userId: 'event-updated',
@@ -764,7 +764,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
         });
       }
   
-      // Immediately refresh the page
+      
       window.location.reload();
     };
   
@@ -788,7 +788,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a törléshez");
         }
   
-        console.log("Deleting event:", currentEvent.id);
+        
         const response = await fetch(`http://localhost:8081/api/v1/deleteEsemeny/${currentEvent.id}`, {
           method: "DELETE",
           headers: {
@@ -801,7 +801,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error(responseData.message || "Sikertelen törlés");
         }
   
-        console.log("Event deletion successful");
+        
   
         if (onParticipantUpdate) {
           onParticipantUpdate(currentEvent.id, false, {
@@ -841,7 +841,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           throw new Error("Bejelentkezés szükséges a felhasználói adatok megtekintéséhez");
         }
   
-        // Felhasználói adatok lekérése
+        
         const response = await fetch(`http://localhost:8081/api/v1/getUser/${participant.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -852,7 +852,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
   
         const userData = await response.json();
   
-        // Statisztikák lekérése
+        
         const statsResponse = await fetch(`http://localhost:8081/api/v1/user-stats/${participant.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -862,7 +862,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           stats = await statsResponse.json();
         }
   
-        // Felhasználói adatok és statisztikák kombinálása
+        
         setParticipantDetails({
           ...userData,
           stats: {
@@ -896,7 +896,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
               <X className="h-5 w-5" />
             </button>
             
-            {/* Main content area - will scroll if needed */}
+            
             <div className="flex-1 overflow-auto custom-scrollbar">
               <div className="flex flex-col md:flex-row">
                 <div className="w-full md:w-3/5 p-6 border-b md:border-b-0 md:border-r border-white/20">
@@ -912,11 +912,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                   </div>
     
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Bal oldali információk */}
+                    
                     <div className="flex-1 space-y-3">
                       <h2 className="text-2xl font-bold mb-4 text-white">{currentEvent.Helyszin?.Nev || "Helyszín"}</h2>
     
-                      {/* Ez a sor lesz egy vonalban a jobb oldali szint információval */}
+                      
                       <div className="flex items-center gap-2 text-white/80">
                         <MapPin className="h-5 w-5 flex-shrink-0 text-blue-400" />
                         <span>
@@ -953,11 +953,11 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     
                     </div>
     
-                    {/* Jobb oldali információk */}
+                   
                     <div className="w-full md:w-1/3 p-4 rounded-lg">
-                      {/* Eltávolítottam a láthatatlan címsort és helyette marginnal igazítom */}
-                      <div className="space-y-3 md:mt-10"> {/* Hozzáadott mt-10 a megfelelő igazításhoz */}
-                        {/* Ez a sor lesz egy vonalban a bal oldali helyszín címmel */}
+                      
+                      <div className="space-y-3 md:mt-10"> 
+                        
                         <div className="flex items-center gap-2 text-white/80">
                           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
@@ -1199,7 +1199,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
               </div>
             </div>
             
-            {/* Action buttons - always at the bottom */}
+            
             <div className="sticky bottom-0 w-full bg-gradient-to-r from-slate-900 to-zinc-900 border-t border-white/10 p-4 shadow-lg">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
@@ -1442,7 +1442,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                     )}
                   </div>
 
-                  {/* Esemény statisztikák - a Profile.jsx-ből átvéve */}
+                  
                   <div className="bg-white/5 p-4 rounded-lg text-left">
                     <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
                     <div className="grid grid-cols-2 gap-3">
@@ -1503,7 +1503,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                     )}
                   </div>
 
-                  {/* Esemény statisztikák alapértelmezett értékekkel */}
+                  
                   <div className="bg-white/5 p-4 rounded-lg text-left">
                     <h4 className="font-medium mb-3 text-white">Esemény statisztikák</h4>
                     <div className="grid grid-cols-2 gap-3">
@@ -1608,7 +1608,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
           eventId={currentEvent.id}
         />
       )}
-      {/* Add the style tag here */}
+      
       <style jsx>{`
       /* Custom scrollbar styling */
       .custom-scrollbar::-webkit-scrollbar {

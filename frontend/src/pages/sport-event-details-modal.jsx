@@ -10,7 +10,7 @@ import LocationMapModal from "./Main/LocationMapModal"
 import UserProfileModal from "./Main/UserProfileModal"
 
 
-// Exportáljuk az Image komponenst és a segédfüggvényeket, hogy más fájlok is használhassák
+
 export const Image = ({ src, alt, className }) => {
   const [error, setError] = useState(false);
 

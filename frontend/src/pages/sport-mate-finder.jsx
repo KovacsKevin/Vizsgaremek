@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { Calendar, Users, MapPin, Clock, Car, Loader, Search } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import EventModal from "./sport-event-details-modal"
-import Header from "./Main/Header" // Import the Header component
+import Header from "./Main/Header" 
 
-// Módosított Image komponens a TestImages.jsx alapján
+
 const Image = ({ src, alt, className }) => (
   <img
     src={src ? `http://localhost:8081${src.startsWith("/") ? src : `/${src}`}` : "/placeholder.svg"}
@@ -21,10 +21,10 @@ const Image = ({ src, alt, className }) => (
 
 const SportMateFinder = () => {
   const navigate = useNavigate()
-  // Add state for activeTab to pass to Header
+  
   const [activeTab, setActiveTab] = useState("home")
 
-  // Új függvény URL paraméterek olvasására
+  
   const getQueryParams = () => {
     const params = new URLSearchParams(window.location.search)
     return {
@@ -37,7 +37,7 @@ const SportMateFinder = () => {
     }
   }
 
-  // Add this function to get the authentication token
+ 
   const getAuthToken = () => {
     const value = `; ${document.cookie}`
     const parts = value.split(`; token=`)
@@ -45,13 +45,13 @@ const SportMateFinder = () => {
     return null
   }
 
-  // Helper to get current user from token
+  
   const getCurrentUser = () => {
     try {
       const token = getAuthToken()
       if (!token) return null
 
-      // Parse the JWT token to get user information
+      
       const base64Url = token.split(".")[1]
       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
       const jsonPayload = decodeURIComponent(
@@ -70,23 +70,23 @@ const SportMateFinder = () => {
     }
   }
 
-  // Keresősáv állapotai
+ 
   const [searchLocation, setSearchLocation] = useState("")
   const [searchSport, setSearchSport] = useState("")
 
-  // Sportok és helyszínek állapotai
+  
   const [sports, setSports] = useState([])
   const [locations, setLocations] = useState([])
   const [loadingSports, setLoadingSports] = useState(false)
   const [loadingLocations, setLoadingLocations] = useState(false)
 
-  // Szűrés állapotai
+  
   const [locationFilter, setLocationFilter] = useState("")
   const [sportFilter, setSportFilter] = useState("")
   const [filteredLocations, setFilteredLocations] = useState([])
   const [filteredSports, setFilteredSports] = useState([])
 
-  // Fókusz állapotok
+ 
   const [locationInputFocused, setLocationInputFocused] = useState(false)
   const [sportInputFocused, setSportInputFocused] = useState(false)
 
@@ -98,19 +98,18 @@ const SportMateFinder = () => {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [userAge, setUserAge] = useState(null)
-  // Módosított állapot a felhasználó által csatlakozott események követésére
-  // Most már a szerepet és státuszt is tároljuk (szervező vagy résztvevő, elfogadva/függőben/elutasítva)
-  const [joinedEvents, setJoinedEvents] = useState([]) // {id: number, role: string, status: string}
+  
+  const [joinedEvents, setJoinedEvents] = useState([]) 
   const [currentUser, setCurrentUser] = useState(null)
   const [isAllEvents, setIsAllEvents] = useState(false)
   const [isAgeFilter, setIsAgeFilter] = useState(false)
   const [isLocationOnly, setIsLocationOnly] = useState(false)
   const [isSportOnly, setIsSportOnly] = useState(false)
 
-  // Add this to the Header component
+
   const [pendingRequests, setPendingRequests] = useState(0)
 
-  // Format full date and time
+ 
   const formatDateTime = (dateString) => {
     try {
       const date = new Date(dateString)
@@ -132,7 +131,7 @@ const SportMateFinder = () => {
     }
   }
 
-  // Helper function to get a cookie
+  
   const getCookie = (name) => {
     const value = `; ${document.cookie}`
     const parts = value.split(`; ${name}=`)
@@ -140,7 +139,7 @@ const SportMateFinder = () => {
     return null
   }
 
-  // Add this useEffect to fetch pending requests count
+  
   useEffect(() => {
     const fetchPendingRequestsCount = async () => {
       try {
@@ -162,20 +161,20 @@ const SportMateFinder = () => {
       }
     }
 
-    // Fetch on load and every 5 minutes
+    
     fetchPendingRequestsCount()
     const interval = setInterval(fetchPendingRequestsCount, 300000)
 
     return () => clearInterval(interval)
   }, [])
 
-  // Fókusz kezelő függvények
+  
   const handleLocationFocus = () => {
     setLocationInputFocused(true)
   }
 
   const handleLocationBlur = () => {
-    // Késleltetett fókusz elvesztés, hogy a kattintás működjön a listaelemeken
+    
     setTimeout(() => {
       setLocationInputFocused(false)
     }, 200)
@@ -186,13 +185,13 @@ const SportMateFinder = () => {
   }
 
   const handleSportBlur = () => {
-    // Késleltetett fókusz elvesztés, hogy a kattintás működjön a listaelemeken
+    
     setTimeout(() => {
       setSportInputFocused(false)
     }, 200)
   }
 
-  // Sportok betöltése az adatbázisból
+  
   useEffect(() => {
     const fetchSports = async () => {
       setLoadingSports(true)
@@ -222,7 +221,7 @@ const SportMateFinder = () => {
     fetchSports()
   }, [])
 
-  // Helyszínek betöltése az adatbázisból
+  
   useEffect(() => {
     const fetchLocations = async () => {
       setLoadingLocations(true)
@@ -240,7 +239,7 @@ const SportMateFinder = () => {
         }
 
         const data = await response.json()
-        // Egyedi települések kinyerése
+        
         const uniqueLocations = [...new Set(data.helyszinek.map((h) => h.Telepules))]
         setLocations(uniqueLocations)
         setFilteredLocations(uniqueLocations)
@@ -254,11 +253,11 @@ const SportMateFinder = () => {
     fetchLocations()
   }, [])
 
-  // Inicializálás URL paraméterekből és felhasználó beállítása
+  
   useEffect(() => {
     const { telepules, sport, allEvents, ageFilter, locationOnly, sportOnly } = getQueryParams()
 
-    // Update selected location and sport from query parameters if they exist
+   
     if (telepules) {
       setSelectedLocation(decodeURIComponent(telepules))
       setSearchLocation(decodeURIComponent(telepules))
@@ -271,24 +270,24 @@ const SportMateFinder = () => {
       setSportFilter(decodeURIComponent(sport))
     }
 
-    // Set if we're showing all events
+    
     setIsAllEvents(allEvents)
     setIsAgeFilter(ageFilter)
     setIsLocationOnly(locationOnly)
     setIsSportOnly(sportOnly)
 
-    // Set current user
+    
     const user = getCurrentUser()
     setCurrentUser(user)
   }, [])
 
-  // Új függvények a szűréshez
+  
   const handleLocationFilterChange = (e) => {
     const value = e.target.value
     setLocationFilter(value)
     setSearchLocation(value)
 
-    // Szűrjük a településeket a beírt szöveg alapján
+    
     if (value) {
       const filtered = locations.filter((location) => location.toLowerCase().includes(value.toLowerCase()))
       setFilteredLocations(filtered)
@@ -302,7 +301,7 @@ const SportMateFinder = () => {
     setSportFilter(value)
     setSearchSport(value)
 
-    // Szűrjük a sportokat a beírt szöveg alapján
+    
     if (value) {
       const filtered = sports.filter((sport) => sport.Nev.toLowerCase().includes(value.toLowerCase()))
       setFilteredSports(filtered)
@@ -323,11 +322,11 @@ const SportMateFinder = () => {
     setSportInputFocused(false)
   }
 
-  // Keresés kezelése - módosított verzió a rugalmas kereséshez
+  
   const handleSearch = (e) => {
     e.preventDefault()
 
-    // Check if both fields are empty - show all events
+    
     if (!searchLocation && !searchSport) {
       navigate(`/sportmate?allEvents=true`)
       setSelectedLocation("")
@@ -339,7 +338,7 @@ const SportMateFinder = () => {
       return
     }
 
-    // If only location is provided
+    
     if (searchLocation && !searchSport) {
       navigate(`/sportmate?telepules=${encodeURIComponent(searchLocation)}&locationOnly=true`)
       setSelectedLocation(searchLocation)
@@ -351,7 +350,7 @@ const SportMateFinder = () => {
       return
     }
 
-    // If only sport is provided
+    
     if (!searchLocation && searchSport) {
       navigate(`/sportmate?sport=${encodeURIComponent(searchSport)}&sportOnly=true`)
       setSelectedLocation("")
@@ -363,7 +362,7 @@ const SportMateFinder = () => {
       return
     }
 
-    // If both are provided - original behavior
+    
     navigate(`/sportmate?telepules=${encodeURIComponent(searchLocation)}&sport=${encodeURIComponent(searchSport)}`)
     setSelectedLocation(searchLocation)
     setSelectedSport(searchSport)
@@ -373,7 +372,7 @@ const SportMateFinder = () => {
     setIsSportOnly(false)
   }
 
-  // Módosított függvény a felhasználó csatlakozási állapotának és szerepének ellenőrzésére
+  
   const checkParticipationForEvents = async (events) => {
     const token = getAuthToken()
     if (!token || !events.length) return
@@ -381,7 +380,7 @@ const SportMateFinder = () => {
     const user = getCurrentUser()
     if (!user) return
 
-    // Minden eseményhez külön-külön ellenőrizzük a csatlakozási állapotot és szerepet
+    
     const joinedEventDetails = []
 
     await Promise.all(
@@ -397,11 +396,11 @@ const SportMateFinder = () => {
           if (response.ok) {
             const data = await response.json()
             if (data.isParticipant) {
-              // Itt a szervertől kapott szerepet és státuszt használjuk
+              
               joinedEventDetails.push({
                 id: event.id,
-                role: data.role, // A szervertől kapott szerep
-                status: data.status, // A szervertől kapott státusz (elfogadva, elutasítva, függőben)
+                role: data.role, 
+                status: data.status, 
               })
             }
           }
@@ -414,17 +413,17 @@ const SportMateFinder = () => {
     setJoinedEvents(joinedEventDetails)
   }
 
-  // Fetch events from API - módosított verzió a rugalmas kereséshez
-  // Modify the fetchEvents function in the useEffect to include events where the user is an organizer
+  
+  
 useEffect(() => {
   const fetchEvents = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Get the authentication token
+      
       const token = getAuthToken();
 
-      // Check query parameters
+      
       const { allEvents, ageFilter, locationOnly, sportOnly } = getQueryParams();
 
       let apiUrl;
@@ -436,30 +435,30 @@ useEffect(() => {
         };
       }
 
-      // Determine which API endpoint to use based on search parameters
+      
       if (allEvents) {
-        // Use the endpoint that returns all events
+        
         if (!token) {
           apiUrl = `http://localhost:8081/api/v1/getAllEsemeny`;
         } else {
           apiUrl = `http://localhost:8081/api/v1/all-events-by-age-or-organizer`;  // Modified endpoint
         }
       } else if (locationOnly && selectedLocation) {
-        // Search by location only
+        
         if (!token) {
           apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepules/${encodeURIComponent(selectedLocation)}`;
         } else {
           apiUrl = `http://localhost:8081/api/v1/getEsemenyekByTelepulesAndAgeOrOrganizer/${encodeURIComponent(selectedLocation)}`;  // Modified endpoint
         }
       } else if (sportOnly && selectedSport) {
-        // Search by sport only
+        
         if (!token) {
           apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNev/${encodeURIComponent(selectedSport)}`;
         } else {
           apiUrl = `http://localhost:8081/api/v1/getEsemenyekBySportNevAndAgeOrOrganizer/${encodeURIComponent(selectedSport)}`;  // Modified endpoint
         }
       } else if (ageFilter) {
-        // Use the endpoint that returns all events filtered by age
+        
         if (!token) {
           setError("A funkció használatához be kell jelentkezni!");
           setLoading(false);
@@ -467,7 +466,7 @@ useEffect(() => {
         }
         apiUrl = `http://localhost:8081/api/v1/all-events-by-age-or-organizer`;  // Modified endpoint
       } else {
-        // Both location and sport are specified
+        
         if (selectedSport && selectedLocation) {
           if (token) {
             apiUrl = `http://localhost:8081/api/v1/getEsemenyekByAgeOrOrganizer/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;  // Modified endpoint
@@ -475,14 +474,14 @@ useEffect(() => {
             apiUrl = `http://localhost:8081/api/v1/getEsemenyek/${encodeURIComponent(selectedLocation)}/${encodeURIComponent(selectedSport)}`;
           }
         } else {
-          // If we don't have enough parameters, show an error
+          
           setError("A kereséshez meg kell adni a sportot és/vagy a települést!");
           setLoading(false);
           return;
         }
       }
 
-      console.log("Fetching events from:", apiUrl);
+     
 
       const response = await fetch(apiUrl, { headers });
       if (!response.ok) {
@@ -492,11 +491,11 @@ useEffect(() => {
       const data = await response.json();
       let fetchedEvents = data.events || [];
 
-      // Filter out events with expired closing times
+      
       const currentTime = new Date();
       fetchedEvents = fetchedEvents.filter((event) => new Date(event.zaroIdo) > currentTime);
 
-      // Now fetch participant data for each event
+      
       const eventsWithParticipants = await Promise.all(
         fetchedEvents.map(async (event) => {
           try {
@@ -518,12 +517,12 @@ useEffect(() => {
 
       setEvents(eventsWithParticipants);
 
-      // Ha van token, ellenőrizzük a felhasználó csatlakozási állapotát és szerepét
+      
       if (token && eventsWithParticipants.length > 0) {
         await checkParticipationForEvents(eventsWithParticipants);
       }
 
-      // If we got user age information, we can display it
+      
       if (data.userAge) {
         setUserAge(data.userAge);
       }
@@ -540,23 +539,20 @@ useEffect(() => {
 }, [selectedSport, selectedLocation, window.location.search]);
 
 
-  // Módosított függvény a résztvevők frissítésére
+
   const handleParticipantUpdate = (eventId, isJoined, participant) => {
-    // Csak akkor frissítsük a résztvevők számát, ha:
-    // 1. Explicit módon kérjük (updateParticipantCount flag)
-    // 2. Teljes résztvevő lista frissítés történik (fullParticipantsList)
-    // 3. A felhasználó státusza "elfogadva"
+    
     const shouldUpdateParticipantCount =
       participant.updateParticipantCount === true ||
       participant.fullParticipantsList ||
       participant.status === "elfogadva"
 
     if (shouldUpdateParticipantCount) {
-      // Update the events array with the new participant count
+      
       setEvents((prevEvents) =>
         prevEvents.map((event) => {
           if (event.id === eventId) {
-            // If we received a full participants list, use it directly
+            
             if (participant.fullParticipantsList) {
               return {
                 ...event,
@@ -564,10 +560,10 @@ useEffect(() => {
               }
             }
 
-            // Otherwise handle individual participant updates
+            
             const currentParticipants = event.resztvevok_lista || []
 
-            // If the user joined, add them to the list if not already there
+            
             if (
               isJoined &&
               participant.userId !== "count-update" &&
@@ -579,7 +575,7 @@ useEffect(() => {
               }
             }
 
-            // If the user left, remove them from the list
+            
             if (!isJoined) {
               return {
                 ...event,
@@ -592,21 +588,21 @@ useEffect(() => {
       )
     }
 
-    // Ha a felhasználó csatlakozott, frissítsük a csatlakozott események listáját
+    
     if (isJoined) {
-      // Ellenőrizzük, hogy már szerepel-e az esemény a listában
+      
       if (!joinedEvents.some((event) => event.id === eventId)) {
-        // Itt a participant objektumból vesszük a szerepet és státuszt
+        
         setJoinedEvents((prev) => [
           ...prev,
           {
             id: eventId,
-            role: participant.role || "játékos", // Használjuk a szervertől kapott szerepet
-            status: participant.status || "függőben", // Használjuk a szervertől kapott státuszt
+            role: participant.role || "játékos", 
+            status: participant.status || "függőben", 
           },
         ])
       } else {
-        // Ha már szerepel, akkor frissítsük a státuszát
+        
         setJoinedEvents((prev) =>
           prev.map((event) =>
             event.id === eventId ? { ...event, status: participant.status || event.status } : event,
@@ -618,12 +614,12 @@ useEffect(() => {
     }
   }
 
-  // Modify the openEventModal function to check for authentication first
+  
   const openEventModal = (event, isInvitation = false) => {
-    // Check if user is authenticated
+    
     const token = getAuthToken()
     if (!token) {
-      // Redirect to login page if not authenticated
+     
       navigate('/login', {
         state: {
           from: window.location.pathname + window.location.search,
@@ -633,7 +629,7 @@ useEffect(() => {
       return
     }
 
-    // If authenticated, proceed as normal
+    
     setSelectedEvent({
       ...event,
       isInvitation: isInvitation,
@@ -647,7 +643,7 @@ useEffect(() => {
     setSelectedEvent(null)
   }
 
-  // Check if facility is available
+  
   const isFacilityAvailable = (event, facility) => {
     if (!event.Helyszin) return false
 
@@ -663,19 +659,19 @@ useEffect(() => {
     }
   }
 
-  // Segédfüggvény annak ellenőrzésére, hogy a felhasználó csatlakozott-e az eseményhez és milyen szerepben
+  
   const getUserEventRole = (eventId) => {
     const eventInfo = joinedEvents.find((event) => event.id === eventId)
     return eventInfo ? eventInfo.role : null
   }
 
-  // Segédfüggvény a felhasználó eseményben való részvételi státuszának lekérdezésére
+  
   const getUserEventStatus = (eventId) => {
     const eventInfo = joinedEvents.find((event) => event.id === eventId)
     return eventInfo ? eventInfo.status : null
   }
 
-  // Helper function to get skill level badge color
+  
   const getSkillLevelColor = (level) => {
     if (!level) return "bg-gray-600"
 
@@ -688,12 +684,12 @@ useEffect(() => {
 
   return (
     <>
-      {/* Add the Header component at the top */}
+      
       <Header activeTab={activeTab} setActiveTab={setActiveTab} pendingRequests={pendingRequests} />
 
       <div className="min-h-screen bg-gradient-to-br from-[#1a1f36] to-[#121528] text-white">
         <div className="container mx-auto px-4 py-8">
-          {/* Header */}
+          
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-[#a855f7] to-[#6366f1]">
               Sporteseményeink
@@ -701,7 +697,7 @@ useEffect(() => {
             <p className="text-[#a1a1aa] max-w-2xl mx-auto">Tekints meg a keresésed alapján szűrt a sporteseményeket</p>
           </div>
 
-          {/* Keresősáv hozzáadása */}
+          
           <div className="mb-8">
             <form
               onSubmit={handleSearch}
@@ -757,7 +753,7 @@ useEffect(() => {
             </form>
           </div>
 
-          {/* Település legördülő lista overlay */}
+          
           {locationInputFocused && filteredLocations.length > 0 && (
   <div
     className="absolute z-50 bg-[#1e2642] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto w-full md:w-auto"
@@ -779,7 +775,7 @@ useEffect(() => {
   </div>
 )}
 
-          {/* Sport legördülő lista overlay */}
+          
           {sportInputFocused && filteredSports.length > 0 && (
   <div
     className="absolute z-50 bg-[#1e2642] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto w-full md:w-auto"
@@ -801,7 +797,7 @@ useEffect(() => {
   </div>
 )}
 
-          {/* Search Results */}
+         
           <div className="w-full">
             {loading ? (
               <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-xl p-8 text-center">
@@ -842,7 +838,7 @@ useEffect(() => {
                           {event.Sportok?.Nev || selectedSport || "Sport"}
                         </div>
 
-                        {/* Skill level badge - now more prominent */}
+                        
                         <div className="absolute top-0 right-0 z-20">
                           <div
                             className={`bg-gradient-to-r ${getSkillLevelColor(event.szint)} px-3 py-1 rounded-bl-lg font-medium text-white`}
@@ -889,14 +885,14 @@ useEffect(() => {
                                 {(event.resztvevok_lista || []).length}/{event.maximumLetszam || 10} résztvevő
                               </span>
                             </div>
-                            {/* Betelt felirat hozzáadása, ha elérte a maximum létszámot */}
+                            
                             {(event.resztvevok_lista || []).length >= (event.maximumLetszam || 10) && (
                               <div className="mt-1 text-red-500 text-sm font-medium">Betelt</div>
                             )}
                           </div>
                         </div>
 
-                        {/* Only show parking facility */}
+                        
                         {isFacilityAvailable(event, "parkolas") && (
                           <div className="mb-4">
                             <span className="px-3 py-1 bg-white/5 rounded-full text-sm flex items-center gap-1 inline-block">
@@ -908,13 +904,13 @@ useEffect(() => {
                         {event.leiras && <div className="text-white/70 text-sm line-clamp-2 mb-4">{event.leiras}</div>}
 
                         <div className="flex justify-end">
-                          {/* Módosított gomb: státusz alapján különböző megjelenítés */}
+                          
                           {getUserEventRole(event.id) ? (
                             <button
                               onClick={() => {
-                                // If this is an invitation, open the modal with invitation mode
+                                
                                 if (getUserEventStatus(event.id) === "meghívott") {
-                                  openEventModal(event, true) // Pass true to indicate invitation mode
+                                  openEventModal(event, true) 
                                 } else {
                                   openEventModal(event)
                                 }
@@ -959,7 +955,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Event Modal */}
+     
       {showModal && selectedEvent && (
         <EventModal
           event={selectedEvent}
@@ -967,7 +963,7 @@ useEffect(() => {
           onParticipantUpdate={handleParticipantUpdate}
           userRole={getUserEventRole(selectedEvent.id)}
           userStatus={getUserEventStatus(selectedEvent.id)}
-          isInvitation={selectedEvent.isInvitation} // Pass the invitation flag
+          isInvitation={selectedEvent.isInvitation} 
         />
       )}
     </>

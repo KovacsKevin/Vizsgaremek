@@ -44,7 +44,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
             min: data.event?.minimumEletkor || 0,
             max: data.event?.maximumEletkor || 100
           });
-          console.log("Event details loaded:", data.event);
+          
         } else {
           console.error("Error loading event details");
         }
@@ -58,7 +58,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         if (response.ok) {
           const data = await response.json();
           setCurrentParticipants(data.participants || []);
-          console.log("Current participants loaded:", data.participants);
+          
         } else {
           console.error("Error loading current participants");
         }
@@ -78,7 +78,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         if (response.ok) {
           const data = await response.json();
           setPendingInvitations(data.invitations || []);
-          console.log("All invitations loaded:", data.invitations);
+          
         } else {
           console.error("Error loading invitations");
         }
@@ -112,7 +112,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         if (data.ageRange) {
           setAgeRange(data.ageRange);
         }
-        console.log("Search results:", data.users);
+        
       } catch (error) {
         console.error("Hiba a felhasználók keresése során:", error);
         setErrorMessage(error.message || "Hiba a felhasználók keresése során");
@@ -144,7 +144,7 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
         if (data.ageRange) {
           setAgeRange(data.ageRange);
         }
-        console.log("Available users:", data.users);
+        
       } catch (error) {
         console.error("Hiba a felhasználók betöltése során:", error);
         setErrorMessage(error.message || "Hiba a felhasználók betöltése során");
@@ -186,7 +186,6 @@ const InviteUsersModal = ({ isOpen, onClose, eventId }) => {
           throw new Error("Bejelentkezés szükséges a meghívók küldéséhez");
         }
         const userIds = selectedUsers.map(user => user.id);
-        console.log("Sending invitations for event:", eventId, "to users:", userIds);
         const response = await fetch(`http://localhost:8081/api/v1/invite-users`, {
           method: "POST",
           headers: {

@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 
-// Helper function to format dates for datetime-local inputs
+
 const formatDateForInput = (date) => {
   return date.toISOString().slice(0, 16);
 };
 
-// Helper function to truncate date to minutes (ignore seconds and milliseconds)
+
 const truncateToMinutes = (date) => {
   const newDate = new Date(date);
   newDate.setSeconds(0, 0);
@@ -26,7 +26,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     maximumLetszam: "",
   })
 
-  // Add field-specific error states
+
   const [fieldErrors, setFieldErrors] = useState({
     helyszinId: "",
     sportId: "",
@@ -38,7 +38,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     maximumEletkor: ""
   })
 
-  // Add state for min date values
+
   const [minDates, setMinDates] = useState({
     kezdoIdo: formatDateForInput(truncateToMinutes(new Date())),
     zaroIdo: formatDateForInput(truncateToMinutes(new Date()))
@@ -55,19 +55,18 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   const [sports, setSports] = useState([])
   const [loadingSports, setLoadingSports] = useState(false)
 
-  // New state variables for searchable inputs
+  
   const [locationSearchTerm, setLocationSearchTerm] = useState("");
   const [sportSearchTerm, setSportSearchTerm] = useState("");
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [showSportSuggestions, setShowSportSuggestions] = useState(false);
 
-  // Fetch locations and sports when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchLocations()
       fetchSports()
 
-      // Reset form and errors when modal opens
+      
       setFormData({
         helyszinId: "",
         sportId: "",
@@ -89,7 +88,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         maximumEletkor: ""
       })
 
-      // Reset min dates with current time (truncated to minutes)
+      
       setMinDates({
         kezdoIdo: formatDateForInput(truncateToMinutes(new Date())),
         zaroIdo: formatDateForInput(truncateToMinutes(new Date()))
@@ -101,13 +100,13 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       setImageError(false)
       setSuccess(false)
 
-      // Reset search terms
+      
       setLocationSearchTerm("");
       setSportSearchTerm("");
     }
   }, [isOpen])
 
-  // Effect to update search terms when locations or sports are loaded
+  
   useEffect(() => {
     if (formData.helyszinId) {
       const selectedLocation = locations.find(loc => loc.Id.toString() === formData.helyszinId.toString());
@@ -124,7 +123,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     }
   }, [locations, sports, formData.helyszinId, formData.sportId]);
 
-  // Effect to close suggestion dropdowns when clicking outside
+  
   useEffect(() => {
     const handleClickOutside = () => {
       setShowLocationSuggestions(false);
@@ -210,12 +209,12 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     }
   }
 
-  // Functions for searchable inputs
+  
   const handleLocationSearch = (e) => {
     setLocationSearchTerm(e.target.value);
     setShowLocationSuggestions(true);
 
-    // Clear the selected location if the search field is emptied
+    
     if (e.target.value === "") {
       setFormData(prev => ({
         ...prev,
@@ -228,7 +227,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     setSportSearchTerm(e.target.value);
     setShowSportSuggestions(true);
 
-    // Clear the selected sport if the search field is emptied
+    
     if (e.target.value === "") {
       setFormData(prev => ({
         ...prev,
@@ -243,7 +242,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       helyszinId: locationId
     }));
 
-    // Find the selected location to display in the input
+    
     const selectedLocation = locations.find(loc => loc.Id.toString() === locationId.toString());
     if (selectedLocation) {
       setLocationSearchTerm(`${selectedLocation.Telepules} - ${selectedLocation.Nev}`);
@@ -251,7 +250,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 
     setShowLocationSuggestions(false);
 
-    // Clear any error for helyszinId field
+    
     setFieldErrors(prev => ({
       ...prev,
       helyszinId: ""
@@ -264,7 +263,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       sportId: sportId
     }));
 
-    // Find the selected sport to display in the input
+    
     const selectedSport = sports.find(sport => sport.Id.toString() === sportId.toString());
     if (selectedSport) {
       setSportSearchTerm(selectedSport.Nev);
@@ -272,17 +271,17 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 
     setShowSportSuggestions(false);
 
-    // Clear any error for sportId field
+    
     setFieldErrors(prev => ({
       ...prev,
       sportId: ""
     }));
   };
 
-  // Validate field when it changes
+  
   const validateField = (name, value) => {
     let error = "";
-    const now = truncateToMinutes(new Date()); // Truncate current time to minutes
+    const now = truncateToMinutes(new Date()); 
 
     switch (name) {
       case "kezdoIdo":
@@ -312,7 +311,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         if (value && minAge <= 5) {
           error = "A minimum életkor nagyobb kell legyen, mint 5 év.";
         } else if (value && formData.maximumEletkor && minAge >= parseInt(formData.maximumEletkor)) {
-          // Don't show error here if ages are equal, we'll show it only on maximumEletkor
+          
           if (minAge > parseInt(formData.maximumEletkor)) {
             error = "A minimum életkor kisebb kell legyen, mint a maximum életkor.";
           }
@@ -343,29 +342,28 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
   const handleChange = (e) => {
     const { id, value } = e.target
 
-    // Update form data
+    
     setFormData((prevState) => ({
       ...prevState,
       [id]: value,
     }))
 
-    // If start time changes, update the minimum end time
+    
     if (id === "kezdoIdo" && value) {
       const kezdoDate = new Date(value);
-      // Add at least 1 minute to the start time for the minimum end time
       kezdoDate.setMinutes(kezdoDate.getMinutes() + 1);
       setMinDates(prev => ({
         ...prev,
         zaroIdo: formatDateForInput(kezdoDate)
       }));
 
-      // If current end time is now invalid, clear it
+      
       if (formData.zaroIdo && new Date(formData.zaroIdo) <= new Date(value)) {
         setFormData(prev => ({
           ...prev,
           zaroIdo: ""
         }));
-        // Clear any error for zaroIdo since we've reset it
+        
         setFieldErrors(prev => ({
           ...prev,
           zaroIdo: ""
@@ -373,16 +371,16 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       }
     }
 
-    // Validate the field
+    
     const error = validateField(id, value);
 
-    // Update field errors
+    
     setFieldErrors(prev => ({
       ...prev,
       [id]: error
     }));
 
-    // Also validate related fields if needed
+    
     if (id === "kezdoIdo" && formData.zaroIdo) {
       const zaroIdoError = validateField("zaroIdo", formData.zaroIdo);
       setFieldErrors(prev => ({
@@ -392,19 +390,18 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     }
 
     if (id === "minimumEletkor" && formData.maximumEletkor) {
-      // Check if ages are equal
+      
       const minAge = parseInt(value);
       const maxAge = parseInt(formData.maximumEletkor);
 
       if (minAge === maxAge) {
-        // If ages are equal, only show error on maximum age field
         setFieldErrors(prev => ({
           ...prev,
           minimumEletkor: "",
           maximumEletkor: "A maximum életkor nem lehet egyenlő a minimum életkorral."
         }));
       } else {
-        // Otherwise validate normally
+        
         const maxAgeError = validateField("maximumEletkor", formData.maximumEletkor);
         setFieldErrors(prev => ({
           ...prev,
@@ -414,25 +411,25 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     }
 
     if (id === "maximumEletkor" && formData.minimumEletkor) {
-      // Check if ages are equal
+      
       const minAge = parseInt(formData.minimumEletkor);
       const maxAge = parseInt(value);
 
       if (minAge === maxAge) {
-        // If ages are equal, only show error on maximum age field
+        
         setFieldErrors(prev => ({
           ...prev,
           minimumEletkor: "",
           maximumEletkor: "A maximum életkor nem lehet egyenlő a minimum életkorral."
         }));
       } else if (minAge > 5 && minAge < maxAge) {
-        // If min age is valid, clear any error
+        
         setFieldErrors(prev => ({
           ...prev,
           minimumEletkor: ""
         }));
       } else {
-        // Otherwise validate normally
+        
         const minAgeError = validateField("minimumEletkor", formData.minimumEletkor);
         setFieldErrors(prev => ({
           ...prev,
@@ -446,7 +443,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     const file = e.target.files[0]
     if (file) {
       setImageFile(file)
-      // Create URL for preview
+      
       const previewUrl = URL.createObjectURL(file)
       setImagePreview(previewUrl)
       setImageError(false)
@@ -460,18 +457,18 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     setImageError(false)
     setSuccess(false)
 
-    // Check if image is provided
+    
     if (!imageFile) {
       setImageError(true)
       setSubmitting(false)
       return
     }
 
-    // Validate all fields before submission
+    
     let hasErrors = false;
     const newErrors = { ...fieldErrors };
 
-    // Validate required fields
+    
     if (!formData.helyszinId) {
       newErrors.helyszinId = "Helyszín kiválasztása kötelező";
       hasErrors = true;
@@ -487,28 +484,28 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       hasErrors = true;
     }
 
-    // Validate kezdoIdo
+    
     const kezdoIdoError = validateField("kezdoIdo", formData.kezdoIdo);
     if (kezdoIdoError) {
       newErrors.kezdoIdo = kezdoIdoError;
       hasErrors = true;
     }
 
-    // Validate zaroIdo
+    
     const zaroIdoError = validateField("zaroIdo", formData.zaroIdo);
     if (zaroIdoError) {
       newErrors.zaroIdo = zaroIdoError;
       hasErrors = true;
     }
 
-    // Validate maximumLetszam
+    
     const maxLetszamError = validateField("maximumLetszam", formData.maximumLetszam);
     if (maxLetszamError) {
       newErrors.maximumLetszam = maxLetszamError;
       hasErrors = true;
     }
 
-    // Validate age range
+    
     const minAgeError = validateField("minimumEletkor", formData.minimumEletkor);
     if (minAgeError) {
       newErrors.minimumEletkor = minAgeError;
@@ -521,16 +518,15 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       hasErrors = true;
     }
 
-    // Check if min and max age are equal
+    
     if (formData.minimumEletkor && formData.maximumEletkor &&
       parseInt(formData.minimumEletkor) === parseInt(formData.maximumEletkor)) {
-      // Only show error on maximum age field
       newErrors.minimumEletkor = "";
       newErrors.maximumEletkor = "A maximum életkor nem lehet egyenlő a minimum életkorral.";
       hasErrors = true;
     }
 
-    // Update error states
+    
     setFieldErrors(newErrors);
 
     if (hasErrors) {
@@ -549,14 +545,14 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         return
       }
 
-      // Create a FormData object to send the form data and image file
+      
       const formDataToSend = new FormData()
-      // Add all form fields to the FormData
+      
       for (const key in formData) {
         formDataToSend.append(key, formData[key])
       }
 
-      // Add the image file if it exists
+      
       if (imageFile) {
         formDataToSend.append("imageFile", imageFile)
       }
@@ -565,8 +561,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // Don't set Content-Type header when using FormData
-          // It will be set automatically with the correct boundary
+          
         },
         body: formDataToSend,
       })
@@ -579,7 +574,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       const data = await response.json()
       setSuccess(true)
 
-      // Reset form after successful submission
+      
       setFormData({
         helyszinId: "",
         sportId: "",
@@ -595,11 +590,11 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
       setLocationSearchTerm("")
       setSportSearchTerm("")
 
-      // Close modal after 2 seconds on success and refresh the page
+      
       setTimeout(() => {
         onClose()
         setSuccess(false)
-        window.location.reload() // Refresh the page to show the new event
+        window.location.reload() 
       }, 2000)
     } catch (error) {
       setErrorMessage(error.message || "An error occurred while creating the event")
@@ -608,22 +603,22 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     }
   }
 
-  // Handler for opening the location modal
+  
   const handleCreateLocation = (e) => {
     e.preventDefault()
-    // Open the location modal without closing the event modal
+    
     openHelyszinModal({
       onLocationCreated: (newLocation) => {
-        // Fetch locations again to update the dropdown
+        
         fetchLocations();
-        // Set the newly created location as the selected one
+        
         setFormData(prev => ({
           ...prev,
           helyszinId: newLocation.Id.toString()
         }));
-        // Update the search term with the new location
+        
         setLocationSearchTerm(`${newLocation.Telepules} - ${newLocation.Nev}`);
-        // Clear any error for helyszinId field
+        
         setFieldErrors(prev => ({
           ...prev,
           helyszinId: ""
@@ -632,12 +627,12 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
     });
   }
 
-  // Handler for opening the sport modal
+  
   const handleCreateSport = (e) => {
     e.preventDefault()
-    // Close the event modal temporarily
+    
     onClose()
-    // Open the sport modal
+    
     openSportModal()
   }
 
@@ -711,7 +706,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
           </button>
         </div>
 
-        {/* Success message */}
+        
         {success && (
           <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-300 p-4 rounded-xl mb-6 flex items-center">
             <div className="mr-3 flex-shrink-0 bg-green-500/20 rounded-full p-2">
@@ -729,7 +724,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
           </div>
         )}
 
-        {/* Error message */}
+        
         {errorMessage && (
           <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 border border-red-500/30 text-red-300 p-4 rounded-xl mb-6 flex items-center">
             <div className="mr-3 flex-shrink-0 bg-red-500/20 rounded-full p-2">
@@ -754,7 +749,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
 
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6 mb-6 md:grid-cols-2">
-            {/* Location selector - now with searchable input */}
+            
             <div>
               <label htmlFor="helyszinId" className="block mb-2 text-sm font-medium text-gray-300">
                 Helyszín
@@ -784,7 +779,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                             `${location.Telepules} - ${location.Nev}`.toLowerCase().includes(locationSearchTerm.toLowerCase()) ||
                             locationSearchTerm === ""
                           )
-                          .slice(0, 5) // Limit to 5 suggestions
+                          .slice(0, 5) 
                           .map(location => (
                             <div
                               key={location.Id}
@@ -839,7 +834,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               )}
             </div>
 
-            {/* Sport selector - now with searchable input */}
+            
             <div>
               <label htmlFor="sportId" className="block mb-2 text-sm font-medium text-gray-300">
                 Sport
@@ -868,7 +863,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
                           sport.Nev.toLowerCase().includes(sportSearchTerm.toLowerCase()) ||
                           sportSearchTerm === ""
                         )
-                        .slice(0, 5) // Limit to 5 suggestions
+                        .slice(0, 5) 
                         .map(sport => (
                           <div
                             key={sport.Id}
@@ -1036,7 +1031,7 @@ export function EventModal({ isOpen, onClose, modalContent, openHelyszinModal, o
               )}
             </div>
 
-            {/* Image Upload */}
+            
             <div className="md:col-span-2">
               <label htmlFor="imageFile" className="block mb-2 text-sm font-medium text-gray-300">
                 Kép feltöltése <span className="text-red-400">*</span>

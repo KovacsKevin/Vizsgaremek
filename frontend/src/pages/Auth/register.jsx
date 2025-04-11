@@ -16,11 +16,11 @@ const Register = () => {
   const [success, setSuccess] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Password visibility states
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Field focus states
+
   const [focusedFields, setFocusedFields] = useState({
     username: false,
     email: false,
@@ -34,7 +34,7 @@ const Register = () => {
 
   const navigate = useNavigate();
 
-  // Validation functions
+
   const validateUsername = (username) => {
     const errors = {};
     if (username.length < 4) {
@@ -63,7 +63,7 @@ const Register = () => {
     } else if (password.length > 25) {
       errors.password = "A jelszó maximum 25 karakter hosszú lehet!";
     } else {
-      // Password complexity check
+
       const hasLowerCase = /[a-z]/.test(password);
       const hasUpperCase = /[A-Z]/.test(password);
       const hasNumber = /[0-9]/.test(password);
@@ -115,13 +115,13 @@ const Register = () => {
     if (birthDate) {
       const birthDateObj = new Date(birthDate);
       const today = new Date();
-      // Calculate age
+
       let age = today.getFullYear() - birthDateObj.getFullYear();
       const m = today.getMonth() - birthDateObj.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birthDateObj.getDate())) {
         age--;
       }
-      // Check: age between 6-100
+     
       if (age < 6) {
         errors.birthDate = "A felhasználónak legalább 6 évesnek kell lennie!";
       } else if (age > 100) {
@@ -131,7 +131,7 @@ const Register = () => {
     return errors;
   };
 
-  // Field change handlers
+ 
   const handleUsernameChange = (e) => {
     const value = e.target.value;
     setFelhasznalonev(value);
@@ -275,7 +275,7 @@ const Register = () => {
     }
   };
 
-  // Field focus handlers
+ 
   const handleFocus = (field) => {
     setFocusedFields((prev) => ({
       ...prev,
@@ -290,7 +290,7 @@ const Register = () => {
     }));
   };
 
-  // Password visibility toggles
+  
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -304,7 +304,7 @@ const Register = () => {
     setError("");
     setSuccess("");
 
-    // Full validation before submission
+    
     const usernameErrors = validateUsername(felhasznalonev);
     const emailErrors = validateEmail(email);
     const passwordErrors = validatePassword(jelszo);
@@ -314,7 +314,7 @@ const Register = () => {
     const firstNameErrors = validateName(keresztnev, "firstName");
     const birthDateErrors = validateBirthDate(szuletesiDatum);
 
-    // Update validation errors
+   
     setValidationErrors({
       ...validationErrors,
       username: usernameErrors.username,
@@ -327,7 +327,7 @@ const Register = () => {
       birthDate: birthDateErrors.birthDate,
     });
 
-    // If there are any validation errors, stop the process
+   
     if (
       usernameErrors.username ||
       emailErrors.email ||
@@ -342,13 +342,13 @@ const Register = () => {
       return;
     }
 
-    // Basic validation
+   
     if (!felhasznalonev || !email || !jelszo || !jelszoMegerosites) {
       setError("Felhasználónév, email, jelszó és jelszó megerősítés megadása kötelező!");
       return;
     }
 
-    // Check if passwords match
+    
     if (jelszo !== jelszoMegerosites) {
       setError("A jelszavak nem egyeznek meg!");
       return;
@@ -385,39 +385,39 @@ const Register = () => {
     }
   };
 
-  // Function to navigate to homepage and scroll to the footer
+  
 const navigateToTerms = (e) => {
   e.preventDefault();
   navigate('/');
-  // Use setTimeout to ensure navigation completes before scrolling
+  
   setTimeout(() => {
-    // Target the footer element
+    
     const footerElement = document.querySelector('footer');
     
     if (footerElement) {
-      // Scroll to the footer
+      
       footerElement.scrollIntoView({ behavior: 'smooth' });
       
-      // If you want to scroll to the very bottom of the footer specifically
-      // This will scroll to the bottom section of the footer where copyright info is
+      
+      
       const bottomSection = footerElement.querySelector('.border-t.border-slate-700\\/50:last-of-type');
       if (bottomSection) {
         bottomSection.scrollIntoView({ behavior: 'smooth' });
       }
     } else {
-      // Fallback if footer is not found
+      
       window.scrollTo({
         top: document.body.scrollHeight,
         behavior: 'smooth'
       });
     }
-  }, 300); // Increased timeout to ensure the page is fully loaded
+  }, 300); 
 };
 
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0f1424]">
-      {/* Header */}
+      
       <header className="border-b border-slate-800/50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
@@ -428,17 +428,17 @@ const navigateToTerms = (e) => {
         </div>
       </header>
 
-      {/* Main content */}
+      
       <main className="flex-1 flex items-center justify-center p-4 py-8">
         <div className="w-full max-w-2xl">
           <div className="bg-[#161b33] border border-slate-700/30 rounded-xl shadow-xl overflow-hidden">
-            {/* Form header */}
+            
             <div className="bg-gradient-to-r from-[#2a2f4c] to-[#252a47] p-6 border-b border-slate-700/30">
               <h1 className="text-2xl font-bold text-white">Fiók létrehozása</h1>
               <p className="text-slate-400 mt-1">Csatlakozz a Sporthaver közösséghez</p>
             </div>
 
-            {/* Form body */}
+            
             <div className="p-6">
               {error && (
                 <div className="mb-4 bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-md text-sm">
@@ -678,7 +678,7 @@ const navigateToTerms = (e) => {
             </div>
           </div>
 
-          {/* Additional info - UPDATED SECTION */}
+          
           <div className="mt-6 text-center">
             <p className="text-sm text-slate-500">
               A regisztrációval elfogadod a{" "}
