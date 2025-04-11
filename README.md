@@ -103,7 +103,7 @@ npm i
 ```
 
 ```bash
-npm schedule
+npm i schedule
 ```
 
 - Backend elindítása
@@ -122,7 +122,7 @@ npm i
 ```
 
 ```bash
-npm vite
+npm i vite
 ```
 
 ```bash
