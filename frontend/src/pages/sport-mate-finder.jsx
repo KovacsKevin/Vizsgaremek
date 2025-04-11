@@ -529,7 +529,7 @@ useEffect(() => {
       }
     } catch (err) {
       console.error("Failed to fetch events:", err);
-      setError("Nem sikerült betölteni az eseményeket. Kérjük, próbálja újra később.");
+      setError("Nincs a keresésednek(vagy korodnak) megfelelő esemény. Kérjük, próbálja újra később.");
       setEvents([]);
     } finally {
       setLoading(false);
@@ -759,61 +759,47 @@ useEffect(() => {
 
           {/* Település legördülő lista overlay */}
           {locationInputFocused && filteredLocations.length > 0 && (
-            <div
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
-              onClick={() => setLocationInputFocused(false)}
-            >
-              <div
-                className="absolute top-[calc(var(--input-top)+var(--input-height))] left-[var(--input-left)] w-[var(--input-width)] bg-[#1e2642] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  "--input-top": document.getElementById("location")?.getBoundingClientRect().top + "px",
-                  "--input-left": document.getElementById("location")?.getBoundingClientRect().left + "px",
-                  "--input-width": document.getElementById("location")?.offsetWidth + "px",
-                  "--input-height": document.getElementById("location")?.offsetHeight + "px",
-                }}
-              >
-                {filteredLocations.map((location) => (
-                  <div
-                    key={location}
-                    className="px-4 py-2 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors duration-150"
-                    onClick={() => handleLocationSelect(location)}
-                  >
-                    {location}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+  <div
+    className="absolute z-50 bg-[#1e2642] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto w-full md:w-auto"
+    style={{
+      top: document.getElementById("location")?.getBoundingClientRect().bottom + window.scrollY + 5 + "px",
+      left: document.getElementById("location")?.getBoundingClientRect().left + window.scrollX + "px",
+      width: document.getElementById("location")?.offsetWidth + "px",
+    }}
+  >
+    {filteredLocations.map((location) => (
+      <div
+        key={location}
+        className="px-4 py-2 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors duration-150"
+        onClick={() => handleLocationSelect(location)}
+      >
+        {location}
+      </div>
+    ))}
+  </div>
+)}
 
           {/* Sport legördülő lista overlay */}
           {sportInputFocused && filteredSports.length > 0 && (
-            <div
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
-              onClick={() => setSportInputFocused(false)}
-            >
-              <div
-                className="absolute top-[calc(var(--input-top)+var(--input-height))] left-[var(--input-left)] w-[var(--input-width)] bg-[#1e2642] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  "--input-top": document.getElementById("sport")?.getBoundingClientRect().top + "px",
-                  "--input-left": document.getElementById("sport")?.getBoundingClientRect().left + "px",
-                  "--input-width": document.getElementById("sport")?.offsetWidth + "px",
-                  "--input-height": document.getElementById("sport")?.offsetHeight + "px",
-                }}
-              >
-                {filteredSports.map((sport) => (
-                  <div
-                    key={sport.Id}
-                    className="px-4 py-2 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors duration-150"
-                    onClick={() => handleSportSelect(sport.Nev)}
-                  >
-                    {sport.Nev}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+  <div
+    className="absolute z-50 bg-[#1e2642] border border-white/10 rounded-lg shadow-xl max-h-60 overflow-auto w-full md:w-auto"
+    style={{
+      top: document.getElementById("sport")?.getBoundingClientRect().bottom + window.scrollY + 5 + "px",
+      left: document.getElementById("sport")?.getBoundingClientRect().left + window.scrollX + "px",
+      width: document.getElementById("sport")?.offsetWidth + "px",
+    }}
+  >
+    {filteredSports.map((sport) => (
+      <div
+        key={sport.Id}
+        className="px-4 py-2 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors duration-150"
+        onClick={() => handleSportSelect(sport.Nev)}
+      >
+        {sport.Nev}
+      </div>
+    ))}
+  </div>
+)}
 
           {/* Search Results */}
           <div className="w-full">

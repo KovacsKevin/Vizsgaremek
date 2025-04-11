@@ -2,6 +2,7 @@
 
 import { useNavigate } from "react-router-dom";
 
+
 const HeroSection = ({ Image }) => {
   const navigate = useNavigate();
 
@@ -55,7 +56,7 @@ const HeroSection = ({ Image }) => {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 transform scale-110 transition-transform duration-10000 animate-slow-zoom">
           <Image
-            src="/src/pages/Main/images/6.png"
+            src="/src/pages/Main/images/homepage.png"
             alt="Sportolók"
             width={1920}
             height={1080}
