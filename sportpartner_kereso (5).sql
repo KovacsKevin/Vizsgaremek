@@ -27,21 +27,7 @@ SET time_zone = "+00:00";
 -- Tábla szerkezet ehhez a táblához `eseménies`
 --
 
-CREATE TABLE `eseménies` (
-  `id` int(11) NOT NULL,
-  `helyszinId` int(11) NOT NULL,
-  `userId` int(11) NOT NULL,
-  `sportId` int(11) NOT NULL,
-  `kezdoIdo` datetime NOT NULL,
-  `zaroIdo` datetime NOT NULL,
-  `szint` text NOT NULL,
-  `minimumEletkor` int(11) NOT NULL,
-  `maximumEletkor` int(11) NOT NULL,
-  `maximumLetszam` int(11) NOT NULL,
-  `imageUrl` varchar(255) DEFAULT NULL,
-  `createdAt` datetime NOT NULL,
-  `updatedAt` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- A tábla adatainak kiíratása `eseménies`
@@ -64,21 +50,7 @@ INSERT INTO `eseménies` (`id`, `helyszinId`, `userId`, `sportId`, `kezdoIdo`, `
 -- Tábla szerkezet ehhez a táblához `helyszins`
 --
 
-CREATE TABLE `helyszins` (
-  `Id` int(11) NOT NULL,
-  `Nev` text NOT NULL,
-  `Cim` text NOT NULL,
-  `Telepules` text NOT NULL,
-  `Iranyitoszam` int(11) NOT NULL,
-  `Fedett` tinyint(1) NOT NULL DEFAULT 0,
-  `Oltozo` tinyint(1) NOT NULL DEFAULT 0,
-  `Parkolas` text NOT NULL,
-  `Leiras` text DEFAULT NULL,
-  `Berles` tinyint(1) NOT NULL DEFAULT 0,
-  `userId` int(11) NOT NULL,
-  `createdAt` datetime NOT NULL,
-  `updatedAt` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- A tábla adatainak kiíratása `helyszins`
@@ -100,17 +72,6 @@ INSERT INTO `helyszins` (`Id`, `Nev`, `Cim`, `Telepules`, `Iranyitoszam`, `Fedet
 -- Tábla szerkezet ehhez a táblához `résztvevős`
 --
 
-CREATE TABLE `résztvevős` (
-  `id` int(11) NOT NULL,
-  `eseményId` int(11) NOT NULL,
-  `userId` int(11) NOT NULL,
-  `szerep` enum('szervező','játékos') NOT NULL DEFAULT 'játékos',
-  `csatlakozásDátuma` datetime NOT NULL,
-  `státusz` enum('elfogadva','elutasítva','függőben','meghívott') NOT NULL DEFAULT 'függőben',
-  `megjegyzés` text DEFAULT NULL,
-  `createdAt` datetime NOT NULL,
-  `updatedAt` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- A tábla adatainak kiíratása `résztvevős`
@@ -180,12 +141,7 @@ INSERT INTO `résztvevős` (`id`, `eseményId`, `userId`, `szerep`, `csatlakozá
 -- Tábla szerkezet ehhez a táblához `sportoks`
 --
 
-CREATE TABLE `sportoks` (
-  `Id` int(11) NOT NULL,
-  `Nev` text NOT NULL,
-  `Leiras` text NOT NULL,
-  `KepUrl` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- A tábla adatainak kiíratása `sportoks`
@@ -229,22 +185,7 @@ INSERT INTO `sportoks` (`Id`, `Nev`, `Leiras`, `KepUrl`) VALUES
 -- Tábla szerkezet ehhez a táblához `users`
 --
 
-CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `username` varchar(255) NOT NULL,
-  `phone` varchar(255) DEFAULT NULL,
-  `firstName` varchar(255) DEFAULT NULL,
-  `lastName` varchar(255) DEFAULT NULL,
-  `birthDate` datetime DEFAULT NULL,
-  `profileBackground` varchar(255) DEFAULT 'gradient1',
-  `customBackground` longtext DEFAULT NULL,
-  `profilePicture` longtext DEFAULT NULL,
-  `bio` text DEFAULT NULL,
-  `createdAt` datetime NOT NULL,
-  `updatedAt` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 --
 -- A tábla adatainak kiíratása `users`
