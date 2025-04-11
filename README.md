@@ -144,7 +144,7 @@ COLLATE utf8_hungarian_ci;
 
 - Importálás menüpontra kattintás, fájl kiválasztása gomb
 
-Az adatokat tartalmazó sql fájl innen tölthető le: [sportpartner_kereso_import_teljes.sql](https://github.com/KovacsKevin/Vizsgaremek/blob/main/sportpartner_kereso_import_teljes.sql)
+Az adatokat tartalmazó sql fájl innen tölthető le: [sportpartner_kereso_import_teljes.sql](https://github.com/KovacsKevin/Vizsgaremek/blob/main/sportpartner_kereso%20(5).sql)
 
 Felhasznalok a belepeshez: [felhasznalok_belepeshez](https://github.com/KovacsKevin/Vizsgaremek/blob/main/felhasznalok_belepeshez.txt)
 
