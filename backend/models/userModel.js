@@ -131,8 +131,6 @@ User.associate = function (models) {
     User.hasMany(models.Helyszin, { foreignKey: 'userId' });  // User can have many locations
 };
 
-sequelize.sync()
-    .then(() => console.log("✅ User table created!"))
-    .catch(err => console.error("❌ Error creating User table:", err));
+
 
 module.exports = User;

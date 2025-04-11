@@ -90,8 +90,5 @@ Esemény.belongsTo(Helyszin, { foreignKey: 'helyszinId' });
 Esemény.belongsTo(User, { foreignKey: 'userId' });
 Esemény.belongsTo(Sportok, { foreignKey: 'sportId' })
 
-sequelize.sync()
-    .then(() => console.log("✅ Esemény table created or updated!"))
-    .catch(err => console.error("❌ Error creating/updating Esemény table:", err));
 
 module.exports = Esemény;

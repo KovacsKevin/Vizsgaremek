@@ -25,8 +25,6 @@ const Sportok = sequelize.define("Sportok", {
 });
 
 // Sync the model with the database
-sequelize.sync()
-    .then(() => console.log("✅ Sportok table created!"))
-    .catch(err => console.error("❌ Error creating Sportok table:", err));
+
 
 module.exports = Sportok;

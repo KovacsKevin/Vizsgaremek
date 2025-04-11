@@ -65,8 +65,6 @@ Résztvevő.belongsTo(User, { foreignKey: 'userId' });
 Esemény.hasMany(Résztvevő, { foreignKey: 'eseményId' });
 User.hasMany(Résztvevő, { foreignKey: 'userId' });
 
-sequelize.sync()
-    .then(() => console.log("✅ Resztvevo table created!"))
-    .catch(err => console.error("❌ Error creating Helyszin table:", err));
+
 
 module.exports = Résztvevő;

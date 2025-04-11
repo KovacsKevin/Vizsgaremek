@@ -83,8 +83,6 @@ const Helyszin = sequelize.define("Helyszin", {
 });
 
 // Sync the model with the database
-sequelize.sync()
-    .then(() => console.log("✅ Helyszin table created!"))
-    .catch(err => console.error("❌ Error creating Helyszin table:", err));
+
 
 module.exports = Helyszin;
