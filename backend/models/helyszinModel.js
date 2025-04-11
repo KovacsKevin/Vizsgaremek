@@ -1,7 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-// Define the Helyszin model
 const Helyszin = sequelize.define("Helyszin", {
     Id: {
         type: DataTypes.INTEGER,
@@ -34,8 +33,8 @@ const Helyszin = sequelize.define("Helyszin", {
         allowNull: false,
         validate: {
             isInt: true,
-            min: 1000,  // Ensures 4-digit postal codes
-            max: 9999,  // Ensures 4-digit postal codes
+            min: 1000,  
+            max: 9999,  
             len: {
                 args: [4, 4],
                 msg: "Az irányítószám pontosan 4 számjegyből kell álljon"
@@ -69,20 +68,17 @@ const Helyszin = sequelize.define("Helyszin", {
         allowNull: false,
         defaultValue: false
     },
-    // Add userId as a foreign key linking Helyszin to User
     userId: {
         type: DataTypes.INTEGER,
         references: {
-            model: 'Users',  // Referencing the User model
-            key: 'id',       // The primary key in the User model
+            model: 'Users',  
+            key: 'id',      
         },
-        allowNull: false,  // Making this field mandatory
+        allowNull: false,  
     }
 }, {
     timestamps: true,
 });
-
-// Sync the model with the database
 
 
 module.exports = Helyszin;

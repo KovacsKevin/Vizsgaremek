@@ -1,7 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-// Define the User model
 const User = sequelize.define("User", {
     id: {
         type: DataTypes.INTEGER,
@@ -85,14 +84,12 @@ const User = sequelize.define("User", {
                     const birthDate = new Date(value);
                     const today = new Date();
                     
-                    // Életkor kiszámítása
                     let age = today.getFullYear() - birthDate.getFullYear();
                     const m = today.getMonth() - birthDate.getMonth();
                     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
                         age--;
                     }
                     
-                    // Ellenőrzés: 6-100 év közötti életkor
                     if (age < 6) {
                         throw new Error('A felhasználónak legalább 6 évesnek kell lennie');
                     }
@@ -103,16 +100,15 @@ const User = sequelize.define("User", {
             }
         }
     },
-    // Ellenőrizzük, hogy a mezők típusa megfelelő-e
     profileBackground: {
         type: DataTypes.STRING,
         defaultValue: "gradient1"
     },
     customBackground: {
-        type: DataTypes.TEXT('long'),  // Nagyobb méretű TEXT típus a képadatokhoz
+        type: DataTypes.TEXT('long'),  
     },
     profilePicture: {
-        type: DataTypes.TEXT('long'),  // Nagyobb méretű TEXT típus a képadatokhoz
+        type: DataTypes.TEXT('long'), 
     },
     bio: {
         type: DataTypes.TEXT,
@@ -122,15 +118,13 @@ const User = sequelize.define("User", {
     timestamps: true,
 });
 
-// User model definition is done, now establish associations
 User.associate = function (models) {
     User.hasMany(models.Esemény, { foreignKey: 'userId' });
 };
 
 User.associate = function (models) {
-    User.hasMany(models.Helyszin, { foreignKey: 'userId' });  // User can have many locations
+    User.hasMany(models.Helyszin, { foreignKey: 'userId' });  
 };
-
 
 
 module.exports = User;

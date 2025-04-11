@@ -17,7 +17,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 
-// Mock dependencies
 jest.mock('../models/userModel');
 jest.mock('../models/esemenyModel');
 jest.mock('../models/resztvevoModel');
@@ -41,10 +40,8 @@ describe('userController', () => {
   let req, res;
 
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
 
-    // Setup request and response objects
     req = {
       body: {},
       params: {},
@@ -61,17 +58,14 @@ describe('userController', () => {
       json: jest.fn()
     };
 
-    // Mock JWT verify
     jwt.verify.mockReturnValue({ userId: 1 });
-    
-    // Mock bcrypt
+
     bcrypt.hash.mockResolvedValue('hashedPassword123');
     bcrypt.compare.mockResolvedValue(true);
   });
 
   describe('createUser', () => {
     it('should create a new user successfully', async () => {
-      // Setup
       req.body = {
         email: 'test@example.com',
         password: 'Password123!',
@@ -93,10 +87,8 @@ describe('userController', () => {
 
       User.create.mockResolvedValue(mockUser);
 
-      // Execute
       await createUser(req, res);
 
-      // Assert
       expect(bcrypt.hash).toHaveBeenCalledWith('Password123!', 10);
       expect(User.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -118,16 +110,12 @@ describe('userController', () => {
     });
 
     it('should return 400 if required fields are missing', async () => {
-      // Setup - missing required fields
       req.body = {
         email: 'test@example.com',
-        // Missing password and username
       };
 
-      // Execute
       await createUser(req, res);
 
-      // Assert
       expect(User.create).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
@@ -138,17 +126,14 @@ describe('userController', () => {
     });
 
     it('should validate email format', async () => {
-      // Setup - invalid email
       req.body = {
         email: 'invalid-email',
         password: 'Password123!',
         username: 'testuser'
       };
 
-      // Execute
       await createUser(req, res);
 
-      // Assert
       expect(User.create).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
@@ -159,17 +144,14 @@ describe('userController', () => {
     });
 
     it('should validate password complexity', async () => {
-      // Setup - simple password
       req.body = {
         email: 'test@example.com',
         password: 'simple',
         username: 'testuser'
       };
 
-      // Execute
       await createUser(req, res);
 
-      // Assert
       expect(User.create).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
@@ -182,7 +164,6 @@ describe('userController', () => {
 
   describe('authenticateUser', () => {
     it('should authenticate a user successfully', async () => {
-      // Setup
       req.body = {
         email: 'test@example.com',
         password: 'Password123!'
@@ -200,10 +181,8 @@ describe('userController', () => {
       User.findOne.mockResolvedValue(mockUser);
       jwt.sign.mockReturnValue('token123');
 
-      // Execute
       await authenticateUser(req, res);
 
-      // Assert
       expect(User.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { email: 'test@example.com' }
@@ -233,7 +212,6 @@ describe('userController', () => {
     });
 
     it('should return 401 if user not found', async () => {
-      // Setup
       req.body = {
         email: 'nonexistent@example.com',
         password: 'Password123!'
@@ -241,10 +219,8 @@ describe('userController', () => {
 
       User.findOne.mockResolvedValue(null);
 
-      // Execute
       await authenticateUser(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -254,7 +230,6 @@ describe('userController', () => {
     });
 
     it('should return 401 if password is incorrect', async () => {
-      // Setup
       req.body = {
         email: 'test@example.com',
         password: 'WrongPassword123!'
@@ -270,10 +245,8 @@ describe('userController', () => {
       User.findOne.mockResolvedValue(mockUser);
       bcrypt.compare.mockResolvedValue(false);
 
-      // Execute
       await authenticateUser(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -285,7 +258,6 @@ describe('userController', () => {
 
   describe('getUser', () => {
     it('should return user by ID', async () => {
-      // Setup
       req.params.id = 1;
       const mockUser = {
         id: 1,
@@ -300,23 +272,18 @@ describe('userController', () => {
 
       User.findByPk.mockResolvedValue(mockUser);
 
-      // Execute
       await getUser(req, res);
 
-      // Assert
       expect(User.findByPk).toHaveBeenCalledWith(1, expect.any(Object));
       expect(res.json).toHaveBeenCalledWith(mockUser);
     });
 
     it('should return 404 if user not found', async () => {
-      // Setup
       req.params.id = 999;
       User.findByPk.mockResolvedValue(null);
 
-      // Execute
       await getUser(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -328,7 +295,6 @@ describe('userController', () => {
 
   describe('updateUser', () => {
     it('should update a user successfully', async () => {
-      // Setup
       req.params.id = 1;
       req.body = {
         firstName: 'Updated',
@@ -338,10 +304,8 @@ describe('userController', () => {
 
       User.update.mockResolvedValue([1]);
 
-      // Execute
       await updateUser(req, res);
 
-      // Assert
       expect(User.update).toHaveBeenCalledWith(
         expect.objectContaining({
           firstName: 'Updated',
@@ -360,7 +324,6 @@ describe('userController', () => {
     });
 
     it('should hash password if included in update', async () => {
-      // Setup
       req.params.id = 1;
       req.body = {
         password: 'NewPassword123!'
@@ -368,10 +331,8 @@ describe('userController', () => {
 
       User.update.mockResolvedValue([1]);
 
-      // Execute
       await updateUser(req, res);
 
-      // Assert
       expect(bcrypt.hash).toHaveBeenCalledWith('NewPassword123!', 10);
       expect(User.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -384,14 +345,11 @@ describe('userController', () => {
     });
 
     it('should return 404 if user not found', async () => {
-      // Setup
       req.params.id = 999;
       User.update.mockResolvedValue([0]);
 
-      // Execute
       await updateUser(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -403,22 +361,18 @@ describe('userController', () => {
 
   describe('deleteUser', () => {
     it('should delete a user and related data successfully', async () => {
-      // Setup
       req.params.id = 1;
-      
-      // Mock user's events
+
       const mockEvents = [
         { id: 1, userId: 1 },
         { id: 2, userId: 1 }
       ];
-      
-      // Mock user's locations
+
       const mockLocations = [
         { Id: 1, userId: 1 },
         { Id: 2, userId: 1 }
       ];
-      
-      // Mock events using user's locations but created by others
+
       const mockEventsUsingLocations = [];
       
       Esemény.findAll.mockResolvedValueOnce(mockEvents);
@@ -429,10 +383,8 @@ describe('userController', () => {
       Helyszin.destroy.mockResolvedValue(true);
       User.destroy.mockResolvedValue(1);
 
-      // Execute
       await deleteUser(req, res);
 
-      // Assert
       expect(Esemény.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 1 }
@@ -473,13 +425,10 @@ describe('userController', () => {
     });
 
     it('should return 403 if trying to delete another user', async () => {
-      // Setup
-      req.params.id = 2; // Different from req.user.userId (1)
+      req.params.id = 2;
 
-      // Execute
       await deleteUser(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -491,7 +440,6 @@ describe('userController', () => {
 
   describe('getUserSettings', () => {
     it('should return user settings', async () => {
-      // Setup
       req.params.id = 1;      const mockUser = {
         id: 1,
         email: 'test@example.com',
@@ -513,10 +461,8 @@ describe('userController', () => {
 
       User.findByPk.mockResolvedValue(mockUser);
 
-      // Execute
       await getUserSettings(req, res);
 
-      // Assert
       expect(User.findByPk).toHaveBeenCalledWith(1);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -541,14 +487,11 @@ describe('userController', () => {
     });
 
     it('should return 404 if user not found', async () => {
-      // Setup
       req.params.id = 999;
       User.findByPk.mockResolvedValue(null);
 
-      // Execute
       await getUserSettings(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -558,13 +501,10 @@ describe('userController', () => {
     });
 
     it('should return 403 if trying to access another user\'s settings', async () => {
-      // Setup
-      req.params.id = 2; // Different from req.user.userId (1)
+      req.params.id = 2; 
 
-      // Execute
       await getUserSettings(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -576,7 +516,6 @@ describe('userController', () => {
 
   describe('saveUserSettings', () => {
     it('should save user settings successfully', async () => {
-      // Setup
       req.params.id = 1;
       req.body = {
         firstName: 'Updated',
@@ -597,10 +536,8 @@ describe('userController', () => {
 
       User.findByPk.mockResolvedValue(mockUser);
 
-      // Execute
       await saveUserSettings(req, res);
 
-      // Assert
       expect(User.findByPk).toHaveBeenCalledWith(1);
       expect(mockUser.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -623,14 +560,11 @@ describe('userController', () => {
     });
 
     it('should return 404 if user not found', async () => {
-      // Setup
       req.params.id = 999;
       User.findByPk.mockResolvedValue(null);
 
-      // Execute
       await saveUserSettings(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -640,13 +574,10 @@ describe('userController', () => {
     });
 
     it('should return 403 if trying to update another user\'s settings', async () => {
-      // Setup
-      req.params.id = 2; // Different from req.user.userId (1)
+      req.params.id = 2; 
 
-      // Execute
       await saveUserSettings(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -658,10 +589,8 @@ describe('userController', () => {
 
   describe('getUserStats', () => {
     it('should return user statistics', async () => {
-      // Setup
       req.params.id = 1;
-      
-      // Mock user
+
       const mockUser = {
         id: 1,
         username: 'testuser',
@@ -670,24 +599,19 @@ describe('userController', () => {
         profilePicture: 'profile.jpg'
       };
       
-      // Mock organized events count
       const mockOrganizedCount = 5;
-      
-      // Mock participated events count
+
       const mockParticipatedCount = 10;
-      
-      // Mock created locations count
+
       const mockLocationsCount = 3;
       
       User.findByPk.mockResolvedValue(mockUser);
-      Résztvevő.count.mockResolvedValueOnce(mockOrganizedCount); // For organized events
-      Résztvevő.count.mockResolvedValueOnce(mockParticipatedCount); // For participated events
+      Résztvevő.count.mockResolvedValueOnce(mockOrganizedCount); 
+      Résztvevő.count.mockResolvedValueOnce(mockParticipatedCount); 
       Helyszin.count.mockResolvedValue(mockLocationsCount);
 
-      // Execute
       await getUserStats(req, res);
 
-      // Assert
       expect(User.findByPk).toHaveBeenCalledWith(1, expect.any(Object));
       expect(Résztvevő.count).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -727,14 +651,11 @@ describe('userController', () => {
     });
 
     it('should return 404 if user not found', async () => {
-      // Setup
       req.params.id = 999;
       User.findByPk.mockResolvedValue(null);
 
-      // Execute
       await getUserStats(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -1,7 +1,6 @@
 const Helyszin = require("../models/helyszinModel");
 const jwt = require("jsonwebtoken");
 
-// Create Location (Helyszin) - Only authenticated users can create a location
 const createHelyszin = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -14,12 +13,10 @@ const createHelyszin = async (req, res) => {
 
         const { Nev, Cim, Telepules, Iranyitoszam, Fedett, Oltozo, Parkolas, Leiras, Berles } = req.body;
 
-        // Update the validation in createHelyszin function
         if (!Nev || !Cim || !Telepules || !Iranyitoszam || !Parkolas) {
             return res.status(400).json({ message: "Missing required fields for creating location!" });
         }
 
-        // When creating a new location, set default empty string for Leiras if not provided
         const newHelyszin = await Helyszin.create({
             Nev,
             Cim,
@@ -41,10 +38,8 @@ const createHelyszin = async (req, res) => {
     }
 };
 
-// Get all Locations (Helyszin) - Public access
 const getAllHelyszin = async (req, res) => {
     try {
-        // Fetch all locations from the database
         const helyszinek = await Helyszin.findAll();
 
         if (helyszinek.length === 0) {
@@ -58,7 +53,6 @@ const getAllHelyszin = async (req, res) => {
     }
 };
 
-// Get a Location by ID (Public access)
 const getHelyszinById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -67,7 +61,6 @@ const getHelyszinById = async (req, res) => {
             return res.status(400).json({ message: "Location ID is required!" });
         }
 
-        // Find the location by its ID
         const helyszin = await Helyszin.findByPk(id);
 
         if (!helyszin) {
@@ -82,7 +75,6 @@ const getHelyszinById = async (req, res) => {
 };
 
 
-// Update Location (Helyszin) - Only the owner can update the location
 const updateHelyszin = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -102,12 +94,11 @@ const updateHelyszin = async (req, res) => {
             return res.status(404).json({ message: "Location not found!" });
         }
 
-        // Ensure the user is the owner of the location before updating
         if (helyszin.userId !== userId) {
             return res.status(403).json({ message: "You can only update your own locations!" });
         }
 
-        // Explicit conversion of boolean values
+
         const updatedData = {
             Nev,
             Cim,
@@ -116,19 +107,17 @@ const updateHelyszin = async (req, res) => {
             Fedett: Fedett === true || Fedett === "true",
             Oltozo: Oltozo === true || Oltozo === "true",
             Parkolas,
-            Leiras: Leiras || "", // Provide default empty string if not provided
+            Leiras: Leiras || "", 
             Berles: Berles === true || Berles === "true",
         };
 
-        console.log("Updating location with data:", updatedData);
 
-        // Update location details
         await helyszin.update(updatedData);
 
         res.status(200).json({
             message: "Location updated successfully!",
             helyszin,
-            updatedLocation: helyszin // Add this to return the updated location
+            updatedLocation: helyszin 
         });
     } catch (error) {
         console.error(error);
@@ -137,7 +126,6 @@ const updateHelyszin = async (req, res) => {
 };
 
 
-// Delete Location (Helyszin) - Only the owner can delete the location
 const deleteHelyszin = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];
@@ -155,12 +143,10 @@ const deleteHelyszin = async (req, res) => {
             return res.status(404).json({ message: "Location not found!" });
         }
 
-        // Ensure the user is the owner of the location before deleting
         if (helyszin.userId !== userId) {
             return res.status(403).json({ message: "You can only delete your own locations!" });
         }
 
-        // Delete the location
         await helyszin.destroy();
 
         res.status(200).json({ message: "Location deleted successfully!" });
@@ -172,16 +158,15 @@ const deleteHelyszin = async (req, res) => {
 
 const getMyOwnHelyszin = async (req, res) => {
     try {
-        const userId = req.user?.userId; // Accessing userId instead of id
+        const userId = req.user?.userId;
 
         if (!userId) {
             return res.status(400).json({ message: "User ID is missing in the request." });
         }
 
-        // Find the locations associated with the authenticated user
         const helyszin = await Helyszin.findAll({
             where: {
-                userId: userId // Assuming `user_id` is the column that associates helyszin with the user
+                userId: userId
             }
         });
 

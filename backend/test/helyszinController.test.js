@@ -10,7 +10,6 @@ const {
 const Helyszin = require('../models/helyszinModel');
 const jwt = require('jsonwebtoken');
 
-// Mock dependencies
 jest.mock('../models/helyszinModel');
 jest.mock('jsonwebtoken');
 
@@ -18,10 +17,8 @@ describe('helyszinController', () => {
   let req, res;
 
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
 
-    // Setup request and response objects
     req = {
       body: {},
       params: {},
@@ -38,7 +35,6 @@ describe('helyszinController', () => {
       json: jest.fn()
     };
 
-    // Mock JWT verify
     jwt.verify.mockReturnValue({ userId: 1 });
   });
 
@@ -65,10 +61,8 @@ describe('helyszinController', () => {
 
       Helyszin.create.mockResolvedValue(mockHelyszin);
 
-      // Execute
       await createHelyszin(req, res);
 
-      // Assert
       expect(Helyszin.create).toHaveBeenCalledWith(
         expect.objectContaining({
           Nev: 'Test Location',
@@ -89,16 +83,12 @@ describe('helyszinController', () => {
     });
 
     it('should return 400 if required fields are missing', async () => {
-      // Setup - missing required fields
       req.body = {
         Nev: 'Test Location',
-        // Missing other required fields
       };
 
-      // Execute
       await createHelyszin(req, res);
 
-      // Assert
       expect(Helyszin.create).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
@@ -109,13 +99,10 @@ describe('helyszinController', () => {
     });
 
     it('should return 401 if no token is provided', async () => {
-      // Setup
       req.headers.authorization = undefined;
 
-      // Execute
       await createHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -135,22 +122,17 @@ describe('helyszinController', () => {
 
       Helyszin.findAll.mockResolvedValue(mockLocations);
 
-      // Execute
       await getAllHelyszin(req, res);
 
-      // Assert
       expect(Helyszin.findAll).toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ helyszinek: mockLocations });
     });
 
     it('should return 404 if no locations found', async () => {
-      // Setup
       Helyszin.findAll.mockResolvedValue([]);
 
-      // Execute
       await getAllHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -162,29 +144,23 @@ describe('helyszinController', () => {
 
   describe('getHelyszinById', () => {
     it('should return a location by ID', async () => {
-      // Setup
       req.params.id = 1;
       const mockLocation = { id: 1, Nev: 'Test Location', userId: 1 };
 
       Helyszin.findByPk.mockResolvedValue(mockLocation);
 
-      // Execute
       await getHelyszinById(req, res);
 
-      // Assert
       expect(Helyszin.findByPk).toHaveBeenCalledWith(1);
       expect(res.json).toHaveBeenCalledWith({ helyszin: mockLocation });
     });
 
     it('should return 404 if location not found', async () => {
-      // Setup
       req.params.id = 999;
       Helyszin.findByPk.mockResolvedValue(null);
 
-      // Execute
       await getHelyszinById(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -196,7 +172,6 @@ describe('helyszinController', () => {
 
   describe('updateHelyszin', () => {
     it('should update a location successfully', async () => {
-      // Setup
       req.params.id = 1;
       req.body = {
         Nev: 'Updated Location',
@@ -219,10 +194,8 @@ describe('helyszinController', () => {
 
       Helyszin.findByPk.mockResolvedValue(mockLocation);
 
-      // Execute
       await updateHelyszin(req, res);
 
-      // Assert
       expect(Helyszin.findByPk).toHaveBeenCalledWith(1);
       expect(mockLocation.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -241,20 +214,17 @@ describe('helyszinController', () => {
     });
 
     it('should return 403 if user is not the owner', async () => {
-      // Setup
       req.params.id = 1;
       const mockLocation = {
         id: 1,
         Nev: 'Test Location',
-        userId: 2 // Different user
+        userId: 2 
       };
 
       Helyszin.findByPk.mockResolvedValue(mockLocation);
 
-      // Execute
       await updateHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -264,14 +234,11 @@ describe('helyszinController', () => {
     });
 
     it('should return 404 if location not found', async () => {
-      // Setup
       req.params.id = 999;
       Helyszin.findByPk.mockResolvedValue(null);
 
-      // Execute
       await updateHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -283,7 +250,6 @@ describe('helyszinController', () => {
 
   describe('deleteHelyszin', () => {
     it('should delete a location successfully', async () => {
-      // Setup
       req.params.id = 1;
       const mockLocation = {
         id: 1,
@@ -294,10 +260,8 @@ describe('helyszinController', () => {
 
       Helyszin.findByPk.mockResolvedValue(mockLocation);
 
-      // Execute
       await deleteHelyszin(req, res);
 
-      // Assert
       expect(Helyszin.findByPk).toHaveBeenCalledWith(1);
       expect(mockLocation.destroy).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
@@ -314,15 +278,12 @@ describe('helyszinController', () => {
       const mockLocation = {
         id: 1,
         Nev: 'Test Location',
-        userId: 2 // Different user
+        userId: 2 
       };
 
       Helyszin.findByPk.mockResolvedValue(mockLocation);
-
-      // Execute
       await deleteHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -332,14 +293,11 @@ describe('helyszinController', () => {
     });
 
     it('should return 404 if location not found', async () => {
-      // Setup
       req.params.id = 999;
       Helyszin.findByPk.mockResolvedValue(null);
 
-      // Execute
       await deleteHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -351,7 +309,6 @@ describe('helyszinController', () => {
 
   describe('getMyOwnHelyszin', () => {
     it('should return user\'s own locations', async () => {
-      // Setup
       const mockLocations = [
         { id: 1, Nev: 'My Location 1', userId: 1 },
         { id: 2, Nev: 'My Location 2', userId: 1 }
@@ -359,10 +316,8 @@ describe('helyszinController', () => {
 
       Helyszin.findAll.mockResolvedValue(mockLocations);
 
-      // Execute
       await getMyOwnHelyszin(req, res);
 
-      // Assert
       expect(Helyszin.findAll).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
@@ -377,10 +332,8 @@ describe('helyszinController', () => {
       // Setup
       Helyszin.findAll.mockResolvedValue([]);
 
-      // Execute
       await getMyOwnHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -390,13 +343,10 @@ describe('helyszinController', () => {
     });
 
     it('should return 400 if userId is missing', async () => {
-      // Setup
       req.user = undefined;
 
-      // Execute
       await getMyOwnHelyszin(req, res);
 
-      // Assert
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({

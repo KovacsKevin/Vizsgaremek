@@ -38,7 +38,7 @@ const Résztvevő = sequelize.define("Résztvevő", {
     státusz: {
         type: DataTypes.ENUM('elfogadva', 'elutasítva', 'függőben', 'meghívott'),
         allowNull: false,
-        defaultValue: 'függőben'  // Changed from 'elfogadva' to 'függőben'
+        defaultValue: 'függőben' 
     },
     megjegyzés: {
         type: DataTypes.TEXT,
@@ -56,15 +56,10 @@ const Résztvevő = sequelize.define("Résztvevő", {
     
 });
 
-
-// Establish relationships
 Résztvevő.belongsTo(Esemény, { foreignKey: 'eseményId' });
 Résztvevő.belongsTo(User, { foreignKey: 'userId' });
 
-// Add reverse relationships
 Esemény.hasMany(Résztvevő, { foreignKey: 'eseményId' });
 User.hasMany(Résztvevő, { foreignKey: 'userId' });
-
-
 
 module.exports = Résztvevő;

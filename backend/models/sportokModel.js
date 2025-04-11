@@ -1,7 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
 
-// Define the Sportok model
 const Sportok = sequelize.define("Sportok", {
     Id: {
         type: DataTypes.INTEGER,
@@ -17,14 +16,12 @@ const Sportok = sequelize.define("Sportok", {
         allowNull: false,
     },
     KepUrl: {
-        type: DataTypes.STRING, // Kép URL-t tárolunk itt
-        allowNull: true,  // Ha nem kötelező a kép, akkor allowNull true
+        type: DataTypes.STRING, 
+        allowNull: true,  
     }
 }, {
-    timestamps: false,  // No timestamps as in the provided SQL definition
+    timestamps: false,  
 });
-
-// Sync the model with the database
 
 
 module.exports = Sportok;
