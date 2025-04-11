@@ -102,6 +102,11 @@ cd backend
 npm i
 ```
 
+- Backend elindítása
+```bash
+npm run dev
+```
+
 - Frontend mappába lépés
 ```bash
 cd frontend
@@ -110,6 +115,11 @@ cd frontend
 - Modulok telepítése
 ```bash
 npm i
+```
+
+- Frontend elindítása
+```bash
+npm run dev
 ```
 
 - XAMPP elindíása, belépés a phpMyAdminba, sportpartner_kereso adatbázis létrehozása, SQL menüpont megnyitása
@@ -139,6 +149,3 @@ localhost:8081 Backend
 
 ## Dokumentáció
 A  dokumentáció itt tölthető le: [Dokumentáció](https://github.com/KovacsKevin/Vizsgaremek/raw/refs/heads/main/Sportpartner_keres%C5%91.docx)
-
-
-
