@@ -122,7 +122,7 @@ COLLATE utf8_hungarian_ci;
 
 - Importálás menüpontra kattintás, fájl kiválasztása gomb
 
-Az adatokat tartalmazó sql fájl innen tölthető le: [sportpartner_kereso_import_teljes.sql](https://github.com/KovacsKevin/Vizsgaremek)
+Az adatokat tartalmazó sql fájl innen tölthető le: [sportpartner_kereso_import_teljes.sql](https://github.com/KovacsKevin/Vizsgaremek/sportpartner_kereso_import_teljes.sql)
 
 ## Az alábbi portokon futnak a szerverek: 
 ```bash
@@ -138,7 +138,7 @@ localhost:8081 Backend
 - **Fejlesztő**: [Lancz Csaba](https://github.com/lanczcsaba)
 
 ## Dokumentáció
-A  dokumentáció itt tölthető le: [Dokumentáció](https://github.com/KovacsKevin/Vizsgaremek)
+A  dokumentáció itt tölthető le: [Dokumentáció](https://github.com/KovacsKevin/Vizsgaremek/Sportpartner kereső.docx)
 
 
 
