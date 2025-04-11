@@ -138,7 +138,7 @@ localhost:8081 Backend
 - **Fejlesztő**: [Lancz Csaba](https://github.com/lanczcsaba)
 
 ## Dokumentáció
-A  dokumentáció itt tölthető le: [Dokumentáció](https://github.com/KovacsKevin/Vizsgaremek/blob/main/Sportpartner_keres%C5%91.docx)
+A  dokumentáció itt tölthető le: [Dokumentáció](https://github.com/KovacsKevin/Vizsgaremek/raw/refs/heads/main/Sportpartner_keres%C5%91.docx)
 
 
 
