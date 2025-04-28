@@ -1035,7 +1035,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
     
                   {isUserOrganizer() && pendingParticipants.length > 0 && (
                     <div className="mb-6">
-                      <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2">
+                      <h4 className="text-lg font-semibold mb-3 border-b border-white/20 pb-2 text-white">
                         Jóváhagyásra váró résztvevők ({pendingParticipants.length})
                       </h4>
                       <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
@@ -1054,7 +1054,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                                 className="w-12 h-12 rounded-full object-cover"
                               />
                               <div>
-                                <h4 className="font-medium">
+                                <h4 className="font-medium text-white">
                                   {participant.name}
                                 </h4>
                                 <p className="text-sm text-white/60">
@@ -1118,7 +1118,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
                                 <div>
-                                  <h4 className="font-medium">
+                                  <h4 className="font-medium text-white">
                                     {participant.name}
                                     {currentUser && participant.id === currentUser.userId && (
                                       <span className="ml-2 text-blue-400 text-sm">(Te)</span>
@@ -1160,7 +1160,7 @@ const EventModal = ({ event, onClose, onParticipantUpdate, isArchived, isInvitat
                                   className="w-12 h-12 rounded-full object-cover"
                                 />
                                 <div>
-                                  <h4 className="font-medium">
+                                  <h4 className="font-medium text-white">
                                     {participant.name}
                                     {currentUser && participant.id === currentUser.userId && (
                                       <span className="ml-2 text-blue-400 text-sm">(Te)</span>
